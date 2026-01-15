@@ -1,0 +1,175 @@
+name: ${RUNLANE_COMPOSE_PROJECT_NAME:-runlane-core}
+
+x-build: &app-build
+  context: .
+  dockerfile: Dockerfile
+  args:
+    NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org/}
+
+x-app-environment: &app-environment
+  DATABASE_URL: postgresql://${POSTGRES_USER:-runlane}:${POSTGRES_PASSWORD:-runlane_local_database}@postgres:5432/${POSTGRES_DB:-runlane}?schema=public
+  REDIS_URL: redis://redis:6379/0
+
+x-app-security: &app-security
+  init: true
+  read_only: true
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  stop_grace_period: 20s
+  tmpfs:
+    - /tmp:size=64m,mode=1777
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '3'
+
+services:
+  postgres:
+    image: postgres:17.10-alpine3.23
+    restart: unless-stopped
+    shm_size: 128mb
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-runlane}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-runlane_local_database}
+      POSTGRES_DB: ${POSTGRES_DB:-runlane}
+    ports:
+      - '127.0.0.1:${RUNLANE_POSTGRES_PORT:-15432}:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    logging: *default-logging
+    networks:
+      - runtime
+
+  redis:
+    image: redis:8.6.4-alpine3.23
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - 'yes'
+      - --appendfsync
+      - everysec
+      - --save
+      - '60'
+      - '1000'
+      - --maxmemory-policy
+      - noeviction
+    ports:
+      - '127.0.0.1:${RUNLANE_REDIS_PORT:-16379}:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+    logging: *default-logging
+    networks:
+      - runtime
+
+  migrator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    restart: 'no'
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${POSTGRES_DB:-runlane}
+      PGUSER: ${POSTGRES_USER:-runlane}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-runlane_local_database}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging: *default-logging
+    networks:
+      - runtime
+
+  api:
+    <<: *app-security
+    build:
+      <<: *app-build
+      target: api
+    restart: unless-stopped
+    environment:
+      <<: *app-environment
+    ports:
+      - '127.0.0.1:${RUNLANE_API_PORT:-14600}:4600'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:4600').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    logging: *default-logging
+    networks:
+      - runtime
+
+  worker:
+    <<: *app-security
+    build:
+      <<: *app-build
+      target: worker
+    restart: unless-stopped
+    environment:
+      <<: *app-environment
+    expose:
+      - '4601'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:4601').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    logging: *default-logging
+    networks:
+      - runtime
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  runtime:
+    driver: bridge
