@@ -1,0 +1,13 @@
+packages:
+  - apps/*
+  - packages/*
+
+allowBuilds:
+  '@nestjs/core': true
+
+engineStrict: true
+nodeVersion: 24.16.0
+pmOnFail: error
+savePrefix: ''
+strictDepBuilds: true
+strictPeerDependencies: true

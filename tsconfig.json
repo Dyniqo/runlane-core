@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "declaration": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "exactOptionalPropertyTypes": true,
+    "experimentalDecorators": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "commonjs",
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
+    "outDir": "./dist",
+    "paths": {
+      "@runlane/application": ["./packages/application/src"],
+      "@runlane/application/*": ["./packages/application/src/*"],
+      "@runlane/config": ["./packages/config/src"],
+      "@runlane/config/*": ["./packages/config/src/*"],
+      "@runlane/contracts": ["./packages/contracts/src"],
+      "@runlane/contracts/*": ["./packages/contracts/src/*"],
+      "@runlane/domain": ["./packages/domain/src"],
+      "@runlane/domain/*": ["./packages/domain/src/*"],
+      "@runlane/infrastructure": ["./packages/infrastructure/src"],
+      "@runlane/infrastructure/*": ["./packages/infrastructure/src/*"],
+      "@runlane/testing": ["./packages/testing/src"],
+      "@runlane/testing/*": ["./packages/testing/src/*"]
+    },
+    "removeComments": true,
+    "rootDir": ".",
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": true,
+    "strictBindCallApply": true,
+    "strictNullChecks": true,
+    "target": "ES2023",
+    "types": ["node"],
+    "useUnknownInCatchVariables": true
+  },
+  "include": ["apps/**/*.ts", "packages/**/*.ts"],
+  "exclude": ["node_modules", "dist", "coverage"]
+}

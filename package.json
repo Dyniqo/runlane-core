@@ -1,0 +1,66 @@
+{
+  "name": "runlane-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Workflow orchestration infrastructure with independent API and worker runtimes.",
+  "author": {
+    "name": "dyniqo",
+    "url": "https://dyniqo.dev",
+    "email": "contact@dyniqo.dev"
+  },
+  "homepage": "https://github.com/dyniqo/runlane-core",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dyniqo/runlane-core.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dyniqo/runlane-core/issues",
+    "email": "contact@dyniqo.dev"
+  },
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=24.16.0",
+    "pnpm": ">=11.4.0"
+  },
+  "packageManager": "pnpm@11.4.0",
+  "scripts": {
+    "build": "pnpm clean && nest build api && nest build worker",
+    "build:api": "nest build api",
+    "build:worker": "nest build worker",
+    "clean": "rimraf dist coverage",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint apps packages --max-warnings=0",
+    "start:api": "nest start api",
+    "start:api:built": "node dist/apps/api/main.js",
+    "start:api:dev": "nest start api --watch",
+    "start:worker": "nest start worker",
+    "start:worker:built": "node dist/apps/worker/main.js",
+    "start:worker:dev": "nest start worker --watch",
+    "typecheck": "tsc --noEmit",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm build"
+  },
+  "dependencies": {
+    "@nestjs/common": "11.1.24",
+    "@nestjs/core": "11.1.24",
+    "@nestjs/platform-express": "11.1.24",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@nestjs/cli": "11.0.21",
+    "@nestjs/schematics": "11.1.0",
+    "@types/node": "24.13.0",
+    "eslint": "10.4.1",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "17.6.0",
+    "prettier": "3.8.3",
+    "rimraf": "6.1.3",
+    "ts-loader": "9.6.0",
+    "ts-node": "10.9.2",
+    "tsconfig-paths": "4.2.0",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.60.1"
+  }
+}
