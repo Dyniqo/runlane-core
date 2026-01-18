@@ -7,6 +7,7 @@ module.exports = (options) => ({
     extensions: ['.ts', '.js', '.json'],
     alias: {
       ...(options.resolve?.alias ?? {}),
+      '@runlane/config': path.resolve(__dirname, 'packages/config/src'),
       '@runlane/contracts': path.resolve(__dirname, 'packages/contracts/src'),
     },
   },

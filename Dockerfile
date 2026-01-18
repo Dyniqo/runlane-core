@@ -12,12 +12,17 @@ ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 WORKDIR /app
 
 ARG NPM_REGISTRY=https://registry.npmjs.org/
+ARG PRISMA_ENGINES_MIRROR=https://binaries.prisma.sh
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
 
-ENV NPM_CONFIG_REGISTRY=${NPM_REGISTRY}
-ENV npm_config_registry=${NPM_REGISTRY}
+ENV NPM_CONFIG_REGISTRY=$NPM_REGISTRY
+ENV npm_config_registry=$NPM_REGISTRY
+ENV PRISMA_ENGINES_MIRROR=$PRISMA_ENGINES_MIRROR
 
 RUN --mount=type=cache,id=runlane-npm-cache,target=/root/.npm \
-  npm install --global pnpm@11.4.0 --registry=${NPM_REGISTRY}
+  npm install --global pnpm@10.0.0 --registry=${NPM_REGISTRY}
 
 FROM base AS dependencies
 
@@ -35,7 +40,7 @@ COPY packages/testing/package.json ./packages/testing/package.json
 
 RUN --mount=type=cache,id=runlane-pnpm-store,target=/pnpm/store \
   pnpm config set store-dir /pnpm/store \
-  && pnpm install --frozen-lockfile
+  && pnpm install --frozen-lockfile --fetch-retries=10
 
 FROM dependencies AS builder
 
@@ -61,7 +66,7 @@ COPY packages/testing/package.json ./packages/testing/package.json
 
 RUN --mount=type=cache,id=runlane-pnpm-store,target=/pnpm/store \
   pnpm config set store-dir /pnpm/store \
-  && pnpm install --prod --frozen-lockfile
+  && pnpm install --prod --frozen-lockfile --fetch-retries=10
 
 FROM ${NODE_IMAGE} AS runtime
 

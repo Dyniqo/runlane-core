@@ -1,12 +1,11 @@
+import { RuntimeConfigService } from '@runlane/config';
 import { NestFactory } from '@nestjs/core';
 import { ApiModule } from './api.module';
 
-const API_HOST = '0.0.0.0';
-const API_PORT = 4600;
-
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(ApiModule);
-  await app.listen(API_PORT, API_HOST);
+  const config = app.get(RuntimeConfigService);
+  await app.listen(config.apiPort, config.apiHost);
 }
 
 void bootstrap();

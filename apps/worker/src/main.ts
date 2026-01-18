@@ -1,12 +1,11 @@
+import { RuntimeConfigService } from '@runlane/config';
 import { NestFactory } from '@nestjs/core';
 import { WorkerModule } from './worker.module';
 
-const WORKER_HOST = '0.0.0.0';
-const WORKER_PORT = 4601;
-
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(WorkerModule);
-  await app.listen(WORKER_PORT, WORKER_HOST);
+  const config = app.get(RuntimeConfigService);
+  await app.listen(config.workerPort, config.workerHost);
 }
 
 void bootstrap();
