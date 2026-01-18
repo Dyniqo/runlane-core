@@ -16,13 +16,41 @@ pnpm install --frozen-lockfile --fetch-retries=10
 
 ## Configuration
 
-The API and Worker load `.env.local` first and `.env` second without overriding variables already provided by the operating system. Local defaults keep both runtimes executable without an environment file.
+The API and Worker load `.env.local` first and `.env` second without overriding variables already provided by the operating system. Local defaults provide runtime values when no environment file is present. PostgreSQL and Redis must be available before either runtime starts.
 
 Use `.env.example` as the complete local configuration reference. Use `.env.deploy.example` as the deployment configuration reference. The local `.env` file remains excluded from version control. The deploy runtime profile requires explicit public URLs and datastore connection URLs and stops during startup when they are missing or invalid.
+
+## Database
+
+Start the datastore services and apply all committed migrations:
+
+```bash
+pnpm docker:infra:up
+```
+
+Create a migration after changing `prisma/schema.prisma`:
+
+```bash
+pnpm db:migrate:create -- --name migration_name
+```
+
+Apply migrations to an existing database:
+
+```bash
+pnpm db:migrate:deploy
+```
+
+Validate the schema and migration state:
+
+```bash
+pnpm db:validate
+pnpm db:migrate:status
+```
 
 ## Run locally
 
 ```bash
+pnpm docker:infra:up
 pnpm start:api:dev
 pnpm start:worker:dev
 ```
@@ -43,6 +71,8 @@ Docker host ports can be changed with `RUNLANE_API_PORT`, `RUNLANE_POSTGRES_PORT
 
 ```bash
 pnpm docker:config
+pnpm docker:infra:up
+pnpm docker:migrate
 pnpm docker:up:detached
 pnpm docker:logs
 pnpm docker:down
@@ -54,6 +84,7 @@ pnpm docker:reset
 ```bash
 pnpm verify
 pnpm docker:config
+powershell -ExecutionPolicy Bypass -File scripts/validate-database.ps1
 ```
 
 ## Run built services

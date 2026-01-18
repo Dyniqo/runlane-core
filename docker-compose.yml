@@ -101,17 +101,15 @@ services:
       - runtime
 
   migrator:
+    <<: *app-security
     build:
-      context: .
-      dockerfile: Dockerfile
+      <<: *app-build
       target: migrator
     restart: 'no'
     environment:
-      PGHOST: postgres
-      PGPORT: 5432
-      PGDATABASE: ${POSTGRES_DB:-runlane}
-      PGUSER: ${POSTGRES_USER:-runlane}
-      PGPASSWORD: ${POSTGRES_PASSWORD:-runlane_local_database}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-runlane}:${POSTGRES_PASSWORD:-runlane_local_database}@postgres:5432/${POSTGRES_DB:-runlane}?schema=public
+      HOME: /tmp
+      XDG_CACHE_HOME: /tmp/.cache
     depends_on:
       postgres:
         condition: service_healthy

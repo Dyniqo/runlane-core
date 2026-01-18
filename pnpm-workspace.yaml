@@ -7,6 +7,9 @@ managePackageManagerVersions: false
 nodeVersion: 24.16.0
 onlyBuiltDependencies:
   - '@nestjs/core'
+  - '@prisma/client'
+  - '@prisma/engines'
+  - prisma
 packageManagerStrictVersion: true
 savePrefix: ''
 strictPeerDependencies: true

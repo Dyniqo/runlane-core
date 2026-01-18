@@ -9,6 +9,7 @@ module.exports = (options) => ({
       ...(options.resolve?.alias ?? {}),
       '@runlane/config': path.resolve(__dirname, 'packages/config/src'),
       '@runlane/contracts': path.resolve(__dirname, 'packages/contracts/src'),
+      '@runlane/infrastructure': path.resolve(__dirname, 'packages/infrastructure/src'),
     },
   },
 });
