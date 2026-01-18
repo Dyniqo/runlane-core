@@ -17,6 +17,7 @@ export interface RuntimeEnvironment {
   readonly DATABASE_URL: string;
   readonly REDIS_URL: string;
   readonly LOG_LEVEL: LogLevel;
+  readonly SHUTDOWN_TIMEOUT_MS: number;
 }
 
 const LOCAL_DEFAULTS = {
@@ -29,6 +30,7 @@ const LOCAL_DEFAULTS = {
   DATABASE_URL: 'postgresql://runlane:runlane_local_database@127.0.0.1:15432/runlane?schema=public',
   REDIS_URL: 'redis://127.0.0.1:16379/0',
   LOG_LEVEL: 'info',
+  SHUTDOWN_TIMEOUT_MS: 15000,
 } as const;
 
 export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironment {
@@ -81,6 +83,14 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
       'LOG_LEVEL',
       LOG_LEVELS,
       LOCAL_DEFAULTS.LOG_LEVEL,
+      errors,
+    ),
+    SHUTDOWN_TIMEOUT_MS: readInteger(
+      source.SHUTDOWN_TIMEOUT_MS,
+      'SHUTDOWN_TIMEOUT_MS',
+      LOCAL_DEFAULTS.SHUTDOWN_TIMEOUT_MS,
+      1000,
+      120000,
       errors,
     ),
   };
@@ -147,6 +157,17 @@ function readPort(
   defaultValue: number,
   errors: string[],
 ): number {
+  return readInteger(value, name, defaultValue, 1, 65535, errors);
+}
+
+function readInteger(
+  value: string | undefined,
+  name: string,
+  defaultValue: number,
+  minimum: number,
+  maximum: number,
+  errors: string[],
+): number {
   const normalizedValue = value?.trim();
 
   if (!normalizedValue) {
@@ -155,8 +176,8 @@ function readPort(
 
   const parsedValue = Number(normalizedValue);
 
-  if (!Number.isInteger(parsedValue) || parsedValue < 1 || parsedValue > 65535) {
-    errors.push(`${name} must be an integer between 1 and 65535`);
+  if (!Number.isInteger(parsedValue) || parsedValue < minimum || parsedValue > maximum) {
+    errors.push(`${name} must be an integer between ${minimum} and ${maximum}`);
     return defaultValue;
   }
 

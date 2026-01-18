@@ -67,6 +67,12 @@ The Docker API listens on `http://127.0.0.1:14600`. PostgreSQL and Redis are bou
 
 Docker host ports can be changed with `RUNLANE_API_PORT`, `RUNLANE_POSTGRES_PORT`, and `RUNLANE_REDIS_PORT` without changing container ports. Public runtime URLs can be changed with `RUNLANE_PUBLIC_API_URL` and `RUNLANE_PUBLIC_APP_URL`. The Compose project namespace can be changed with `RUNLANE_COMPOSE_PROJECT_NAME`.
 
+## Runtime observability
+
+API and Worker logs are emitted as structured JSON. Every HTTP response includes `x-request-id` and `x-correlation-id`. Valid incoming values are preserved and missing or invalid values are replaced with generated identifiers. Sensitive values are redacted before logs are written.
+
+Runtime shutdown is coordinated for `SIGINT`, `SIGTERM`, uncaught exceptions, and unhandled rejections. `SHUTDOWN_TIMEOUT_MS` controls the maximum graceful shutdown duration.
+
 ## Docker operations
 
 ```bash

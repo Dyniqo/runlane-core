@@ -45,4 +45,8 @@ export class RuntimeConfigService {
   get logLevel(): LogLevel {
     return this.environment.LOG_LEVEL;
   }
+
+  get shutdownTimeoutMs(): number {
+    return this.environment.SHUTDOWN_TIMEOUT_MS;
+  }
 }
