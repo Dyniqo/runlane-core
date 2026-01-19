@@ -25,6 +25,10 @@ x-app-environment: &app-environment
   APP_URL: ${RUNLANE_PUBLIC_APP_URL:-http://127.0.0.1:14600}
   DATABASE_URL: postgresql://${POSTGRES_USER:-runlane}:${POSTGRES_PASSWORD:-runlane_local_database}@postgres:5432/${POSTGRES_DB:-runlane}?schema=public
   REDIS_URL: redis://redis:6379/0
+  API_DOCS_ENABLED: ${API_DOCS_ENABLED:-true}
+  API_DOCS_PATH: ${API_DOCS_PATH:-docs}
+  HEALTH_CHECK_TIMEOUT_MS: ${HEALTH_CHECK_TIMEOUT_MS:-3000}
+  REDIS_CONNECT_TIMEOUT_MS: ${REDIS_CONNECT_TIMEOUT_MS:-5000}
   LOG_LEVEL: ${LOG_LEVEL:-info}
   SHUTDOWN_TIMEOUT_MS: ${SHUTDOWN_TIMEOUT_MS:-15000}
 
@@ -141,7 +145,7 @@ services:
         - node
         - -e
         - >-
-          fetch('http://127.0.0.1:4600').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))
+          fetch('http://127.0.0.1:4600/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))
       interval: 10s
       timeout: 5s
       retries: 12
@@ -173,7 +177,7 @@ services:
         - node
         - -e
         - >-
-          fetch('http://127.0.0.1:4601').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))
+          fetch('http://127.0.0.1:4601/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))
       interval: 10s
       timeout: 5s
       retries: 12

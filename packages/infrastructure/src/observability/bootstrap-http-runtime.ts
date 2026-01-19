@@ -14,6 +14,10 @@ export interface HttpRuntimeOptions {
   readonly module: Type<unknown>;
   readonly serviceName: RunlaneServiceName;
   readonly resolveEndpoint: (config: RuntimeConfigService) => RuntimeEndpoint;
+  readonly configureApplication?: (
+    application: INestApplication,
+    config: RuntimeConfigService,
+  ) => Promise<void> | void;
 }
 
 export async function bootstrapHttpRuntime(options: HttpRuntimeOptions): Promise<void> {
@@ -26,6 +30,7 @@ export async function bootstrapHttpRuntime(options: HttpRuntimeOptions): Promise
     const endpoint = options.resolveEndpoint(config);
 
     app.useLogger(logger);
+    await options.configureApplication?.(app, config);
     await app.listen(endpoint.port, endpoint.host);
 
     logger.logEvent(

@@ -39,7 +39,7 @@ export class RunlaneObservabilityModule implements NestModule {
           useClass: GlobalExceptionFilter,
         },
       ],
-      exports: [RequestContextService, StructuredLoggerService],
+      exports: [RUNLANE_SERVICE_NAME, RequestContextService, StructuredLoggerService],
     };
   }
 

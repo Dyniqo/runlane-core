@@ -1,4 +1,18 @@
 export {
+  HEALTH_INDICATOR_STATES,
+  HealthController,
+  HealthIndicatorDto,
+  HealthService,
+  LIVENESS_STATES,
+  LivenessResponseDto,
+  QueueHealthResponseDto,
+  READINESS_STATES,
+  ReadinessChecksDto,
+  ReadinessResponseDto,
+  RunlaneHealthModule,
+} from './health';
+export type { HealthIndicatorState, LivenessState, ReadinessState } from './health';
+export {
   bootstrapHttpRuntime,
   CORRELATION_ID_HEADER,
   GlobalExceptionFilter,
@@ -18,3 +32,4 @@ export type {
   StructuredLogLevel,
 } from './observability';
 export { RunlaneDatabaseModule, PrismaService } from './prisma';
+export { RedisService, RunlaneRedisModule } from './redis';

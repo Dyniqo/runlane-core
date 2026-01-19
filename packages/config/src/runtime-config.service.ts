@@ -42,6 +42,22 @@ export class RuntimeConfigService {
     return this.environment.REDIS_URL;
   }
 
+  get apiDocsEnabled(): boolean {
+    return this.environment.API_DOCS_ENABLED;
+  }
+
+  get apiDocsPath(): string {
+    return this.environment.API_DOCS_PATH;
+  }
+
+  get healthCheckTimeoutMs(): number {
+    return this.environment.HEALTH_CHECK_TIMEOUT_MS;
+  }
+
+  get redisConnectTimeoutMs(): number {
+    return this.environment.REDIS_CONNECT_TIMEOUT_MS;
+  }
+
   get logLevel(): LogLevel {
     return this.environment.LOG_LEVEL;
   }

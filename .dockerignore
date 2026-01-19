@@ -7,6 +7,7 @@ node_modules
 coverage
 **/coverage
 dist
+.run
 **/dist
 *.tsbuildinfo
 .env

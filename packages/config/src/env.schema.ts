@@ -16,6 +16,10 @@ export interface RuntimeEnvironment {
   readonly APP_URL: string;
   readonly DATABASE_URL: string;
   readonly REDIS_URL: string;
+  readonly API_DOCS_ENABLED: boolean;
+  readonly API_DOCS_PATH: string;
+  readonly HEALTH_CHECK_TIMEOUT_MS: number;
+  readonly REDIS_CONNECT_TIMEOUT_MS: number;
   readonly LOG_LEVEL: LogLevel;
   readonly SHUTDOWN_TIMEOUT_MS: number;
 }
@@ -29,6 +33,9 @@ const LOCAL_DEFAULTS = {
   APP_URL: 'http://localhost:4600',
   DATABASE_URL: 'postgresql://runlane:runlane_local_database@127.0.0.1:15432/runlane?schema=public',
   REDIS_URL: 'redis://127.0.0.1:16379/0',
+  API_DOCS_PATH: 'docs',
+  HEALTH_CHECK_TIMEOUT_MS: 3000,
+  REDIS_CONNECT_TIMEOUT_MS: 5000,
   LOG_LEVEL: 'info',
   SHUTDOWN_TIMEOUT_MS: 15000,
 } as const;
@@ -78,6 +85,29 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
       ['redis:', 'rediss:'],
       errors,
     ),
+    API_DOCS_ENABLED: readBoolean(source.API_DOCS_ENABLED, !deployRequired, errors),
+    API_DOCS_PATH: readRoutePath(
+      source.API_DOCS_PATH,
+      'API_DOCS_PATH',
+      LOCAL_DEFAULTS.API_DOCS_PATH,
+      errors,
+    ),
+    HEALTH_CHECK_TIMEOUT_MS: readInteger(
+      source.HEALTH_CHECK_TIMEOUT_MS,
+      'HEALTH_CHECK_TIMEOUT_MS',
+      LOCAL_DEFAULTS.HEALTH_CHECK_TIMEOUT_MS,
+      250,
+      30000,
+      errors,
+    ),
+    REDIS_CONNECT_TIMEOUT_MS: readInteger(
+      source.REDIS_CONNECT_TIMEOUT_MS,
+      'REDIS_CONNECT_TIMEOUT_MS',
+      LOCAL_DEFAULTS.REDIS_CONNECT_TIMEOUT_MS,
+      250,
+      60000,
+      errors,
+    ),
     LOG_LEVEL: readEnum(
       source.LOG_LEVEL,
       'LOG_LEVEL',
@@ -119,6 +149,41 @@ function readEnum<const T extends readonly string[]>(
   }
 
   return normalizedValue as T[number];
+}
+
+function readBoolean(value: string | undefined, defaultValue: boolean, errors: string[]): boolean {
+  const normalizedValue = value?.trim().toLowerCase();
+
+  if (!normalizedValue) {
+    return defaultValue;
+  }
+
+  if (normalizedValue === 'true') {
+    return true;
+  }
+
+  if (normalizedValue === 'false') {
+    return false;
+  }
+
+  errors.push('API_DOCS_ENABLED must be true or false');
+  return defaultValue;
+}
+
+function readRoutePath(
+  value: string | undefined,
+  name: string,
+  defaultValue: string,
+  errors: string[],
+): string {
+  const normalizedValue = value?.trim().replace(/^\/+|\/+$/g, '') || defaultValue;
+
+  if (!/^[a-z0-9]+(?:[/-][a-z0-9]+)*$/.test(normalizedValue)) {
+    errors.push(`${name} must contain lowercase route segments separated by / or -`);
+    return defaultValue;
+  }
+
+  return normalizedValue;
 }
 
 function readHost(

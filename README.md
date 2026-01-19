@@ -57,6 +57,18 @@ pnpm start:worker:dev
 
 The local API listens on `http://localhost:4600` and the local Worker runtime listens on `http://localhost:4601`.
 
+## API and operational endpoints
+
+The API uses URI versioning. The current API descriptor is available at `GET /v1`. OpenAPI documentation is available at `/docs` and the OpenAPI JSON document is available at `/docs/openapi.json` when `API_DOCS_ENABLED=true`.
+
+Both runtimes expose unversioned operational endpoints:
+
+- `GET /health`
+- `GET /health/ready`
+- `GET /health/queue`
+
+Liveness does not query external dependencies. Readiness verifies PostgreSQL and Redis. Queue health verifies the Redis transport used by the queue boundary.
+
 ## Run with Docker
 
 ```bash
@@ -89,9 +101,10 @@ pnpm docker:reset
 
 ```bash
 pnpm verify
-pnpm docker:config
-powershell -ExecutionPolicy Bypass -File scripts/validate-database.ps1
+powershell -ExecutionPolicy Bypass -File scripts/validate-operational-endpoints.ps1
 ```
+
+The operational endpoint validation expects the API and Worker runtimes to be running locally.
 
 ## Run built services
 

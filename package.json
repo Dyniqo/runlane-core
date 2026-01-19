@@ -50,12 +50,13 @@
     "lint": "eslint apps packages --max-warnings=0",
     "start:api": "pnpm db:generate && nest start api",
     "start:api:built": "node dist/apps/api/main.js",
-    "start:api:dev": "pnpm db:generate && nest start api --watch",
+    "start:api:dev": "pnpm db:generate && nest start api --watch --path apps/api/tsconfig.dev.json --webpackPath webpack.api.dev.cjs",
     "start:worker": "pnpm db:generate && nest start worker",
     "start:worker:built": "node dist/apps/worker/main.js",
-    "start:worker:dev": "pnpm db:generate && nest start worker --watch",
+    "start:worker:dev": "pnpm db:generate && nest start worker --watch --path apps/worker/tsconfig.dev.json --webpackPath webpack.worker.dev.cjs",
     "typecheck": "pnpm db:generate && tsc --noEmit",
-    "verify": "pnpm format:check && pnpm lint && pnpm db:validate && pnpm typecheck && pnpm build"
+    "verify": "pnpm format:check && pnpm lint && pnpm db:validate && pnpm typecheck && pnpm build",
+    "validate:runtime": "node scripts/validate-operational-endpoints.mjs"
   },
   "dependencies": {
     "@nestjs/common": "11.1.24",
@@ -63,7 +64,9 @@
     "@nestjs/platform-express": "11.1.24",
     "@prisma/client": "6.19.3",
     "reflect-metadata": "0.2.2",
-    "rxjs": "7.8.2"
+    "rxjs": "7.8.2",
+    "@nestjs/swagger": "11.4.4",
+    "redis": "6.0.0"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
