@@ -6,6 +6,8 @@ import {
   type ArgumentsHost,
   type ExceptionFilter,
 } from '@nestjs/common';
+import { isDomainError } from '@runlane/domain';
+import { getDomainErrorHttpStatus } from '../errors';
 import { RequestContextService } from './request-context.service';
 import { StructuredLoggerService } from './structured-logger.service';
 
@@ -36,9 +38,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const http = host.switchToHttp();
     const request = http.getRequest<HttpRequestLike>();
     const response = http.getResponse<HttpResponseLike>();
-    const statusCode =
-      exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+    const statusCode = getStatusCode(exception);
     const message = getPublicMessage(exception, statusCode);
+    const errorCode = getPublicErrorCode(exception);
+    const domainErrorContext = getDomainErrorLogContext(exception);
     const path = getRequestPath(request);
     const traceContext = this.requestContext.current;
 
@@ -47,6 +50,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       'HTTP request failed',
       {
         error: exception,
+        errorCode,
+        ...domainErrorContext,
         method: request.method ?? 'UNKNOWN',
         path,
         statusCode,
@@ -61,6 +66,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     response.status(statusCode).json({
       statusCode,
+      ...(errorCode ? { code: errorCode } : {}),
       message,
       timestamp: new Date().toISOString(),
       path,
@@ -69,7 +75,21 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   }
 }
 
+function getStatusCode(exception: unknown): number {
+  if (isDomainError(exception)) {
+    return getDomainErrorHttpStatus(exception);
+  }
+
+  return exception instanceof HttpException
+    ? exception.getStatus()
+    : HttpStatus.INTERNAL_SERVER_ERROR;
+}
+
 function getPublicMessage(exception: unknown, statusCode: number): string | readonly string[] {
+  if (isDomainError(exception)) {
+    return exception.message;
+  }
+
   if (statusCode >= 500 || !(exception instanceof HttpException)) {
     return 'Internal server error';
   }
@@ -85,6 +105,19 @@ function getPublicMessage(exception: unknown, statusCode: number): string | read
   }
 
   return exception.message;
+}
+
+function getPublicErrorCode(exception: unknown): string | undefined {
+  return isDomainError(exception) ? exception.code : undefined;
+}
+
+function getDomainErrorLogContext(exception: unknown): Record<string, unknown> {
+  return isDomainError(exception)
+    ? {
+        domainErrorCategory: exception.category,
+        domainErrorDetails: exception.details,
+      }
+    : {};
 }
 
 function isHttpExceptionResponse(value: unknown): value is HttpExceptionResponse {

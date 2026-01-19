@@ -1,3 +1,4 @@
+export { getDomainErrorHttpStatus } from './errors';
 export {
   HEALTH_INDICATOR_STATES,
   HealthController,

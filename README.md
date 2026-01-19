@@ -20,6 +20,17 @@ The API and Worker load `.env.local` first and `.env` second without overriding 
 
 Use `.env.example` as the complete local configuration reference. Use `.env.deploy.example` as the deployment configuration reference. The local `.env` file remains excluded from version control. The deploy runtime profile requires explicit public URLs and datastore connection URLs and stops during startup when they are missing or invalid.
 
+## Architecture boundaries
+
+Runlane Core separates domain rules, application orchestration, infrastructure adapters, shared contracts, and runtime composition roots. The dependency direction is enforced during linting:
+
+- Domain code remains independent from frameworks and outer layers.
+- Application use cases depend only on domain rules and shared contracts.
+- Infrastructure implements external-system adapters and may depend inward.
+- API and Worker runtimes compose modules without accessing datastores directly.
+
+Domain failures use stable machine-readable codes and semantic categories. The infrastructure exception boundary maps them to consistent HTTP responses without coupling domain code to HTTP concepts.
+
 ## Database
 
 Start the datastore services and apply all committed migrations:
