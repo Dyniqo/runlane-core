@@ -32,5 +32,6 @@ export type {
   StructuredLogFields,
   StructuredLogLevel,
 } from './observability';
-export { RunlaneDatabaseModule, PrismaService } from './prisma';
+export { PrismaPersistenceContext, PrismaService, RunlaneDatabaseModule } from './prisma';
+export type { PrismaPersistenceClient, PrismaTransactionClient } from './prisma';
 export { RedisService, RunlaneRedisModule } from './redis';

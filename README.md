@@ -31,6 +31,8 @@ Runlane Core separates domain rules, application orchestration, infrastructure a
 
 Domain failures use stable machine-readable codes and semantic categories. The infrastructure exception boundary maps them to consistent HTTP responses without coupling domain code to HTTP concepts.
 
+Application persistence contracts expose explicit read and write repository operations without depending on Prisma. Transactional use cases depend on the application transaction boundary, while infrastructure coordinates Prisma interactive transactions and transparently routes repository adapters through the active transaction context. Nested transaction calls reuse the active transaction and cannot override its options.
+
 ## Database
 
 Start the datastore services and apply all committed migrations:
