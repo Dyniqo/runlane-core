@@ -1,3 +1,11 @@
 export { RUNLANE_API_VERSION } from './api-version';
+export * from './connectors';
+export * from './dto';
+export * from './events';
+export * from './jobs';
+export * from './redis';
 export { RUNLANE_PRODUCT_NAME } from './service-descriptor';
 export type { RunlaneServiceDescriptor, RunlaneServiceName } from './service-descriptor';
+export * from './shared';
+export * from './workflow-schema';
+export * from './workspace';

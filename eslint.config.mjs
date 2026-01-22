@@ -6,8 +6,9 @@ import tseslint from 'typescript-eslint';
 const domainBoundaryPatterns = [
   '@nestjs/*',
   '@prisma/*',
-  'redis',
   '@runlane/application',
+  '@runlane/contracts',
+  '@runlane/contracts/*',
   '@runlane/application/*',
   '@runlane/config',
   '@runlane/config/*',
@@ -18,10 +19,25 @@ const domainBoundaryPatterns = [
   'apps/*',
 ];
 
+const contractsBoundaryPatterns = [
+  '@nestjs/*',
+  '@prisma/*',
+  '@runlane/application',
+  '@runlane/application/*',
+  '@runlane/config',
+  '@runlane/config/*',
+  '@runlane/domain',
+  '@runlane/domain/*',
+  '@runlane/infrastructure',
+  '@runlane/infrastructure/*',
+  '@runlane/testing',
+  '@runlane/testing/*',
+  'apps/*',
+];
+
 const applicationBoundaryPatterns = [
   '@nestjs/*',
   '@prisma/*',
-  'redis',
   '@runlane/config',
   '@runlane/config/*',
   '@runlane/infrastructure',
@@ -35,10 +51,11 @@ const infrastructureBoundaryPatterns = ['@runlane/testing', '@runlane/testing/*'
 
 const interfaceBoundaryPatterns = ['@prisma/*', 'redis', '@runlane/testing', '@runlane/testing/*'];
 
-function restrictedImports(patterns, message) {
+function restrictedImports(patterns, message, paths = []) {
   return [
     'error',
     {
+      paths: paths.map((name) => ({ name, message })),
       patterns: [
         {
           group: patterns,
@@ -74,12 +91,24 @@ export default tseslint.config(
       ],
     },
   },
+
+  {
+    files: ['packages/contracts/**/*.ts'],
+    rules: {
+      'no-restricted-imports': restrictedImports(
+        contractsBoundaryPatterns,
+        'Shared contracts must remain independent from frameworks and implementation layers.',
+        ['redis'],
+      ),
+    },
+  },
   {
     files: ['packages/domain/**/*.ts'],
     rules: {
       'no-restricted-imports': restrictedImports(
         domainBoundaryPatterns,
         'Domain code must remain independent from frameworks and outer layers.',
+        ['redis'],
       ),
     },
   },
@@ -89,6 +118,7 @@ export default tseslint.config(
       'no-restricted-imports': restrictedImports(
         applicationBoundaryPatterns,
         'Application code may depend only on domain and contracts.',
+        ['redis'],
       ),
     },
   },
@@ -107,6 +137,7 @@ export default tseslint.config(
       'no-restricted-imports': restrictedImports(
         interfaceBoundaryPatterns,
         'Interface runtimes must access external systems through infrastructure adapters.',
+        ['redis'],
       ),
     },
   },

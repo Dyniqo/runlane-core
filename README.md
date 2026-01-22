@@ -33,6 +33,8 @@ Domain failures use stable machine-readable codes and semantic categories. The i
 
 Application persistence contracts expose explicit read and write repository operations without depending on Prisma. Transactional use cases depend on the application transaction boundary, while infrastructure coordinates Prisma interactive transactions and transparently routes repository adapters through the active transaction context. Nested transaction calls reuse the active transaction and cannot override its options.
 
+Shared contracts define stable transport shapes for jobs, events, DTOs, connector execution, workflow definitions, workspace scope, and Redis keys. Workspace-owned Redis keys can only be created through explicit builders that preserve tenant namespaces and reject unsafe key segments.
+
 ## Database
 
 Start the datastore services and apply all committed migrations:
@@ -63,10 +65,13 @@ pnpm db:migrate:status
 ## Run locally
 
 ```bash
+pnpm db:generate
 pnpm docker:infra:up
 pnpm start:api:dev
 pnpm start:worker:dev
 ```
+
+Generate the Prisma Client before starting either runtime. API and Worker start commands never regenerate the client, which allows both runtimes to run concurrently without replacing loaded native engine files.
 
 The local API listens on `http://localhost:4600` and the local Worker runtime listens on `http://localhost:4601`.
 
