@@ -55,18 +55,19 @@
     "start:worker:built": "node dist/apps/worker/main.js",
     "start:worker:dev": "nest start worker --watch --path apps/worker/tsconfig.dev.json --webpackPath webpack.worker.dev.cjs",
     "typecheck": "pnpm db:generate && tsc --noEmit",
-    "verify": "pnpm format:check && pnpm lint && pnpm db:validate && pnpm typecheck && pnpm build",
-    "validate:runtime": "node scripts/validate-operational-endpoints.mjs"
+    "validate:registration": "powershell -ExecutionPolicy Bypass -File scripts/validate-registration.ps1",
+    "validate:runtime": "node scripts/validate-operational-endpoints.mjs",
+    "verify": "pnpm format:check && pnpm lint && pnpm db:validate && pnpm typecheck && pnpm build"
   },
   "dependencies": {
     "@nestjs/common": "11.1.24",
     "@nestjs/core": "11.1.24",
     "@nestjs/platform-express": "11.1.24",
-    "@prisma/client": "6.19.3",
-    "reflect-metadata": "0.2.2",
-    "rxjs": "7.8.2",
     "@nestjs/swagger": "11.4.4",
-    "redis": "6.0.0"
+    "@prisma/client": "6.19.3",
+    "redis": "6.0.0",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

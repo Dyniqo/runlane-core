@@ -13,6 +13,7 @@ export {
   RunlaneHealthModule,
 } from './health';
 export type { HealthIndicatorState, LivenessState, ReadinessState } from './health';
+export { RunlaneIdentityModule, ScryptPasswordHasher } from './identity';
 export {
   bootstrapHttpRuntime,
   CORRELATION_ID_HEADER,

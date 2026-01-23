@@ -35,6 +35,8 @@ Application persistence contracts expose explicit read and write repository oper
 
 Shared contracts define stable transport shapes for jobs, events, DTOs, connector execution, workflow definitions, workspace scope, and Redis keys. Workspace-owned Redis keys can only be created through explicit builders that preserve tenant namespaces and reject unsafe key segments.
 
+Identity registration is implemented as an application use case with explicit repository and password hashing ports. User creation, default workspace creation, and owner membership creation are committed in a single database transaction.
+
 ## Database
 
 Start the datastore services and apply all committed migrations:
@@ -67,6 +69,7 @@ pnpm db:migrate:status
 ```bash
 pnpm db:generate
 pnpm docker:infra:up
+pnpm db:migrate:deploy
 pnpm start:api:dev
 pnpm start:worker:dev
 ```
@@ -86,6 +89,14 @@ Both runtimes expose unversioned operational endpoints:
 - `GET /health/queue`
 
 Liveness does not query external dependencies. Readiness verifies PostgreSQL and Redis. Queue health verifies the Redis transport used by the queue boundary.
+
+## Identity endpoints
+
+The registration endpoint creates a user, a default workspace, and an owner membership in one transaction:
+
+- `POST /v1/auth/register`
+
+Registration uses normalized email addresses and scrypt password hashing. Existing emails return a conflict response with a stable error code.
 
 ## Run with Docker
 
@@ -120,9 +131,10 @@ pnpm docker:reset
 ```bash
 pnpm verify
 powershell -ExecutionPolicy Bypass -File scripts/validate-operational-endpoints.ps1
+powershell -ExecutionPolicy Bypass -File scripts/validate-registration.ps1
 ```
 
-The operational endpoint validation expects the API and Worker runtimes to be running locally.
+The operational endpoint validation expects the API and Worker runtimes to be running locally. The registration validation expects the API runtime and PostgreSQL to be available locally.
 
 ## Run built services
 
