@@ -6,6 +6,10 @@ export interface StoredUserRecord {
   readonly name: string;
 }
 
+export interface StoredUserCredentialsRecord extends StoredUserRecord {
+  readonly passwordHash: string;
+}
+
 export interface CreateUserInput {
   readonly email: string;
   readonly passwordHash: string;
@@ -14,5 +18,7 @@ export interface CreateUserInput {
 
 export interface UserRepositoryPort {
   findByEmail(email: string): Promise<StoredUserRecord | null>;
+  findByEmailWithPassword(email: string): Promise<StoredUserCredentialsRecord | null>;
+  findById(userId: string): Promise<StoredUserRecord | null>;
   create(input: CreateUserInput): Promise<StoredUserRecord>;
 }

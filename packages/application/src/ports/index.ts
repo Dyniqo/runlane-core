@@ -1,6 +1,26 @@
-export type { PasswordHasherPort } from './identity';
-export { PASSWORD_HASHER, USER_REPOSITORY } from './identity';
-export type { CreateUserInput, StoredUserRecord, UserRepositoryPort } from './identity';
+export type {
+  AccessTokenPrincipal,
+  AccessTokenSubject,
+  AuthTokenServicePort,
+  CreateSessionInput,
+  CreateUserInput,
+  IssuedAccessToken,
+  IssuedRefreshToken,
+  PasswordHasherPort,
+  RevokeSessionInput,
+  RotateSessionRefreshTokenInput,
+  SessionRepositoryPort,
+  StoredSessionRecord,
+  StoredUserCredentialsRecord,
+  StoredUserRecord,
+  UserRepositoryPort,
+} from './identity';
+export {
+  AUTH_TOKEN_SERVICE,
+  PASSWORD_HASHER,
+  SESSION_REPOSITORY,
+  USER_REPOSITORY,
+} from './identity';
 export type { ReadRepositoryPort, RepositoryPort, WriteRepositoryPort } from './repositories';
 export { TRANSACTION_BOUNDARY, TRANSACTION_ISOLATION_LEVELS } from './transactions';
 export type {
@@ -10,6 +30,7 @@ export type {
 } from './transactions';
 export { WORKSPACE_REPOSITORY } from './workspace';
 export type {
+  AuthenticatedWorkspaceRecord,
   CreateWorkspaceWithOwnerInput,
   WorkspaceRepositoryPort,
   WorkspaceWithOwnerMembershipRecord,

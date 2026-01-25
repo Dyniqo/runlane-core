@@ -42,6 +42,22 @@ export class RuntimeConfigService {
     return this.environment.REDIS_URL;
   }
 
+  get jwtAccessSecret(): string {
+    return this.environment.JWT_ACCESS_SECRET;
+  }
+
+  get jwtRefreshSecret(): string {
+    return this.environment.JWT_REFRESH_SECRET;
+  }
+
+  get accessTokenTtlSeconds(): number {
+    return this.environment.ACCESS_TOKEN_TTL;
+  }
+
+  get refreshTokenTtlSeconds(): number {
+    return this.environment.REFRESH_TOKEN_TTL;
+  }
+
   get apiDocsEnabled(): boolean {
     return this.environment.API_DOCS_ENABLED;
   }

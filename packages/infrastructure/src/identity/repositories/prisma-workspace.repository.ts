@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type {
+  AuthenticatedWorkspaceRecord,
   CreateWorkspaceWithOwnerInput,
   WorkspaceRepositoryPort,
   WorkspaceWithOwnerMembershipRecord,
@@ -52,12 +53,38 @@ export class PrismaWorkspaceRepository implements WorkspaceRepositoryPort {
     return {
       id: workspace.id,
       name: workspace.name,
-      role: mapWorkspaceRole(ownerMembership.role),
+      role: mapOwnerWorkspaceRole(ownerMembership.role),
+    };
+  }
+
+  async findPrimaryWorkspaceForUser(userId: string): Promise<AuthenticatedWorkspaceRecord | null> {
+    const membership = await this.persistence.client.workspaceMember.findFirst({
+      where: { userId },
+      orderBy: [{ role: 'asc' }, { createdAt: 'asc' }],
+      select: {
+        role: true,
+        workspace: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!membership) {
+      return null;
+    }
+
+    return {
+      id: membership.workspace.id,
+      name: membership.workspace.name,
+      role: mapAuthenticatedWorkspaceRole(membership.role),
     };
   }
 }
 
-function mapWorkspaceRole(role: string): 'owner' {
+function mapOwnerWorkspaceRole(role: string): 'owner' {
   if (role !== 'OWNER') {
     throw new DomainError({
       code: 'WORKSPACE_OWNER_ROLE_INVALID',
@@ -68,4 +95,21 @@ function mapWorkspaceRole(role: string): 'owner' {
   }
 
   return 'owner';
+}
+
+function mapAuthenticatedWorkspaceRole(role: string): 'owner' | 'member' {
+  if (role === 'OWNER') {
+    return 'owner';
+  }
+
+  if (role === 'MEMBER') {
+    return 'member';
+  }
+
+  throw new DomainError({
+    code: 'WORKSPACE_MEMBER_ROLE_INVALID',
+    category: 'business_rule',
+    message: 'Workspace membership has an invalid role',
+    details: { role },
+  });
 }

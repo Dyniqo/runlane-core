@@ -1,16 +1,30 @@
 export {
+  AUTH_TOKEN_SERVICE,
   PASSWORD_HASHER,
+  SESSION_REPOSITORY,
   TRANSACTION_BOUNDARY,
   TRANSACTION_ISOLATION_LEVELS,
   USER_REPOSITORY,
   WORKSPACE_REPOSITORY,
 } from './ports';
 export type {
+  AccessTokenPrincipal,
+  AccessTokenSubject,
+  AuthenticatedWorkspaceRecord,
+  AuthTokenServicePort,
+  CreateSessionInput,
   CreateUserInput,
   CreateWorkspaceWithOwnerInput,
+  IssuedAccessToken,
+  IssuedRefreshToken,
   PasswordHasherPort,
   ReadRepositoryPort,
   RepositoryPort,
+  RevokeSessionInput,
+  RotateSessionRefreshTokenInput,
+  SessionRepositoryPort,
+  StoredSessionRecord,
+  StoredUserCredentialsRecord,
   StoredUserRecord,
   TransactionBoundary,
   TransactionIsolationLevel,
@@ -20,5 +34,18 @@ export type {
   WorkspaceWithOwnerMembershipRecord,
   WriteRepositoryPort,
 } from './ports';
-export { RegisterUserUseCase } from './use-cases';
-export type { RegisterUserInput, UseCase } from './use-cases';
+export {
+  GetAuthenticatedUserUseCase,
+  LoginUserUseCase,
+  LogoutSessionUseCase,
+  RefreshSessionUseCase,
+  RegisterUserUseCase,
+} from './use-cases';
+export type {
+  GetAuthenticatedUserInput,
+  LoginUserInput,
+  LogoutSessionInput,
+  RefreshSessionInput,
+  RegisterUserInput,
+  UseCase,
+} from './use-cases';

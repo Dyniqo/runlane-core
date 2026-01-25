@@ -1,2 +1,10 @@
+export { GetAuthenticatedUserUseCase } from './get-authenticated-user.use-case';
+export type { GetAuthenticatedUserInput } from './get-authenticated-user.use-case';
+export { LoginUserUseCase } from './login-user.use-case';
+export type { LoginUserInput } from './login-user.use-case';
+export { LogoutSessionUseCase } from './logout-session.use-case';
+export type { LogoutSessionInput } from './logout-session.use-case';
+export { RefreshSessionUseCase } from './refresh-session.use-case';
+export type { RefreshSessionInput } from './refresh-session.use-case';
 export { RegisterUserUseCase } from './register-user.use-case';
 export type { RegisterUserInput } from './register-user.use-case';

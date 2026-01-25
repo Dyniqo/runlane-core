@@ -1,5 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { CreateUserInput, StoredUserRecord, UserRepositoryPort } from '@runlane/application';
+import type {
+  CreateUserInput,
+  StoredUserCredentialsRecord,
+  StoredUserRecord,
+  UserRepositoryPort,
+} from '@runlane/application';
 import { DomainError } from '@runlane/domain';
 import { PrismaPersistenceContext } from '../../prisma';
 
@@ -12,6 +17,29 @@ export class PrismaUserRepository implements UserRepositoryPort {
   async findByEmail(email: string): Promise<StoredUserRecord | null> {
     return this.persistence.client.user.findUnique({
       where: { email },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+      },
+    });
+  }
+
+  async findByEmailWithPassword(email: string): Promise<StoredUserCredentialsRecord | null> {
+    return this.persistence.client.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        passwordHash: true,
+      },
+    });
+  }
+
+  async findById(userId: string): Promise<StoredUserRecord | null> {
+    return this.persistence.client.user.findUnique({
+      where: { id: userId },
       select: {
         id: true,
         email: true,

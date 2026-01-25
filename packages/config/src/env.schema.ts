@@ -16,6 +16,10 @@ export interface RuntimeEnvironment {
   readonly APP_URL: string;
   readonly DATABASE_URL: string;
   readonly REDIS_URL: string;
+  readonly JWT_ACCESS_SECRET: string;
+  readonly JWT_REFRESH_SECRET: string;
+  readonly ACCESS_TOKEN_TTL: number;
+  readonly REFRESH_TOKEN_TTL: number;
   readonly API_DOCS_ENABLED: boolean;
   readonly API_DOCS_PATH: string;
   readonly HEALTH_CHECK_TIMEOUT_MS: number;
@@ -33,6 +37,10 @@ const LOCAL_DEFAULTS = {
   APP_URL: 'http://localhost:4600',
   DATABASE_URL: 'postgresql://runlane:runlane_local_database@127.0.0.1:15432/runlane?schema=public',
   REDIS_URL: 'redis://127.0.0.1:16379/0',
+  JWT_ACCESS_SECRET: 'runlane_local_access_secret_change_me_64_bytes_minimum_value',
+  JWT_REFRESH_SECRET: 'runlane_local_refresh_secret_change_me_64_bytes_minimum_value',
+  ACCESS_TOKEN_TTL: 900,
+  REFRESH_TOKEN_TTL: 2592000,
   API_DOCS_PATH: 'docs',
   HEALTH_CHECK_TIMEOUT_MS: 3000,
   REDIS_CONNECT_TIMEOUT_MS: 5000,
@@ -85,7 +93,40 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
       ['redis:', 'rediss:'],
       errors,
     ),
-    API_DOCS_ENABLED: readBoolean(source.API_DOCS_ENABLED, !deployRequired, errors),
+    JWT_ACCESS_SECRET: readSecret(
+      source.JWT_ACCESS_SECRET,
+      'JWT_ACCESS_SECRET',
+      deployRequired ? undefined : LOCAL_DEFAULTS.JWT_ACCESS_SECRET,
+      errors,
+    ),
+    JWT_REFRESH_SECRET: readSecret(
+      source.JWT_REFRESH_SECRET,
+      'JWT_REFRESH_SECRET',
+      deployRequired ? undefined : LOCAL_DEFAULTS.JWT_REFRESH_SECRET,
+      errors,
+    ),
+    ACCESS_TOKEN_TTL: readInteger(
+      source.ACCESS_TOKEN_TTL,
+      'ACCESS_TOKEN_TTL',
+      LOCAL_DEFAULTS.ACCESS_TOKEN_TTL,
+      60,
+      86400,
+      errors,
+    ),
+    REFRESH_TOKEN_TTL: readInteger(
+      source.REFRESH_TOKEN_TTL,
+      'REFRESH_TOKEN_TTL',
+      LOCAL_DEFAULTS.REFRESH_TOKEN_TTL,
+      300,
+      31536000,
+      errors,
+    ),
+    API_DOCS_ENABLED: readBoolean(
+      source.API_DOCS_ENABLED,
+      'API_DOCS_ENABLED',
+      !deployRequired,
+      errors,
+    ),
     API_DOCS_PATH: readRoutePath(
       source.API_DOCS_PATH,
       'API_DOCS_PATH',
@@ -125,6 +166,10 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
     ),
   };
 
+  if (environment.JWT_ACCESS_SECRET === environment.JWT_REFRESH_SECRET) {
+    errors.push('JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must be different values');
+  }
+
   if (errors.length > 0) {
     throw new Error(
       `Invalid environment configuration:\n${errors.map((error) => `- ${error}`).join('\n')}`,
@@ -151,7 +196,12 @@ function readEnum<const T extends readonly string[]>(
   return normalizedValue as T[number];
 }
 
-function readBoolean(value: string | undefined, defaultValue: boolean, errors: string[]): boolean {
+function readBoolean(
+  value: string | undefined,
+  name: string,
+  defaultValue: boolean,
+  errors: string[],
+): boolean {
   const normalizedValue = value?.trim().toLowerCase();
 
   if (!normalizedValue) {
@@ -166,7 +216,7 @@ function readBoolean(value: string | undefined, defaultValue: boolean, errors: s
     return false;
   }
 
-  errors.push('API_DOCS_ENABLED must be true or false');
+  errors.push(`${name} must be true or false`);
   return defaultValue;
 }
 
@@ -275,6 +325,26 @@ function readUrl(
     }
   } catch {
     errors.push(`${name} must be a valid URL`);
+  }
+
+  return normalizedValue;
+}
+
+function readSecret(
+  value: string | undefined,
+  name: string,
+  defaultValue: string | undefined,
+  errors: string[],
+): string {
+  const normalizedValue = value?.trim() || defaultValue;
+
+  if (!normalizedValue) {
+    errors.push(`${name} is required`);
+    return '';
+  }
+
+  if (normalizedValue.length < 48) {
+    errors.push(`${name} must contain at least 48 characters`);
   }
 
   return normalizedValue;
