@@ -2,6 +2,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import type {
   AuthenticatedWorkspaceRecord,
   CreateWorkspaceWithOwnerInput,
+  UpdateWorkspaceNameInput,
+  WorkspaceMembershipRecord,
   WorkspaceRepositoryPort,
   WorkspaceWithOwnerMembershipRecord,
 } from '@runlane/application';
@@ -61,27 +63,97 @@ export class PrismaWorkspaceRepository implements WorkspaceRepositoryPort {
     const membership = await this.persistence.client.workspaceMember.findFirst({
       where: { userId },
       orderBy: [{ role: 'asc' }, { createdAt: 'asc' }],
-      select: {
-        role: true,
-        workspace: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
+      select: workspaceMembershipSelect,
     });
 
-    if (!membership) {
+    return membership ? mapWorkspaceMembership(membership) : null;
+  }
+
+  async findWorkspaceForUser(input: {
+    readonly userId: string;
+    readonly workspaceId: string;
+  }): Promise<WorkspaceMembershipRecord | null> {
+    const membership = await this.persistence.client.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: {
+          workspaceId: input.workspaceId,
+          userId: input.userId,
+        },
+      },
+      select: workspaceMembershipSelect,
+    });
+
+    return membership ? mapWorkspaceMembership(membership) : null;
+  }
+
+  async listWorkspacesForUser(userId: string): Promise<readonly AuthenticatedWorkspaceRecord[]> {
+    const memberships = await this.persistence.client.workspaceMember.findMany({
+      where: { userId },
+      orderBy: [{ role: 'asc' }, { createdAt: 'asc' }],
+      select: workspaceMembershipSelect,
+    });
+
+    return memberships.map((membership) => mapWorkspaceMembership(membership));
+  }
+
+  async updateWorkspaceName(
+    input: UpdateWorkspaceNameInput,
+  ): Promise<AuthenticatedWorkspaceRecord | null> {
+    const membership = await this.findWorkspaceForUser({
+      userId: input.actorUserId,
+      workspaceId: input.workspaceId,
+    });
+
+    if (!membership || membership.role !== 'owner') {
       return null;
     }
 
+    const workspace = await this.persistence.client.workspace.update({
+      where: { id: input.workspaceId },
+      data: { name: input.name },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
     return {
-      id: membership.workspace.id,
-      name: membership.workspace.name,
-      role: mapAuthenticatedWorkspaceRole(membership.role),
+      id: workspace.id,
+      name: workspace.name,
+      role: membership.role,
     };
   }
+}
+
+const workspaceMembershipSelect = {
+  userId: true,
+  role: true,
+  workspace: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+} as const;
+
+interface PrismaWorkspaceMembershipRecord {
+  readonly userId: string;
+  readonly role: string;
+  readonly workspace: {
+    readonly id: string;
+    readonly name: string;
+  };
+}
+
+function mapWorkspaceMembership(
+  membership: PrismaWorkspaceMembershipRecord,
+): WorkspaceMembershipRecord {
+  return {
+    id: membership.workspace.id,
+    name: membership.workspace.name,
+    role: mapAuthenticatedWorkspaceRole(membership.role),
+    userId: membership.userId,
+  };
 }
 
 function mapOwnerWorkspaceRole(role: string): 'owner' {

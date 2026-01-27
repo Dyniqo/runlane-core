@@ -28,10 +28,21 @@ export type {
   TransactionIsolationLevel,
   TransactionOptions,
 } from './transactions';
-export { WORKSPACE_REPOSITORY } from './workspace';
+export { WORKSPACE_REPOSITORY, WORKSPACE_SCOPE_RESOLVER } from './workspace';
 export type {
   AuthenticatedWorkspaceRecord,
   CreateWorkspaceWithOwnerInput,
+  ResolveWorkspaceScopeInput,
+  UpdateWorkspaceNameInput,
+  WorkspaceMembershipRecord,
   WorkspaceRepositoryPort,
+  WorkspaceScopeRecord,
+  WorkspaceScopeResolverPort,
+  WorkspaceScopedEntityQuery,
+  WorkspaceScopedQuery,
+  WorkspaceScopedReadRepositoryPort,
+  WorkspaceScopedRepositoryPort,
+  WorkspaceScopedWriteInput,
+  WorkspaceScopedWriteRepositoryPort,
   WorkspaceWithOwnerMembershipRecord,
 } from './workspace';

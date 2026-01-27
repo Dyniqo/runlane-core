@@ -62,6 +62,7 @@ model Workspace {
   members   WorkspaceMember[]
 
   @@index([ownerId], map: "workspaces_owner_id_idx")
+  @@index([id, ownerId], map: "workspaces_id_owner_id_idx")
   @@map("workspaces")
 }
 
@@ -77,5 +78,6 @@ model WorkspaceMember {
   @@unique([workspaceId, userId], map: "workspace_members_workspace_id_user_id_key")
   @@index([userId], map: "workspace_members_user_id_idx")
   @@index([workspaceId, role], map: "workspace_members_workspace_id_role_idx")
+  @@index([userId, workspaceId, role], map: "workspace_members_user_id_workspace_id_role_idx")
   @@map("workspace_members")
 }

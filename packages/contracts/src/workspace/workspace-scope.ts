@@ -1,3 +1,7 @@
+export const WORKSPACE_ROLES = ['owner', 'member'] as const;
+
+export type WorkspaceRole = (typeof WORKSPACE_ROLES)[number];
+
 export interface WorkspaceScope {
   readonly workspaceId: string;
 }
@@ -13,4 +17,10 @@ export interface WorkspaceRuntimeScope extends WorkspaceScope {
 
 export interface WorkspaceScopedEntityReference extends WorkspaceScope {
   readonly entityId: string;
+}
+
+export interface AuthenticatedWorkspaceScopeDto extends WorkspaceScope {
+  readonly userId: string;
+  readonly sessionId: string;
+  readonly role: WorkspaceRole;
 }

@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import {
   AUTH_TOKEN_SERVICE,
   GetAuthenticatedUserUseCase,
+  GetCurrentWorkspaceUseCase,
+  ListWorkspacesUseCase,
   LoginUserUseCase,
   LogoutSessionUseCase,
   PASSWORD_HASHER,
@@ -9,8 +11,10 @@ import {
   RegisterUserUseCase,
   SESSION_REPOSITORY,
   TRANSACTION_BOUNDARY,
+  UpdateCurrentWorkspaceUseCase,
   USER_REPOSITORY,
   WORKSPACE_REPOSITORY,
+  WORKSPACE_SCOPE_RESOLVER,
 } from '@runlane/application';
 import type {
   AuthTokenServicePort,
@@ -21,10 +25,12 @@ import type {
   WorkspaceRepositoryPort,
 } from '@runlane/application';
 import { RunlaneDatabaseModule } from '../prisma';
+import { WorkspaceTenantGuard } from './guards';
 import { ScryptPasswordHasher } from './passwords/scrypt-password-hasher';
 import { PrismaSessionRepository } from './repositories/prisma-session.repository';
 import { PrismaUserRepository } from './repositories/prisma-user.repository';
 import { PrismaWorkspaceRepository } from './repositories/prisma-workspace.repository';
+import { DefaultWorkspaceScopeResolver } from './scope';
 import { HmacAuthTokenService } from './tokens/hmac-auth-token.service';
 
 @Module({
@@ -35,6 +41,8 @@ import { HmacAuthTokenService } from './tokens/hmac-auth-token.service';
     PrismaSessionRepository,
     PrismaUserRepository,
     PrismaWorkspaceRepository,
+    DefaultWorkspaceScopeResolver,
+    WorkspaceTenantGuard,
     {
       provide: AUTH_TOKEN_SERVICE,
       useExisting: HmacAuthTokenService,
@@ -54,6 +62,10 @@ import { HmacAuthTokenService } from './tokens/hmac-auth-token.service';
     {
       provide: WORKSPACE_REPOSITORY,
       useExisting: PrismaWorkspaceRepository,
+    },
+    {
+      provide: WORKSPACE_SCOPE_RESOLVER,
+      useExisting: DefaultWorkspaceScopeResolver,
     },
     {
       provide: RegisterUserUseCase,
@@ -118,13 +130,35 @@ import { HmacAuthTokenService } from './tokens/hmac-auth-token.service';
         tokens: AuthTokenServicePort,
       ) => new GetAuthenticatedUserUseCase(users, workspaces, sessions, tokens),
     },
+    {
+      provide: ListWorkspacesUseCase,
+      inject: [WORKSPACE_REPOSITORY],
+      useFactory: (workspaces: WorkspaceRepositoryPort) => new ListWorkspacesUseCase(workspaces),
+    },
+    {
+      provide: GetCurrentWorkspaceUseCase,
+      inject: [WORKSPACE_REPOSITORY],
+      useFactory: (workspaces: WorkspaceRepositoryPort) =>
+        new GetCurrentWorkspaceUseCase(workspaces),
+    },
+    {
+      provide: UpdateCurrentWorkspaceUseCase,
+      inject: [WORKSPACE_REPOSITORY],
+      useFactory: (workspaces: WorkspaceRepositoryPort) =>
+        new UpdateCurrentWorkspaceUseCase(workspaces),
+    },
   ],
   exports: [
     GetAuthenticatedUserUseCase,
+    GetCurrentWorkspaceUseCase,
+    ListWorkspacesUseCase,
     LoginUserUseCase,
     LogoutSessionUseCase,
     RefreshSessionUseCase,
     RegisterUserUseCase,
+    UpdateCurrentWorkspaceUseCase,
+    WorkspaceTenantGuard,
+    WORKSPACE_SCOPE_RESOLVER,
   ],
 })
 export class RunlaneIdentityModule {}

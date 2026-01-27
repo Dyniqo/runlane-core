@@ -13,7 +13,15 @@ export {
   RunlaneHealthModule,
 } from './health';
 export type { HealthIndicatorState, LivenessState, ReadinessState } from './health';
-export { HmacAuthTokenService, RunlaneIdentityModule, ScryptPasswordHasher } from './identity';
+export {
+  DefaultWorkspaceScopeResolver,
+  HmacAuthTokenService,
+  readWorkspaceScope,
+  RunlaneIdentityModule,
+  ScryptPasswordHasher,
+  WorkspaceTenantGuard,
+} from './identity';
+export type { WorkspaceScopedHttpRequest } from './identity';
 export {
   bootstrapHttpRuntime,
   CORRELATION_ID_HEADER,

@@ -13,3 +13,13 @@ export type {
   RegisterUserInput,
 } from './identity';
 export type { UseCase } from './use-case';
+export {
+  GetCurrentWorkspaceUseCase,
+  ListWorkspacesUseCase,
+  UpdateCurrentWorkspaceUseCase,
+} from './workspace';
+export type {
+  GetCurrentWorkspaceInput,
+  ListWorkspacesInput,
+  UpdateCurrentWorkspaceInput,
+} from './workspace';
