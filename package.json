@@ -59,7 +59,8 @@
     "validate:registration": "powershell -ExecutionPolicy Bypass -File scripts/validate-registration.ps1",
     "validate:runtime": "node scripts/validate-operational-endpoints.mjs",
     "verify": "pnpm format:check && pnpm lint && pnpm db:validate && pnpm typecheck && pnpm build",
-    "validate:workspace": "powershell -ExecutionPolicy Bypass -File scripts/validate-workspace-scope.ps1"
+    "validate:workspace": "powershell -ExecutionPolicy Bypass -File scripts/validate-workspace-scope.ps1",
+    "validate:api-keys": "powershell -ExecutionPolicy Bypass -File scripts/validate-api-keys.ps1"
   },
   "dependencies": {
     "@nestjs/common": "11.1.24",

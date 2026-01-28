@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { RunlaneConfigModule } from '@runlane/config';
 import { RunlaneHealthModule, RunlaneObservabilityModule } from '@runlane/infrastructure';
 import { ApiController } from './api.controller';
+import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 
@@ -12,6 +13,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
     RunlaneHealthModule,
     AuthModule,
     WorkspacesModule,
+    ApiKeysModule,
   ],
   controllers: [ApiController],
 })

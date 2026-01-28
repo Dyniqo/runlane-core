@@ -1,3 +1,11 @@
+export type {
+  ApiKeyResponseDto,
+  CurrentApiKeyResponseDto,
+  CreateApiKeyRequestDto,
+  CreateApiKeyResponseDto,
+  ListApiKeysResponseDto,
+  RevokeApiKeyResponseDto,
+} from './api-key.dto';
 export type { ApiErrorDto } from './api-error.dto';
 export type {
   AuthenticatedSessionDto,

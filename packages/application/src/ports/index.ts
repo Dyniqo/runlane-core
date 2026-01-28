@@ -1,3 +1,14 @@
+export { API_KEY_REPOSITORY, API_KEY_TOKEN_SERVICE } from './access';
+export type {
+  ApiKeyRepositoryPort,
+  ApiKeyTokenServicePort,
+  CreateApiKeyInput,
+  GeneratedApiKeyToken,
+  MarkApiKeyLastUsedInput,
+  RevokeApiKeyInput,
+  StoredApiKeyCredentialsRecord,
+  StoredApiKeyRecord,
+} from './access';
 export type {
   AccessTokenPrincipal,
   AccessTokenSubject,

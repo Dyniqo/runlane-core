@@ -1,4 +1,17 @@
 export {
+  CreateApiKeyUseCase,
+  ListApiKeysUseCase,
+  ResolveApiKeyUseCase,
+  RevokeApiKeyUseCase,
+} from './access';
+export type {
+  ApiKeyScopeRecord,
+  CreateApiKeyUseCaseInput,
+  ListApiKeysUseCaseInput,
+  ResolveApiKeyUseCaseInput,
+  RevokeApiKeyUseCaseInput,
+} from './access';
+export {
   GetAuthenticatedUserUseCase,
   LoginUserUseCase,
   LogoutSessionUseCase,

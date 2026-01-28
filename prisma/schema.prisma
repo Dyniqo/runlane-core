@@ -60,6 +60,7 @@ model Workspace {
   updatedAt DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
   owner     User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   members   WorkspaceMember[]
+  apiKeys   ApiKey[]
 
   @@index([ownerId], map: "workspaces_owner_id_idx")
   @@index([id, ownerId], map: "workspaces_id_owner_id_idx")
@@ -80,4 +81,22 @@ model WorkspaceMember {
   @@index([workspaceId, role], map: "workspace_members_workspace_id_role_idx")
   @@index([userId, workspaceId, role], map: "workspace_members_user_id_workspace_id_role_idx")
   @@map("workspace_members")
+}
+
+model ApiKey {
+  id          String    @id @default(uuid()) @db.Uuid
+  workspaceId String    @map("workspace_id") @db.Uuid
+  name        String    @db.VarChar(120)
+  prefix      String    @unique(map: "api_keys_prefix_key") @db.VarChar(32)
+  keyHash     String    @map("key_hash") @db.VarChar(255)
+  lastUsedAt  DateTime? @map("last_used_at") @db.Timestamptz(3)
+  revokedAt   DateTime? @map("revoked_at") @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([workspaceId, id], map: "api_keys_workspace_id_id_idx")
+  @@index([workspaceId, prefix], map: "api_keys_workspace_id_prefix_idx")
+  @@index([workspaceId, revokedAt, createdAt], map: "api_keys_workspace_id_revoked_at_created_at_idx")
+  @@map("api_keys")
 }

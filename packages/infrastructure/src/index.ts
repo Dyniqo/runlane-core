@@ -1,3 +1,5 @@
+export { ApiKeyGuard, readApiKeyScope, RunlaneAccessModule } from './access';
+export type { ApiKeyScopedHttpRequest } from './access';
 export { getDomainErrorHttpStatus } from './errors';
 export {
   HEALTH_INDICATOR_STATES,

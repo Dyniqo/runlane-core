@@ -1,4 +1,11 @@
 export {
+  apiKeyAccessDenied,
+  apiKeyAuthenticationRequired,
+  apiKeyInvalid,
+  normalizeApiKeyName,
+  readApiKeyCredential,
+} from './access';
+export {
   authenticationRequired,
   createDefaultWorkspaceName,
   invalidCredentials,
