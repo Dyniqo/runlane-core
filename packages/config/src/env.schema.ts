@@ -20,6 +20,10 @@ export interface RuntimeEnvironment {
   readonly JWT_REFRESH_SECRET: string;
   readonly ACCESS_TOKEN_TTL: number;
   readonly REFRESH_TOKEN_TTL: number;
+  readonly CORS_ORIGIN: readonly string[];
+  readonly RATE_LIMIT_TTL: number;
+  readonly RATE_LIMIT_MAX: number;
+  readonly MAX_PAYLOAD_SIZE: number;
   readonly API_DOCS_ENABLED: boolean;
   readonly API_DOCS_PATH: string;
   readonly HEALTH_CHECK_TIMEOUT_MS: number;
@@ -41,6 +45,10 @@ const LOCAL_DEFAULTS = {
   JWT_REFRESH_SECRET: 'runlane_local_refresh_secret_change_me_64_bytes_minimum_value',
   ACCESS_TOKEN_TTL: 900,
   REFRESH_TOKEN_TTL: 2592000,
+  CORS_ORIGIN: 'http://localhost:4600,http://127.0.0.1:4600',
+  RATE_LIMIT_TTL: 60,
+  RATE_LIMIT_MAX: 25,
+  MAX_PAYLOAD_SIZE: 1048576,
   API_DOCS_PATH: 'docs',
   HEALTH_CHECK_TIMEOUT_MS: 3000,
   REDIS_CONNECT_TIMEOUT_MS: 5000,
@@ -119,6 +127,36 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
       LOCAL_DEFAULTS.REFRESH_TOKEN_TTL,
       300,
       31536000,
+      errors,
+    ),
+    CORS_ORIGIN: readCorsOrigins(
+      source.CORS_ORIGIN,
+      'CORS_ORIGIN',
+      deployRequired ? undefined : LOCAL_DEFAULTS.CORS_ORIGIN,
+      errors,
+    ),
+    RATE_LIMIT_TTL: readInteger(
+      source.RATE_LIMIT_TTL,
+      'RATE_LIMIT_TTL',
+      LOCAL_DEFAULTS.RATE_LIMIT_TTL,
+      1,
+      3600,
+      errors,
+    ),
+    RATE_LIMIT_MAX: readInteger(
+      source.RATE_LIMIT_MAX,
+      'RATE_LIMIT_MAX',
+      LOCAL_DEFAULTS.RATE_LIMIT_MAX,
+      1,
+      10000,
+      errors,
+    ),
+    MAX_PAYLOAD_SIZE: readInteger(
+      source.MAX_PAYLOAD_SIZE,
+      'MAX_PAYLOAD_SIZE',
+      LOCAL_DEFAULTS.MAX_PAYLOAD_SIZE,
+      1024,
+      10485760,
       errors,
     ),
     API_DOCS_ENABLED: readBoolean(
@@ -218,6 +256,50 @@ function readBoolean(
 
   errors.push(`${name} must be true or false`);
   return defaultValue;
+}
+
+function readCorsOrigins(
+  value: string | undefined,
+  name: string,
+  defaultValue: string | undefined,
+  errors: string[],
+): readonly string[] {
+  const normalizedValue = value?.trim() || defaultValue;
+
+  if (!normalizedValue) {
+    errors.push(`${name} is required`);
+    return [];
+  }
+
+  const origins = normalizedValue
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  if (origins.length === 0) {
+    errors.push(`${name} must include at least one origin`);
+    return [];
+  }
+
+  const uniqueOrigins = Array.from(new Set(origins));
+
+  for (const origin of uniqueOrigins) {
+    try {
+      const parsedOrigin = new URL(origin);
+
+      if (!['http:', 'https:'].includes(parsedOrigin.protocol)) {
+        errors.push(`${name} entries must use http or https`);
+      }
+
+      if (parsedOrigin.pathname !== '/' || parsedOrigin.search || parsedOrigin.hash) {
+        errors.push(`${name} entries must contain origins without paths, queries or fragments`);
+      }
+    } catch {
+      errors.push(`${name} entries must be valid origins`);
+    }
+  }
+
+  return Object.freeze(uniqueOrigins);
 }
 
 function readRoutePath(

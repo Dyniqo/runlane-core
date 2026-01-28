@@ -46,3 +46,4 @@ export type {
 export { PrismaPersistenceContext, PrismaService, RunlaneDatabaseModule } from './prisma';
 export type { PrismaPersistenceClient, PrismaTransactionClient } from './prisma';
 export { RedisService, RunlaneRedisModule } from './redis';
+export { configureHttpSecurity, RedisRateLimitMiddleware, RunlaneSecurityModule } from './security';

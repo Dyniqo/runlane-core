@@ -27,6 +27,12 @@ interface HttpExceptionResponse {
   readonly message?: string | readonly string[];
 }
 
+interface HttpStatusErrorLike {
+  readonly message?: string;
+  readonly status?: number;
+  readonly statusCode?: number;
+}
+
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   constructor(
@@ -80,9 +86,15 @@ function getStatusCode(exception: unknown): number {
     return getDomainErrorHttpStatus(exception);
   }
 
-  return exception instanceof HttpException
-    ? exception.getStatus()
-    : HttpStatus.INTERNAL_SERVER_ERROR;
+  if (exception instanceof HttpException) {
+    return exception.getStatus();
+  }
+
+  if (isHttpStatusErrorLike(exception)) {
+    return exception.statusCode ?? exception.status ?? HttpStatus.INTERNAL_SERVER_ERROR;
+  }
+
+  return HttpStatus.INTERNAL_SERVER_ERROR;
 }
 
 function getPublicMessage(exception: unknown, statusCode: number): string | readonly string[] {
@@ -90,8 +102,14 @@ function getPublicMessage(exception: unknown, statusCode: number): string | read
     return exception.message;
   }
 
-  if (statusCode >= 500 || !(exception instanceof HttpException)) {
+  if (statusCode >= 500) {
     return 'Internal server error';
+  }
+
+  if (!(exception instanceof HttpException)) {
+    return isHttpStatusErrorLike(exception) && exception.message
+      ? exception.message
+      : 'Request failed';
   }
 
   const exceptionResponse = exception.getResponse();
@@ -122,6 +140,35 @@ function getDomainErrorLogContext(exception: unknown): Record<string, unknown> {
 
 function isHttpExceptionResponse(value: unknown): value is HttpExceptionResponse {
   return typeof value === 'object' && value !== null;
+}
+
+function isHttpStatusErrorLike(value: unknown): value is HttpStatusErrorLike {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const statusCode = readHttpStatusCode(value);
+
+  return (
+    typeof statusCode === 'number' &&
+    Number.isInteger(statusCode) &&
+    statusCode >= 400 &&
+    statusCode <= 599
+  );
+}
+
+function readHttpStatusCode(value: object): number | undefined {
+  const candidate = value as { readonly status?: unknown; readonly statusCode?: unknown };
+
+  if (typeof candidate.statusCode === 'number') {
+    return candidate.statusCode;
+  }
+
+  if (typeof candidate.status === 'number') {
+    return candidate.status;
+  }
+
+  return undefined;
 }
 
 function getRequestPath(request: HttpRequestLike): string {

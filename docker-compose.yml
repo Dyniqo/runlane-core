@@ -25,6 +25,10 @@ x-app-environment: &app-environment
   APP_URL: ${RUNLANE_PUBLIC_APP_URL:-http://127.0.0.1:14600}
   DATABASE_URL: postgresql://${POSTGRES_USER:-runlane}:${POSTGRES_PASSWORD:-runlane_local_database}@postgres:5432/${POSTGRES_DB:-runlane}?schema=public
   REDIS_URL: redis://redis:6379/0
+  CORS_ORIGIN: ${CORS_ORIGIN:-http://127.0.0.1:14600,http://localhost:14600,http://localhost:4600,http://127.0.0.1:4600}
+  RATE_LIMIT_TTL: ${RATE_LIMIT_TTL:-60}
+  RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-25}
+  MAX_PAYLOAD_SIZE: ${MAX_PAYLOAD_SIZE:-1048576}
   API_DOCS_ENABLED: ${API_DOCS_ENABLED:-true}
   API_DOCS_PATH: ${API_DOCS_PATH:-docs}
   HEALTH_CHECK_TIMEOUT_MS: ${HEALTH_CHECK_TIMEOUT_MS:-3000}

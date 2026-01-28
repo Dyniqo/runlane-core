@@ -24,7 +24,7 @@ export async function bootstrapHttpRuntime(options: HttpRuntimeOptions): Promise
   let app: INestApplication | undefined;
 
   try {
-    app = await NestFactory.create(options.module, { bufferLogs: true });
+    app = await NestFactory.create(options.module, { bufferLogs: true, bodyParser: false });
     const logger = app.get(StructuredLoggerService);
     const config = app.get(RuntimeConfigService);
     const endpoint = options.resolveEndpoint(config);

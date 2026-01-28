@@ -45,6 +45,24 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  async consumeRateLimitWindow(
+    key: string,
+    ttlSeconds: number,
+  ): Promise<{ readonly count: number; readonly ttlSeconds: number }> {
+    const count = await this.client.incr(key);
+
+    if (count === 1) {
+      await this.client.expire(key, ttlSeconds);
+    }
+
+    const currentTtl = await this.client.ttl(key);
+
+    return {
+      count,
+      ttlSeconds: currentTtl > 0 ? currentTtl : ttlSeconds,
+    };
+  }
+
   async ping(): Promise<void> {
     const response = await this.client.ping();
 

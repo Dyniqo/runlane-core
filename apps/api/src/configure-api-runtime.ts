@@ -1,12 +1,15 @@
 import { VersioningType, type INestApplication } from '@nestjs/common';
 import type { RuntimeConfigService } from '@runlane/config';
 import { RUNLANE_API_VERSION, RUNLANE_PRODUCT_NAME } from '@runlane/contracts';
+import { configureHttpSecurity } from '@runlane/infrastructure';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 export function configureApiRuntime(
   application: INestApplication,
   config: RuntimeConfigService,
 ): void {
+  configureHttpSecurity(application, config);
+
   application.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: RUNLANE_API_VERSION,

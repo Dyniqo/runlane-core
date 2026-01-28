@@ -58,6 +58,22 @@ export class RuntimeConfigService {
     return this.environment.REFRESH_TOKEN_TTL;
   }
 
+  get corsAllowedOrigins(): readonly string[] {
+    return this.environment.CORS_ORIGIN;
+  }
+
+  get rateLimitTtlSeconds(): number {
+    return this.environment.RATE_LIMIT_TTL;
+  }
+
+  get rateLimitMaxRequests(): number {
+    return this.environment.RATE_LIMIT_MAX;
+  }
+
+  get maxPayloadSizeBytes(): number {
+    return this.environment.MAX_PAYLOAD_SIZE;
+  }
+
   get apiDocsEnabled(): boolean {
     return this.environment.API_DOCS_ENABLED;
   }

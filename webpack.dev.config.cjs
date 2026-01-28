@@ -11,5 +11,10 @@ module.exports = (runtimeName) => (options, webpack) => {
       filename: 'main.js',
       path: path.resolve(__dirname, '.run', runtimeName),
     },
+    watchOptions: {
+      ...(config.watchOptions ?? {}),
+      aggregateTimeout: 200,
+      ignored: ['**/.git/**', '**/.run/**', '**/coverage/**', '**/dist/**', '**/node_modules/**'],
+    },
   };
 };
