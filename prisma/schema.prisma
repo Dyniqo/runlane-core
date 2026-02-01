@@ -29,6 +29,7 @@ model User {
   ownedWorkspaces      Workspace[]       @relation("WorkspaceOwner")
   workspaceMemberships WorkspaceMember[]
   sessions             Session[]
+  auditLogs            AuditLog[]
 
   @@map("users")
 }
@@ -61,6 +62,7 @@ model Workspace {
   owner     User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   members   WorkspaceMember[]
   apiKeys   ApiKey[]
+  auditLogs AuditLog[]
 
   @@index([ownerId], map: "workspaces_owner_id_idx")
   @@index([id, ownerId], map: "workspaces_id_owner_id_idx")
@@ -99,4 +101,26 @@ model ApiKey {
   @@index([workspaceId, prefix], map: "api_keys_workspace_id_prefix_idx")
   @@index([workspaceId, revokedAt, createdAt], map: "api_keys_workspace_id_revoked_at_created_at_idx")
   @@map("api_keys")
+}
+
+
+model AuditLog {
+  id           String    @id @default(uuid()) @db.Uuid
+  workspaceId  String    @map("workspace_id") @db.Uuid
+  actorUserId  String?   @map("actor_user_id") @db.Uuid
+  action       String    @db.VarChar(96)
+  entityType   String    @map("entity_type") @db.VarChar(64)
+  entityId     String?   @map("entity_id") @db.VarChar(128)
+  metadataJson Json      @default("{}") @map("metadata_json")
+  ip           String?   @db.VarChar(64)
+  userAgent    String?   @map("user_agent") @db.VarChar(512)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  actorUser    User?     @relation(fields: [actorUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([workspaceId, createdAt, id], map: "audit_logs_workspace_id_created_at_id_idx")
+  @@index([workspaceId, action, createdAt], map: "audit_logs_workspace_id_action_created_at_idx")
+  @@index([workspaceId, entityType, entityId], map: "audit_logs_workspace_id_entity_type_entity_id_idx")
+  @@index([actorUserId, createdAt], map: "audit_logs_actor_user_id_created_at_idx")
+  @@map("audit_logs")
 }

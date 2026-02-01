@@ -164,12 +164,14 @@ export class ApiKeysController {
   @ApiCreatedResponse({ schema: createApiKeyResponseSchema })
   @UseGuards(WorkspaceTenantGuard)
   create(
-    @Req() request: WorkspaceScopedHttpRequest,
+    @Req() request: WorkspaceHttpRequest,
     @Body() body: unknown,
   ): Promise<CreateApiKeyResponseDto> {
     return this.createApiKey.execute({
       scope: readWorkspaceScope(request),
       name: parseCreateApiKeyRequest(body).name,
+      userAgent: readHeader(request, 'user-agent', 512),
+      ip: readClientIp(request),
     });
   }
 
@@ -180,15 +182,24 @@ export class ApiKeysController {
   @ApiOkResponse({ schema: revokeApiKeyResponseSchema })
   @UseGuards(WorkspaceTenantGuard)
   revoke(
-    @Req() request: WorkspaceScopedHttpRequest,
+    @Req() request: WorkspaceHttpRequest,
     @Param('id') id: string,
   ): Promise<RevokeApiKeyResponseDto> {
     return this.revokeApiKey.execute({
       scope: readWorkspaceScope(request),
       id: parseApiKeyId(id),
+      userAgent: readHeader(request, 'user-agent', 512),
+      ip: readClientIp(request),
     });
   }
 }
+
+type WorkspaceHttpRequest = WorkspaceScopedHttpRequest & {
+  readonly ip?: string;
+  readonly socket?: {
+    readonly remoteAddress?: string;
+  };
+};
 
 function parseCreateApiKeyRequest(body: unknown): CreateApiKeyRequestDto {
   if (!isRecord(body)) {
@@ -210,6 +221,25 @@ function parseApiKeyId(id: string): string {
   }
 
   return id;
+}
+
+function readHeader(
+  request: WorkspaceHttpRequest,
+  name: string,
+  maximumLength: number,
+): string | null {
+  const value = request.headers[name];
+  const headerValue = Array.isArray(value) ? value[0] : value;
+
+  if (!headerValue) {
+    return null;
+  }
+
+  return headerValue.slice(0, maximumLength);
+}
+
+function readClientIp(request: WorkspaceHttpRequest): string | null {
+  return (request.ip ?? request.socket?.remoteAddress ?? null)?.slice(0, 64) ?? null;
 }
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {

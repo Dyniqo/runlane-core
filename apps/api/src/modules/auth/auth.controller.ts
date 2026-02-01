@@ -197,8 +197,12 @@ export class AuthController {
   @ApiBody({ schema: registerUserRequestSchema })
   @ApiCreatedResponse({ schema: registerUserResponseSchema })
   @ApiConflictResponse({ description: 'Email address is already registered' })
-  register(@Body() body: unknown): Promise<RegisterUserResponseDto> {
-    return this.registerUser.execute(parseRegisterUserRequest(body));
+  register(@Body() body: unknown, @Req() request: HttpRequest): Promise<RegisterUserResponseDto> {
+    return this.registerUser.execute({
+      ...parseRegisterUserRequest(body),
+      userAgent: readHeader(request, 'user-agent', 512),
+      ip: readClientIp(request),
+    });
   }
 
   @Post('login')
@@ -221,8 +225,12 @@ export class AuthController {
   @ApiBody({ schema: refreshSessionRequestSchema })
   @ApiOkResponse({ schema: authenticationResponseSchema })
   @ApiUnauthorizedResponse({ description: 'Refresh token is invalid' })
-  refresh(@Body() body: unknown): Promise<AuthenticationResponseDto> {
-    return this.refreshSession.execute(parseRefreshSessionRequest(body));
+  refresh(@Body() body: unknown, @Req() request: HttpRequest): Promise<AuthenticationResponseDto> {
+    return this.refreshSession.execute({
+      ...parseRefreshSessionRequest(body),
+      userAgent: readHeader(request, 'user-agent', 512),
+      ip: readClientIp(request),
+    });
   }
 
   @Post('logout')
@@ -230,8 +238,12 @@ export class AuthController {
   @ApiOperation({ operationId: 'logoutSession', summary: 'Revoke an authenticated session' })
   @ApiBody({ schema: logoutSessionRequestSchema })
   @ApiOkResponse({ schema: logoutSessionResponseSchema })
-  logout(@Body() body: unknown): Promise<LogoutSessionResponseDto> {
-    return this.logoutSession.execute(parseLogoutSessionRequest(body));
+  logout(@Body() body: unknown, @Req() request: HttpRequest): Promise<LogoutSessionResponseDto> {
+    return this.logoutSession.execute({
+      ...parseLogoutSessionRequest(body),
+      userAgent: readHeader(request, 'user-agent', 512),
+      ip: readClientIp(request),
+    });
   }
 
   @Get('me')
@@ -254,7 +266,7 @@ interface HttpRequest {
   };
 }
 
-function parseRegisterUserRequest(body: unknown): RegisterUserInput {
+function parseRegisterUserRequest(body: unknown): Omit<RegisterUserInput, 'userAgent' | 'ip'> {
   if (!isRecord(body)) {
     throw invalidPayload('REGISTRATION_PAYLOAD_INVALID', 'Registration payload must be an object');
   }
@@ -277,7 +289,7 @@ function parseLoginUserRequest(body: unknown): Omit<LoginUserInput, 'userAgent' 
   };
 }
 
-function parseRefreshSessionRequest(body: unknown): RefreshSessionInput {
+function parseRefreshSessionRequest(body: unknown): Omit<RefreshSessionInput, 'userAgent' | 'ip'> {
   if (!isRecord(body)) {
     throw invalidPayload('REFRESH_PAYLOAD_INVALID', 'Refresh payload must be an object');
   }
@@ -287,7 +299,7 @@ function parseRefreshSessionRequest(body: unknown): RefreshSessionInput {
   };
 }
 
-function parseLogoutSessionRequest(body: unknown): LogoutSessionInput {
+function parseLogoutSessionRequest(body: unknown): Omit<LogoutSessionInput, 'userAgent' | 'ip'> {
   if (!isRecord(body)) {
     throw invalidPayload('LOGOUT_PAYLOAD_INVALID', 'Logout payload must be an object');
   }

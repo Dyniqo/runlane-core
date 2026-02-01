@@ -7,6 +7,7 @@ import {
   validateRegistrationPassword,
 } from '@runlane/domain';
 import type {
+  AuditLogRepositoryPort,
   PasswordHasherPort,
   TransactionBoundary,
   UserRepositoryPort,
@@ -18,6 +19,8 @@ export interface RegisterUserInput {
   readonly email: string;
   readonly password: string;
   readonly name: string;
+  readonly userAgent: string | null;
+  readonly ip: string | null;
 }
 
 export class RegisterUserUseCase implements UseCase<RegisterUserInput, RegisterUserResponseDto> {
@@ -25,6 +28,7 @@ export class RegisterUserUseCase implements UseCase<RegisterUserInput, RegisterU
     private readonly users: UserRepositoryPort,
     private readonly workspaces: WorkspaceRepositoryPort,
     private readonly passwordHasher: PasswordHasherPort,
+    private readonly auditLogs: AuditLogRepositoryPort,
     private readonly transactionBoundary: TransactionBoundary,
   ) {}
 
@@ -50,6 +54,20 @@ export class RegisterUserUseCase implements UseCase<RegisterUserInput, RegisterU
         const workspace = await this.workspaces.createDefaultWorkspaceForOwner({
           ownerId: user.id,
           name: createDefaultWorkspaceName(user.name),
+        });
+
+        await this.auditLogs.create({
+          workspaceId: workspace.id,
+          actorUserId: user.id,
+          action: 'identity.user_registered',
+          entityType: 'user',
+          entityId: user.id,
+          metadata: {
+            email: user.email,
+            workspaceId: workspace.id,
+          },
+          ip: input.ip,
+          userAgent: input.userAgent,
         });
 
         return {

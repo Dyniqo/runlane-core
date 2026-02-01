@@ -1,3 +1,10 @@
+export { AUDIT_LOG_REPOSITORY } from './audit';
+export type {
+  AuditLogRepositoryPort,
+  CreateAuditLogInput,
+  ListAuditLogsInput,
+  StoredAuditLogRecord,
+} from './audit';
 export { API_KEY_REPOSITORY, API_KEY_TOKEN_SERVICE } from './access';
 export type {
   ApiKeyRepositoryPort,

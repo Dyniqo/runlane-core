@@ -1,6 +1,7 @@
 export {
   API_KEY_REPOSITORY,
   API_KEY_TOKEN_SERVICE,
+  AUDIT_LOG_REPOSITORY,
   AUTH_TOKEN_SERVICE,
   PASSWORD_HASHER,
   SESSION_REPOSITORY,
@@ -11,6 +12,10 @@ export {
   WORKSPACE_SCOPE_RESOLVER,
 } from './ports';
 export type {
+  AuditLogRepositoryPort,
+  CreateAuditLogInput,
+  ListAuditLogsInput,
+  StoredAuditLogRecord,
   AccessTokenPrincipal,
   AccessTokenSubject,
   ApiKeyRepositoryPort,
@@ -58,6 +63,7 @@ export type {
 } from './ports';
 export {
   CreateApiKeyUseCase,
+  ListAuditLogsUseCase,
   GetAuthenticatedUserUseCase,
   GetCurrentWorkspaceUseCase,
   ListApiKeysUseCase,
@@ -72,6 +78,7 @@ export {
 } from './use-cases';
 export type {
   ApiKeyScopeRecord,
+  ListAuditLogsUseCaseInput,
   CreateApiKeyUseCaseInput,
   GetAuthenticatedUserInput,
   GetCurrentWorkspaceInput,

@@ -7,6 +7,7 @@ import {
 } from '@runlane/infrastructure';
 import { ApiController } from './api.controller';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module';
+import { AuditLogsModule } from './modules/audit/audit-logs.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 
@@ -19,6 +20,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
     AuthModule,
     WorkspacesModule,
     ApiKeysModule,
+    AuditLogsModule,
   ],
   controllers: [ApiController],
 })

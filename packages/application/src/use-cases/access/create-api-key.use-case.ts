@@ -8,6 +8,7 @@ import {
 import type {
   ApiKeyRepositoryPort,
   ApiKeyTokenServicePort,
+  AuditLogRepositoryPort,
   TransactionBoundary,
   WorkspaceScopeRecord,
 } from '../../ports';
@@ -19,6 +20,8 @@ const MAX_API_KEY_GENERATION_ATTEMPTS = 5;
 export interface CreateApiKeyUseCaseInput {
   readonly scope: WorkspaceScopeRecord;
   readonly name: string;
+  readonly userAgent: string | null;
+  readonly ip: string | null;
 }
 
 export class CreateApiKeyUseCase implements UseCase<
@@ -28,6 +31,7 @@ export class CreateApiKeyUseCase implements UseCase<
   constructor(
     private readonly apiKeys: ApiKeyRepositoryPort,
     private readonly apiKeyTokens: ApiKeyTokenServicePort,
+    private readonly auditLogs: AuditLogRepositoryPort,
     private readonly transactionBoundary: TransactionBoundary,
   ) {}
 
@@ -46,6 +50,20 @@ export class CreateApiKeyUseCase implements UseCase<
             name,
             prefix: generatedKey.prefix,
             keyHash,
+          });
+
+          await this.auditLogs.create({
+            workspaceId: input.scope.workspaceId,
+            actorUserId: input.scope.userId,
+            action: 'access.api_key_created',
+            entityType: 'api_key',
+            entityId: apiKey.id,
+            metadata: {
+              name: apiKey.name,
+              prefix: apiKey.prefix,
+            },
+            ip: input.ip,
+            userAgent: input.userAgent,
           });
 
           return buildCreateApiKeyResponse({ apiKey, token: generatedKey.token });

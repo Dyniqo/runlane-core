@@ -1,6 +1,7 @@
 import type { AuthenticationResponseDto } from '@runlane/contracts';
 import { normalizeUserEmail } from '@runlane/domain';
 import type {
+  AuditLogRepositoryPort,
   AuthTokenServicePort,
   PasswordHasherPort,
   SessionRepositoryPort,
@@ -26,6 +27,7 @@ export class LoginUserUseCase implements UseCase<LoginUserInput, AuthenticationR
     private readonly sessions: SessionRepositoryPort,
     private readonly passwordHasher: PasswordHasherPort,
     private readonly tokens: AuthTokenServicePort,
+    private readonly auditLogs: AuditLogRepositoryPort,
     private readonly transactionBoundary: TransactionBoundary,
   ) {}
 
@@ -74,6 +76,19 @@ export class LoginUserUseCase implements UseCase<LoginUserInput, AuthenticationR
         },
         now,
       );
+
+      await this.auditLogs.create({
+        workspaceId: workspace.id,
+        actorUserId: user.id,
+        action: 'identity.user_logged_in',
+        entityType: 'session',
+        entityId: session.id,
+        metadata: {
+          workspaceRole: workspace.role,
+        },
+        ip: input.ip,
+        userAgent: input.userAgent,
+      });
 
       return buildAuthenticationResponse({
         user,

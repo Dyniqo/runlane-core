@@ -117,15 +117,24 @@ export class WorkspacesController {
   @ApiBody({ schema: updateCurrentWorkspaceRequestSchema })
   @ApiOkResponse({ schema: currentWorkspaceResponseSchema })
   update(
-    @Req() request: WorkspaceScopedHttpRequest,
+    @Req() request: WorkspaceHttpRequest,
     @Body() body: unknown,
   ): Promise<CurrentWorkspaceResponseDto> {
     return this.updateCurrentWorkspace.execute({
       scope: readWorkspaceScope(request),
       name: parseUpdateCurrentWorkspaceRequest(body).name,
+      userAgent: readHeader(request, 'user-agent', 512),
+      ip: readClientIp(request),
     });
   }
 }
+
+type WorkspaceHttpRequest = WorkspaceScopedHttpRequest & {
+  readonly ip?: string;
+  readonly socket?: {
+    readonly remoteAddress?: string;
+  };
+};
 
 function parseUpdateCurrentWorkspaceRequest(body: unknown): UpdateCurrentWorkspaceRequestDto {
   if (!isRecord(body)) {
@@ -139,6 +148,25 @@ function parseUpdateCurrentWorkspaceRequest(body: unknown): UpdateCurrentWorkspa
   }
 
   return { name };
+}
+
+function readHeader(
+  request: WorkspaceHttpRequest,
+  name: string,
+  maximumLength: number,
+): string | null {
+  const value = request.headers[name];
+  const headerValue = Array.isArray(value) ? value[0] : value;
+
+  if (!headerValue) {
+    return null;
+  }
+
+  return headerValue.slice(0, maximumLength);
+}
+
+function readClientIp(request: WorkspaceHttpRequest): string | null {
+  return (request.ip ?? request.socket?.remoteAddress ?? null)?.slice(0, 64) ?? null;
 }
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {

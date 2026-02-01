@@ -1,3 +1,4 @@
+export type { AuditLogResponseDto, ListAuditLogsResponseDto } from './audit-log.dto';
 export type {
   ApiKeyResponseDto,
   CurrentApiKeyResponseDto,

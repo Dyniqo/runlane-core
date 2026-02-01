@@ -1,3 +1,5 @@
+export { AUDIT_ACTIONS, AUDIT_ENTITY_TYPES } from './audit';
+export type { AuditAction, AuditEntityType } from './audit';
 export {
   apiKeyAccessDenied,
   apiKeyAuthenticationRequired,

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import {
+  AUDIT_LOG_REPOSITORY,
   AUTH_TOKEN_SERVICE,
   GetAuthenticatedUserUseCase,
   GetCurrentWorkspaceUseCase,
@@ -17,6 +18,7 @@ import {
   WORKSPACE_SCOPE_RESOLVER,
 } from '@runlane/application';
 import type {
+  AuditLogRepositoryPort,
   AuthTokenServicePort,
   PasswordHasherPort,
   SessionRepositoryPort,
@@ -24,6 +26,7 @@ import type {
   UserRepositoryPort,
   WorkspaceRepositoryPort,
 } from '@runlane/application';
+import { RunlaneAuditModule } from '../audit';
 import { RunlaneDatabaseModule } from '../prisma';
 import { WorkspaceTenantGuard } from './guards';
 import { ScryptPasswordHasher } from './passwords/scrypt-password-hasher';
@@ -34,7 +37,7 @@ import { DefaultWorkspaceScopeResolver } from './scope';
 import { HmacAuthTokenService } from './tokens/hmac-auth-token.service';
 
 @Module({
-  imports: [RunlaneDatabaseModule],
+  imports: [RunlaneDatabaseModule, RunlaneAuditModule],
   providers: [
     HmacAuthTokenService,
     ScryptPasswordHasher,
@@ -69,13 +72,21 @@ import { HmacAuthTokenService } from './tokens/hmac-auth-token.service';
     },
     {
       provide: RegisterUserUseCase,
-      inject: [USER_REPOSITORY, WORKSPACE_REPOSITORY, PASSWORD_HASHER, TRANSACTION_BOUNDARY],
+      inject: [
+        USER_REPOSITORY,
+        WORKSPACE_REPOSITORY,
+        PASSWORD_HASHER,
+        AUDIT_LOG_REPOSITORY,
+        TRANSACTION_BOUNDARY,
+      ],
       useFactory: (
         users: UserRepositoryPort,
         workspaces: WorkspaceRepositoryPort,
         passwordHasher: PasswordHasherPort,
+        auditLogs: AuditLogRepositoryPort,
         transactionBoundary: TransactionBoundary,
-      ) => new RegisterUserUseCase(users, workspaces, passwordHasher, transactionBoundary),
+      ) =>
+        new RegisterUserUseCase(users, workspaces, passwordHasher, auditLogs, transactionBoundary),
     },
     {
       provide: LoginUserUseCase,
@@ -85,6 +96,7 @@ import { HmacAuthTokenService } from './tokens/hmac-auth-token.service';
         SESSION_REPOSITORY,
         PASSWORD_HASHER,
         AUTH_TOKEN_SERVICE,
+        AUDIT_LOG_REPOSITORY,
         TRANSACTION_BOUNDARY,
       ],
       useFactory: (
@@ -93,6 +105,7 @@ import { HmacAuthTokenService } from './tokens/hmac-auth-token.service';
         sessions: SessionRepositoryPort,
         passwordHasher: PasswordHasherPort,
         tokens: AuthTokenServicePort,
+        auditLogs: AuditLogRepositoryPort,
         transactionBoundary: TransactionBoundary,
       ) =>
         new LoginUserUseCase(
@@ -101,24 +114,53 @@ import { HmacAuthTokenService } from './tokens/hmac-auth-token.service';
           sessions,
           passwordHasher,
           tokens,
+          auditLogs,
           transactionBoundary,
         ),
     },
     {
       provide: RefreshSessionUseCase,
-      inject: [USER_REPOSITORY, WORKSPACE_REPOSITORY, SESSION_REPOSITORY, AUTH_TOKEN_SERVICE],
+      inject: [
+        USER_REPOSITORY,
+        WORKSPACE_REPOSITORY,
+        SESSION_REPOSITORY,
+        AUTH_TOKEN_SERVICE,
+        AUDIT_LOG_REPOSITORY,
+        TRANSACTION_BOUNDARY,
+      ],
       useFactory: (
         users: UserRepositoryPort,
         workspaces: WorkspaceRepositoryPort,
         sessions: SessionRepositoryPort,
         tokens: AuthTokenServicePort,
-      ) => new RefreshSessionUseCase(users, workspaces, sessions, tokens),
+        auditLogs: AuditLogRepositoryPort,
+        transactionBoundary: TransactionBoundary,
+      ) =>
+        new RefreshSessionUseCase(
+          users,
+          workspaces,
+          sessions,
+          tokens,
+          auditLogs,
+          transactionBoundary,
+        ),
     },
     {
       provide: LogoutSessionUseCase,
-      inject: [SESSION_REPOSITORY, AUTH_TOKEN_SERVICE],
-      useFactory: (sessions: SessionRepositoryPort, tokens: AuthTokenServicePort) =>
-        new LogoutSessionUseCase(sessions, tokens),
+      inject: [
+        SESSION_REPOSITORY,
+        AUTH_TOKEN_SERVICE,
+        WORKSPACE_REPOSITORY,
+        AUDIT_LOG_REPOSITORY,
+        TRANSACTION_BOUNDARY,
+      ],
+      useFactory: (
+        sessions: SessionRepositoryPort,
+        tokens: AuthTokenServicePort,
+        workspaces: WorkspaceRepositoryPort,
+        auditLogs: AuditLogRepositoryPort,
+        transactionBoundary: TransactionBoundary,
+      ) => new LogoutSessionUseCase(sessions, tokens, workspaces, auditLogs, transactionBoundary),
     },
     {
       provide: GetAuthenticatedUserUseCase,
@@ -143,9 +185,12 @@ import { HmacAuthTokenService } from './tokens/hmac-auth-token.service';
     },
     {
       provide: UpdateCurrentWorkspaceUseCase,
-      inject: [WORKSPACE_REPOSITORY],
-      useFactory: (workspaces: WorkspaceRepositoryPort) =>
-        new UpdateCurrentWorkspaceUseCase(workspaces),
+      inject: [WORKSPACE_REPOSITORY, AUDIT_LOG_REPOSITORY, TRANSACTION_BOUNDARY],
+      useFactory: (
+        workspaces: WorkspaceRepositoryPort,
+        auditLogs: AuditLogRepositoryPort,
+        transactionBoundary: TransactionBoundary,
+      ) => new UpdateCurrentWorkspaceUseCase(workspaces, auditLogs, transactionBoundary),
     },
   ],
   exports: [

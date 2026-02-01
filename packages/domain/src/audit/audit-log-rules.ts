@@ -1,0 +1,14 @@
+export const AUDIT_ACTIONS = [
+  'identity.user_registered',
+  'identity.user_logged_in',
+  'identity.session_refreshed',
+  'identity.session_logged_out',
+  'workspace.updated',
+  'access.api_key_created',
+  'access.api_key_revoked',
+] as const;
+
+export const AUDIT_ENTITY_TYPES = ['user', 'session', 'workspace', 'api_key'] as const;
+
+export type AuditAction = (typeof AUDIT_ACTIONS)[number];
+export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[number];

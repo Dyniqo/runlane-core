@@ -1,3 +1,5 @@
+export { ListAuditLogsUseCase } from './audit';
+export type { ListAuditLogsUseCaseInput } from './audit';
 export {
   CreateApiKeyUseCase,
   ListApiKeysUseCase,

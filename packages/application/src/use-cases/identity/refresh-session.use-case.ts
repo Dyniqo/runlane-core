@@ -1,7 +1,9 @@
 import type { AuthenticationResponseDto } from '@runlane/contracts';
 import type {
+  AuditLogRepositoryPort,
   AuthTokenServicePort,
   SessionRepositoryPort,
+  TransactionBoundary,
   UserRepositoryPort,
   WorkspaceRepositoryPort,
 } from '../../ports';
@@ -16,6 +18,8 @@ import {
 
 export interface RefreshSessionInput {
   readonly refreshToken: string;
+  readonly userAgent: string | null;
+  readonly ip: string | null;
 }
 
 export class RefreshSessionUseCase implements UseCase<
@@ -27,72 +31,89 @@ export class RefreshSessionUseCase implements UseCase<
     private readonly workspaces: WorkspaceRepositoryPort,
     private readonly sessions: SessionRepositoryPort,
     private readonly tokens: AuthTokenServicePort,
+    private readonly auditLogs: AuditLogRepositoryPort,
+    private readonly transactionBoundary: TransactionBoundary,
   ) {}
 
-  async execute(input: RefreshSessionInput): Promise<AuthenticationResponseDto> {
-    const sessionId = this.tokens.readRefreshSessionId(input.refreshToken);
-    const session = await this.sessions.findById(sessionId);
+  execute(input: RefreshSessionInput): Promise<AuthenticationResponseDto> {
+    return this.transactionBoundary.execute(async () => {
+      const sessionId = this.tokens.readRefreshSessionId(input.refreshToken);
+      const session = await this.sessions.findById(sessionId);
 
-    if (!session) {
-      rejectInvalidRefreshToken();
-    }
+      if (!session) {
+        rejectInvalidRefreshToken();
+      }
 
-    ensureActiveSession(session);
+      ensureActiveSession(session);
 
-    const refreshTokenMatches = await this.tokens.isRefreshTokenHashMatch(
-      input.refreshToken,
-      session.refreshTokenHash,
-    );
+      const refreshTokenMatches = await this.tokens.isRefreshTokenHashMatch(
+        input.refreshToken,
+        session.refreshTokenHash,
+      );
 
-    if (!refreshTokenMatches) {
-      rejectInvalidRefreshToken();
-    }
+      if (!refreshTokenMatches) {
+        rejectInvalidRefreshToken();
+      }
 
-    const user = await this.users.findById(session.userId);
+      const user = await this.users.findById(session.userId);
 
-    if (!user) {
-      throw missingAuthenticatedUser();
-    }
+      if (!user) {
+        throw missingAuthenticatedUser();
+      }
 
-    const workspace = await this.workspaces.findPrimaryWorkspaceForUser(user.id);
+      const workspace = await this.workspaces.findPrimaryWorkspaceForUser(user.id);
 
-    if (!workspace) {
-      throw missingWorkspaceMembership();
-    }
+      if (!workspace) {
+        throw missingWorkspaceMembership();
+      }
 
-    const now = new Date();
-    const nextRefreshToken = await this.tokens.issueRefreshToken(session.id);
-    const nextRefreshTokenHash = await this.tokens.hashRefreshToken(nextRefreshToken.token);
-    const nextRefreshTokenExpiresAt = this.tokens.getRefreshTokenExpiresAt(now);
-    const rotatedSession = await this.sessions.rotateRefreshToken({
-      id: session.id,
-      userId: session.userId,
-      currentRefreshTokenHash: session.refreshTokenHash,
-      nextRefreshTokenHash,
-      expiresAt: nextRefreshTokenExpiresAt,
-    });
+      const now = new Date();
+      const nextRefreshToken = await this.tokens.issueRefreshToken(session.id);
+      const nextRefreshTokenHash = await this.tokens.hashRefreshToken(nextRefreshToken.token);
+      const nextRefreshTokenExpiresAt = this.tokens.getRefreshTokenExpiresAt(now);
+      const rotatedSession = await this.sessions.rotateRefreshToken({
+        id: session.id,
+        userId: session.userId,
+        currentRefreshTokenHash: session.refreshTokenHash,
+        nextRefreshTokenHash,
+        expiresAt: nextRefreshTokenExpiresAt,
+      });
 
-    if (!rotatedSession) {
-      rejectInvalidRefreshToken();
-    }
+      if (!rotatedSession) {
+        rejectInvalidRefreshToken();
+      }
 
-    const accessToken = await this.tokens.issueAccessToken(
-      {
-        userId: user.id,
-        email: user.email,
-        sessionId: rotatedSession.id,
+      const accessToken = await this.tokens.issueAccessToken(
+        {
+          userId: user.id,
+          email: user.email,
+          sessionId: rotatedSession.id,
+          workspaceId: workspace.id,
+          workspaceRole: workspace.role,
+        },
+        now,
+      );
+
+      await this.auditLogs.create({
         workspaceId: workspace.id,
-        workspaceRole: workspace.role,
-      },
-      now,
-    );
+        actorUserId: user.id,
+        action: 'identity.session_refreshed',
+        entityType: 'session',
+        entityId: rotatedSession.id,
+        metadata: {
+          workspaceRole: workspace.role,
+        },
+        ip: input.ip,
+        userAgent: input.userAgent,
+      });
 
-    return buildAuthenticationResponse({
-      user,
-      workspace,
-      session: rotatedSession,
-      accessToken,
-      refreshToken: nextRefreshToken.token,
+      return buildAuthenticationResponse({
+        user,
+        workspace,
+        session: rotatedSession,
+        accessToken,
+        refreshToken: nextRefreshToken.token,
+      });
     });
   }
 }

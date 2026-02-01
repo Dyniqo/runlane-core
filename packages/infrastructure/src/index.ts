@@ -1,3 +1,4 @@
+export { RunlaneAuditModule } from './audit';
 export { ApiKeyGuard, readApiKeyScope, RunlaneAccessModule } from './access';
 export type { ApiKeyScopedHttpRequest } from './access';
 export { getDomainErrorHttpStatus } from './errors';
