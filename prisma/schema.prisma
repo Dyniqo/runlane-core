@@ -19,6 +19,12 @@ enum WorkspaceMemberRole {
   MEMBER
 }
 
+enum WorkflowStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 model User {
   id                   String            @id @default(uuid()) @db.Uuid
   email                String            @unique(map: "users_email_key") @db.VarChar(320)
@@ -63,6 +69,7 @@ model Workspace {
   members   WorkspaceMember[]
   apiKeys   ApiKey[]
   auditLogs AuditLog[]
+  workflows Workflow[]
 
   @@index([ownerId], map: "workspaces_owner_id_idx")
   @@index([id, ownerId], map: "workspaces_id_owner_id_idx")
@@ -123,4 +130,24 @@ model AuditLog {
   @@index([workspaceId, entityType, entityId], map: "audit_logs_workspace_id_entity_type_entity_id_idx")
   @@index([actorUserId, createdAt], map: "audit_logs_actor_user_id_created_at_idx")
   @@map("audit_logs")
+}
+
+
+model Workflow {
+  id             String         @id @default(uuid()) @db.Uuid
+  workspaceId    String         @map("workspace_id") @db.Uuid
+  name           String         @db.VarChar(140)
+  status         WorkflowStatus @default(DRAFT)
+  version        Int            @default(1)
+  definitionJson Json           @default("{}") @map("definition_json")
+  triggerType    String         @default("webhook") @map("trigger_type") @db.VarChar(64)
+  publishedAt    DateTime?      @map("published_at") @db.Timestamptz(3)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  workspace      Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([workspaceId, id], map: "workflows_workspace_id_id_idx")
+  @@index([workspaceId, status, updatedAt], map: "workflows_workspace_id_status_updated_at_idx")
+  @@index([workspaceId, createdAt, id], map: "workflows_workspace_id_created_at_id_idx")
+  @@map("workflows")
 }

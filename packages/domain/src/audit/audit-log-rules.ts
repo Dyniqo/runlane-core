@@ -6,9 +6,11 @@ export const AUDIT_ACTIONS = [
   'workspace.updated',
   'access.api_key_created',
   'access.api_key_revoked',
+  'workflow.created',
+  'workflow.updated',
 ] as const;
 
-export const AUDIT_ENTITY_TYPES = ['user', 'session', 'workspace', 'api_key'] as const;
+export const AUDIT_ENTITY_TYPES = ['user', 'session', 'workspace', 'api_key', 'workflow'] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[number];

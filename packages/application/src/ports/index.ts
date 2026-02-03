@@ -64,3 +64,10 @@ export type {
   WorkspaceScopedWriteRepositoryPort,
   WorkspaceWithOwnerMembershipRecord,
 } from './workspace';
+export { WORKFLOW_REPOSITORY } from './workflow';
+export type {
+  CreateWorkflowInput,
+  StoredWorkflowRecord,
+  UpdateWorkflowInput,
+  WorkflowRepositoryPort,
+} from './workflow';

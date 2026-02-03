@@ -26,3 +26,11 @@ export type {
 } from './auth.dto';
 export type { CursorPageDto, CursorPageQueryDto } from './cursor-page.dto';
 export type { OperationAcceptedDto } from './operation-accepted.dto';
+export type {
+  CreateWorkflowRequestDto,
+  ListWorkflowsResponseDto,
+  UpdateWorkflowRequestDto,
+  WorkflowDto,
+  WorkflowResponseDto,
+  WorkflowStatusDto,
+} from './workflow.dto';

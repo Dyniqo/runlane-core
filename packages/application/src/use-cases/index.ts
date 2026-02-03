@@ -38,3 +38,19 @@ export type {
   ListWorkspacesInput,
   UpdateCurrentWorkspaceInput,
 } from './workspace';
+export {
+  CreateWorkflowUseCase,
+  GetWorkflowUseCase,
+  ListWorkflowsUseCase,
+  UpdateWorkflowUseCase,
+  buildListWorkflowsResponse,
+  buildWorkflowResponse,
+  workflowNotFound,
+  workflowUpdateEmpty,
+} from './workflow';
+export type {
+  CreateWorkflowUseCaseInput,
+  GetWorkflowUseCaseInput,
+  ListWorkflowsUseCaseInput,
+  UpdateWorkflowUseCaseInput,
+} from './workflow';
