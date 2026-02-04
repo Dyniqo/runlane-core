@@ -14,6 +14,7 @@ import {
   CreateWorkflowUseCase,
   GetWorkflowUseCase,
   ListWorkflowsUseCase,
+  PublishWorkflowUseCase,
   UpdateWorkflowUseCase,
 } from '@runlane/application';
 import type { ListWorkflowsResponseDto, WorkflowResponseDto } from '@runlane/contracts';
@@ -27,6 +28,8 @@ type OpenApiSchemaObject = {
   readonly example?: unknown;
   readonly minLength?: number;
   readonly maxLength?: number;
+  readonly minimum?: number;
+  readonly maximum?: number;
   readonly required?: string[];
   readonly enum?: unknown[];
   readonly properties?: Record<string, OpenApiSchemaObject>;
@@ -35,11 +38,71 @@ type OpenApiSchemaObject = {
   readonly additionalProperties?: boolean | OpenApiSchemaObject;
 };
 
+const workflowStepTransitionsSchema = {
+  type: 'object',
+  properties: {
+    onSuccess: { type: 'string', example: 'notify_team' },
+    onFailure: { type: 'string', example: 'notify_failure' },
+    branches: {
+      type: 'object',
+      additionalProperties: { type: 'string' },
+      example: { qualified: 'notify_team', rejected: 'notify_failure' },
+    },
+  },
+  additionalProperties: false,
+} satisfies OpenApiSchemaObject;
+
 const workflowDefinitionSchema = {
   type: 'object',
-  additionalProperties: true,
+  required: ['schemaVersion', 'trigger', 'entryStepKey', 'steps'],
+  properties: {
+    schemaVersion: { type: 'integer', enum: [1] },
+    trigger: {
+      type: 'object',
+      required: ['type', 'config'],
+      properties: {
+        type: { type: 'string', enum: ['webhook', 'automation', 'manual'] },
+        config: { type: 'object', additionalProperties: true },
+      },
+      additionalProperties: false,
+    },
+    entryStepKey: { type: 'string', example: 'qualify_lead' },
+    steps: {
+      type: 'array',
+      items: {
+        type: 'object',
+        required: ['key', 'name', 'type', 'config'],
+        properties: {
+          key: { type: 'string', example: 'qualify_lead' },
+          name: { type: 'string', example: 'Qualify lead' },
+          type: {
+            type: 'string',
+            enum: ['http', 'ai_decision', 'notification', 'condition'],
+          },
+          config: { type: 'object', additionalProperties: true },
+          timeoutMs: { type: 'integer', minimum: 100, maximum: 300000 },
+          transitions: workflowStepTransitionsSchema,
+        },
+        additionalProperties: false,
+      },
+    },
+  },
+  additionalProperties: false,
   example: {
-    steps: [],
+    schemaVersion: 1,
+    trigger: {
+      type: 'webhook',
+      config: {},
+    },
+    entryStepKey: 'qualify_lead',
+    steps: [
+      {
+        key: 'qualify_lead',
+        name: 'Qualify lead',
+        type: 'condition',
+        config: {},
+      },
+    ],
   },
 } satisfies OpenApiSchemaObject;
 
@@ -95,7 +158,7 @@ const createWorkflowRequestSchema = {
   required: ['name'],
   properties: {
     name: { type: 'string', minLength: 2, maxLength: 140, example: 'AI lead routing' },
-    triggerType: { type: 'string', example: 'webhook' },
+    triggerType: { type: 'string', enum: ['webhook', 'automation', 'manual'] },
     definition: workflowDefinitionSchema,
   },
 } satisfies OpenApiSchemaObject;
@@ -104,7 +167,7 @@ const updateWorkflowRequestSchema = {
   type: 'object',
   properties: {
     name: { type: 'string', minLength: 2, maxLength: 140, example: 'Qualified lead routing' },
-    triggerType: { type: 'string', example: 'webhook' },
+    triggerType: { type: 'string', enum: ['webhook', 'automation', 'manual'] },
     definition: workflowDefinitionSchema,
   },
 } satisfies OpenApiSchemaObject;
@@ -121,6 +184,7 @@ export class WorkflowsController {
     @Inject(ListWorkflowsUseCase) private readonly listWorkflows: ListWorkflowsUseCase,
     @Inject(GetWorkflowUseCase) private readonly getWorkflow: GetWorkflowUseCase,
     @Inject(UpdateWorkflowUseCase) private readonly updateWorkflow: UpdateWorkflowUseCase,
+    @Inject(PublishWorkflowUseCase) private readonly publishWorkflow: PublishWorkflowUseCase,
   ) {}
 
   @Get()
@@ -186,6 +250,22 @@ export class WorkflowsController {
       triggerType: payload.triggerType ?? null,
       definition: payload.definition,
       hasDefinition: Object.prototype.hasOwnProperty.call(payload, 'definition'),
+      userAgent: readHeader(request, 'user-agent', 512),
+      ip: readClientIp(request),
+    });
+  }
+
+  @Post(':id/publish')
+  @ApiOperation({ operationId: 'publishWorkflow', summary: 'Publish a validated workflow draft' })
+  @ApiParam({ name: 'id', schema: { type: 'string', format: 'uuid' } })
+  @ApiOkResponse({ schema: workflowResponseSchema })
+  publish(
+    @Req() request: WorkflowHttpRequest,
+    @Param('id') id: string,
+  ): Promise<WorkflowResponseDto> {
+    return this.publishWorkflow.execute({
+      scope: readWorkspaceScope(request),
+      id: parseWorkflowId(id),
       userAgent: readHeader(request, 'user-agent', 512),
       ip: readClientIp(request),
     });

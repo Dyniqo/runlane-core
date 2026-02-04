@@ -67,6 +67,7 @@ export type {
 export { WORKFLOW_REPOSITORY } from './workflow';
 export type {
   CreateWorkflowInput,
+  PublishWorkflowInput,
   StoredWorkflowRecord,
   UpdateWorkflowInput,
   WorkflowRepositoryPort,

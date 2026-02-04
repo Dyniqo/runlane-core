@@ -1,12 +1,16 @@
 import type { JsonValue, WorkflowResponseDto } from '@runlane/contracts';
 import {
   assertWorkspaceRole,
+  ensureWorkflowCanBeUpdated,
+  getWorkflowDefinitionTriggerType,
   normalizeWorkflowName,
   normalizeWorkflowTriggerType,
   readWorkflowDefinition,
+  retargetWorkflowDefinitionTriggerType,
 } from '@runlane/domain';
 import type {
   AuditLogRepositoryPort,
+  StoredWorkflowRecord,
   TransactionBoundary,
   WorkflowRepositoryPort,
   WorkspaceScopeRecord,
@@ -38,19 +42,6 @@ export class UpdateWorkflowUseCase implements UseCase<
 
   execute(input: UpdateWorkflowUseCaseInput): Promise<WorkflowResponseDto> {
     assertWorkspaceRole(input.scope, ['owner']);
-    const name =
-      input.name === undefined || input.name === null
-        ? undefined
-        : normalizeWorkflowName(input.name);
-    const triggerType =
-      input.triggerType === undefined || input.triggerType === null
-        ? undefined
-        : normalizeWorkflowTriggerType(input.triggerType);
-    const definition = input.hasDefinition ? readWorkflowDefinition(input.definition) : undefined;
-
-    if (name === undefined && triggerType === undefined && definition === undefined) {
-      throw workflowUpdateEmpty();
-    }
 
     return this.transactionBoundary.execute(async () => {
       const currentWorkflow = await this.workflows.findByWorkspaceId({
@@ -62,12 +53,22 @@ export class UpdateWorkflowUseCase implements UseCase<
         throw workflowNotFound();
       }
 
+      ensureWorkflowCanBeUpdated(currentWorkflow.status);
+      const update = buildWorkflowUpdateInput(input, currentWorkflow);
+
+      if (
+        update.name === undefined &&
+        update.triggerType === undefined &&
+        update.definition === undefined
+      ) {
+        throw workflowUpdateEmpty();
+      }
+
       const workflow = await this.workflows.updateForWorkspace({
         workspaceId: input.scope.workspaceId,
         id: input.id,
-        ...(name !== undefined ? { name } : {}),
-        ...(triggerType !== undefined ? { triggerType } : {}),
-        ...(definition !== undefined ? { definition } : {}),
+        ...update,
+        incrementVersion: true,
       });
 
       if (!workflow) {
@@ -81,7 +82,7 @@ export class UpdateWorkflowUseCase implements UseCase<
         entityType: 'workflow',
         entityId: workflow.id,
         metadata: buildWorkflowUpdateMetadata(currentWorkflow, workflow, {
-          hasDefinition: definition !== undefined,
+          hasDefinition: update.definition !== undefined,
         }),
         ip: input.ip,
         userAgent: input.userAgent,
@@ -92,14 +93,65 @@ export class UpdateWorkflowUseCase implements UseCase<
   }
 }
 
+type NormalizedWorkflowUpdate = Readonly<{
+  name?: string;
+  triggerType?: string;
+  definition?: JsonValue;
+}>;
+
+function buildWorkflowUpdateInput(
+  input: UpdateWorkflowUseCaseInput,
+  currentWorkflow: StoredWorkflowRecord,
+): NormalizedWorkflowUpdate {
+  const name =
+    input.name === undefined || input.name === null ? undefined : normalizeWorkflowName(input.name);
+  const requestedTriggerType =
+    input.triggerType === undefined || input.triggerType === null
+      ? undefined
+      : normalizeWorkflowTriggerType(input.triggerType);
+
+  if (input.hasDefinition) {
+    const definition = readWorkflowDefinition(
+      input.definition,
+      requestedTriggerType === undefined ? {} : { triggerType: requestedTriggerType },
+    );
+    const triggerType = getWorkflowDefinitionTriggerType(definition);
+
+    return {
+      ...(name !== undefined ? { name } : {}),
+      triggerType,
+      definition,
+    };
+  }
+
+  if (requestedTriggerType !== undefined) {
+    const definition = retargetWorkflowDefinitionTriggerType(
+      currentWorkflow.definition,
+      requestedTriggerType,
+    );
+
+    return {
+      ...(name !== undefined ? { name } : {}),
+      triggerType: requestedTriggerType,
+      definition,
+    };
+  }
+
+  return {
+    ...(name !== undefined ? { name } : {}),
+  };
+}
+
 function buildWorkflowUpdateMetadata(
-  before: Readonly<{ name: string; triggerType: string; version: number }>,
-  after: Readonly<{ name: string; triggerType: string; version: number }>,
+  before: Readonly<{ name: string; status: string; triggerType: string; version: number }>,
+  after: Readonly<{ name: string; status: string; triggerType: string; version: number }>,
   changes: Readonly<{ hasDefinition: boolean }>,
 ): JsonValue {
   return {
     previousName: before.name,
     nextName: after.name,
+    previousStatus: before.status,
+    nextStatus: after.status,
     previousTriggerType: before.triggerType,
     nextTriggerType: after.triggerType,
     previousVersion: before.version,

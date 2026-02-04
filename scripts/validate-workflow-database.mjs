@@ -46,6 +46,7 @@ try {
       version: true,
       triggerType: true,
       definitionJson: true,
+      publishedAt: true,
     },
   });
 
@@ -53,16 +54,28 @@ try {
     throw new Error(`Workflow ${workflowId} was not stored in the expected workspace.`);
   }
 
-  if (workflow.status !== 'DRAFT') {
-    throw new Error(`Expected workflow status DRAFT but received ${workflow.status}.`);
+  if (workflow.status !== 'PUBLISHED') {
+    throw new Error(`Expected workflow status PUBLISHED but received ${workflow.status}.`);
   }
 
-  if (workflow.version !== 1) {
-    throw new Error(`Expected workflow version 1 but received ${workflow.version}.`);
+  if (workflow.version !== 2) {
+    throw new Error(`Expected workflow version 2 but received ${workflow.version}.`);
   }
 
   if (workflow.triggerType !== 'webhook') {
     throw new Error(`Expected trigger type webhook but received ${workflow.triggerType}.`);
+  }
+
+  if (!workflow.publishedAt) {
+    throw new Error('Expected workflow publishedAt to be stored.');
+  }
+
+  if (workflow.definitionJson?.schemaVersion !== 1) {
+    throw new Error('Expected workflow definition schemaVersion 1.');
+  }
+
+  if (workflow.definitionJson?.entryStepKey !== 'qualify_lead') {
+    throw new Error('Expected workflow definition entryStepKey qualify_lead.');
   }
 
   const auditActions = await prisma.auditLog.findMany({
@@ -87,6 +100,10 @@ try {
 
   if (!actionNames.has('workflow.updated')) {
     throw new Error('Workflow update audit log was not persisted.');
+  }
+
+  if (!actionNames.has('workflow.published')) {
+    throw new Error('Workflow publish audit log was not persisted.');
   }
 } finally {
   await prisma.$disconnect();

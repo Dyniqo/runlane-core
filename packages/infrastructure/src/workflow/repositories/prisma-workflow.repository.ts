@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import type {
   CreateWorkflowInput,
+  PublishWorkflowInput,
   StoredWorkflowRecord,
   UpdateWorkflowInput,
   WorkflowRepositoryPort,
@@ -67,6 +68,26 @@ export class PrismaWorkflowRepository implements WorkflowRepositoryPort {
         ...(input.definition !== undefined
           ? { definitionJson: input.definition as Prisma.InputJsonValue }
           : {}),
+        ...(input.incrementVersion ? { version: { increment: 1 } } : {}),
+      },
+    });
+
+    if (updated.count !== 1) {
+      return null;
+    }
+
+    return this.findByWorkspaceId({ id: input.id, workspaceId: input.workspaceId });
+  }
+
+  async publishForWorkspace(input: PublishWorkflowInput): Promise<StoredWorkflowRecord | null> {
+    const updated = await this.persistence.client.workflow.updateMany({
+      where: {
+        id: input.id,
+        workspaceId: input.workspaceId,
+      },
+      data: {
+        status: 'PUBLISHED',
+        publishedAt: input.publishedAt,
       },
     });
 

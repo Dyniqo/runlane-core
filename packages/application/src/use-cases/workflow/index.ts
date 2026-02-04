@@ -1,10 +1,12 @@
 export { CreateWorkflowUseCase } from './create-workflow.use-case';
 export { GetWorkflowUseCase } from './get-workflow.use-case';
 export { ListWorkflowsUseCase } from './list-workflows.use-case';
+export { PublishWorkflowUseCase } from './publish-workflow.use-case';
 export { UpdateWorkflowUseCase } from './update-workflow.use-case';
 export { workflowNotFound, workflowUpdateEmpty } from './workflow-errors';
 export { buildListWorkflowsResponse, buildWorkflowResponse } from './workflow-response';
 export type { CreateWorkflowUseCaseInput } from './create-workflow.use-case';
 export type { GetWorkflowUseCaseInput } from './get-workflow.use-case';
 export type { ListWorkflowsUseCaseInput } from './list-workflows.use-case';
+export type { PublishWorkflowUseCaseInput } from './publish-workflow.use-case';
 export type { UpdateWorkflowUseCaseInput } from './update-workflow.use-case';

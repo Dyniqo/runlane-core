@@ -28,11 +28,28 @@ export {
 export type { WorkspaceAuthorizationScope, WorkspaceRole } from './workspace';
 export {
   DEFAULT_WORKFLOW_TRIGGER_TYPE,
+  ensureWorkflowCanBePublished,
+  ensureWorkflowCanBeUpdated,
+  getWorkflowDefinitionTriggerType,
   normalizeWorkflowName,
   normalizeWorkflowTriggerType,
   readWorkflowDefinition,
+  retargetWorkflowDefinitionTriggerType,
+  WORKFLOW_SCHEMA_VERSION,
   WORKFLOW_STATUSES,
+  WORKFLOW_STEP_TYPES,
+  WORKFLOW_TRIGGER_TYPES,
 } from './workflow';
-export type { WorkflowDefinitionValue, WorkflowStatus } from './workflow';
+export type {
+  ReadWorkflowDefinitionOptions,
+  WorkflowDefinition,
+  WorkflowDefinitionValue,
+  WorkflowStatus,
+  WorkflowStepDefinitionValue,
+  WorkflowStepTransitionsValue,
+  WorkflowStepType,
+  WorkflowTriggerDefinitionValue,
+  WorkflowTriggerType,
+} from './workflow';
 export { DOMAIN_ERROR_CATEGORIES, DomainError, isDomainError } from './shared';
 export type { DomainErrorCategory, DomainErrorDetails, DomainErrorOptions } from './shared';

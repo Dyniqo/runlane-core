@@ -1,4 +1,5 @@
 import type { JsonValue } from '../shared';
+import type { WorkflowDefinition } from '../workflow-schema';
 
 export type WorkflowStatusDto = 'draft' | 'published' | 'archived';
 
@@ -9,7 +10,7 @@ export interface WorkflowDto {
   readonly status: WorkflowStatusDto;
   readonly version: number;
   readonly triggerType: string;
-  readonly definition: JsonValue;
+  readonly definition: WorkflowDefinition | JsonValue;
   readonly publishedAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -18,13 +19,13 @@ export interface WorkflowDto {
 export interface CreateWorkflowRequestDto {
   readonly name: string;
   readonly triggerType?: string;
-  readonly definition?: JsonValue;
+  readonly definition?: WorkflowDefinition;
 }
 
 export interface UpdateWorkflowRequestDto {
   readonly name?: string;
   readonly triggerType?: string;
-  readonly definition?: JsonValue;
+  readonly definition?: WorkflowDefinition;
 }
 
 export interface WorkflowResponseDto {

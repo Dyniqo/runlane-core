@@ -42,6 +42,7 @@ export {
   CreateWorkflowUseCase,
   GetWorkflowUseCase,
   ListWorkflowsUseCase,
+  PublishWorkflowUseCase,
   UpdateWorkflowUseCase,
   buildListWorkflowsResponse,
   buildWorkflowResponse,
@@ -52,5 +53,6 @@ export type {
   CreateWorkflowUseCaseInput,
   GetWorkflowUseCaseInput,
   ListWorkflowsUseCaseInput,
+  PublishWorkflowUseCaseInput,
   UpdateWorkflowUseCaseInput,
 } from './workflow';

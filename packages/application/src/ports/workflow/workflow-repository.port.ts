@@ -29,6 +29,13 @@ export interface UpdateWorkflowInput {
   readonly name?: string;
   readonly triggerType?: string;
   readonly definition?: JsonValue;
+  readonly incrementVersion?: boolean;
+}
+
+export interface PublishWorkflowInput {
+  readonly workspaceId: string;
+  readonly id: string;
+  readonly publishedAt: Date;
 }
 
 export interface WorkflowRepositoryPort {
@@ -38,4 +45,5 @@ export interface WorkflowRepositoryPort {
     input: Readonly<{ workspaceId: string; id: string }>,
   ): Promise<StoredWorkflowRecord | null>;
   updateForWorkspace(input: UpdateWorkflowInput): Promise<StoredWorkflowRecord | null>;
+  publishForWorkspace(input: PublishWorkflowInput): Promise<StoredWorkflowRecord | null>;
 }
