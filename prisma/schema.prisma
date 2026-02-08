@@ -136,6 +136,7 @@ model AuditLog {
 model Workflow {
   id             String         @id @default(uuid()) @db.Uuid
   workspaceId    String         @map("workspace_id") @db.Uuid
+  publicId       String         @unique(map: "workflows_public_id_key") @map("public_id") @db.VarChar(40)
   name           String         @db.VarChar(140)
   status         WorkflowStatus @default(DRAFT)
   version        Int            @default(1)
@@ -147,6 +148,7 @@ model Workflow {
   workspace      Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([workspaceId, id], map: "workflows_workspace_id_id_idx")
+  @@index([workspaceId, publicId], map: "workflows_workspace_id_public_id_idx")
   @@index([workspaceId, status, updatedAt], map: "workflows_workspace_id_status_updated_at_idx")
   @@index([workspaceId, createdAt, id], map: "workflows_workspace_id_created_at_id_idx")
   @@map("workflows")

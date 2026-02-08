@@ -12,12 +12,17 @@ import {
 } from '@nestjs/swagger';
 import {
   CreateWorkflowUseCase,
+  CreateWorkflowTestContractUseCase,
   GetWorkflowUseCase,
   ListWorkflowsUseCase,
   PublishWorkflowUseCase,
   UpdateWorkflowUseCase,
 } from '@runlane/application';
-import type { ListWorkflowsResponseDto, WorkflowResponseDto } from '@runlane/contracts';
+import type {
+  ListWorkflowsResponseDto,
+  WorkflowResponseDto,
+  WorkflowTestResponseDto,
+} from '@runlane/contracts';
 import { DomainError } from '@runlane/domain';
 import { readWorkspaceScope, WorkspaceTenantGuard } from '@runlane/infrastructure';
 import type { WorkspaceScopedHttpRequest } from '@runlane/infrastructure';
@@ -110,6 +115,7 @@ const workflowSchema = {
   type: 'object',
   required: [
     'id',
+    'publicId',
     'workspaceId',
     'name',
     'status',
@@ -122,6 +128,7 @@ const workflowSchema = {
   ],
   properties: {
     id: { type: 'string', format: 'uuid' },
+    publicId: { type: 'string', example: 'wf_0123456789abcdef0123456789abcdef' },
     workspaceId: { type: 'string', format: 'uuid' },
     name: { type: 'string' },
     status: { type: 'string', enum: ['draft', 'published', 'archived'] },
@@ -172,6 +179,63 @@ const updateWorkflowRequestSchema = {
   },
 } satisfies OpenApiSchemaObject;
 
+const workflowTestRequestSchema = {
+  type: 'object',
+  properties: {
+    payload: {
+      type: 'object',
+      additionalProperties: true,
+      example: {
+        email: 'lead@example.com',
+        score: 91,
+      },
+    },
+    source: { type: 'string', example: 'manual_test' },
+    idempotencyKey: { type: 'string', example: 'test-lead-0001' },
+  },
+  additionalProperties: false,
+} satisfies OpenApiSchemaObject;
+
+const workflowTestResponseSchema = {
+  type: 'object',
+  required: ['contract'],
+  properties: {
+    contract: {
+      type: 'object',
+      required: [
+        'mode',
+        'workflowId',
+        'workflowPublicId',
+        'workspaceId',
+        'workflowVersion',
+        'triggerType',
+        'workflowStatus',
+        'entryStepKey',
+        'stepCount',
+        'source',
+        'idempotencyKey',
+        'payload',
+        'acceptedAt',
+      ],
+      properties: {
+        mode: { type: 'string', enum: ['contract'] },
+        workflowId: { type: 'string', format: 'uuid' },
+        workflowPublicId: { type: 'string', example: 'wf_0123456789abcdef0123456789abcdef' },
+        workspaceId: { type: 'string', format: 'uuid' },
+        workflowVersion: { type: 'integer' },
+        triggerType: { type: 'string', example: 'webhook' },
+        workflowStatus: { type: 'string', enum: ['draft', 'published', 'archived'] },
+        entryStepKey: { type: 'string', example: 'qualify_lead' },
+        stepCount: { type: 'integer', minimum: 1 },
+        source: { type: 'string', example: 'manual_test' },
+        idempotencyKey: { type: 'string', nullable: true, example: 'test-lead-0001' },
+        payload: { type: 'object', additionalProperties: true },
+        acceptedAt: { type: 'string', format: 'date-time' },
+      },
+    },
+  },
+} satisfies OpenApiSchemaObject;
+
 @ApiTags('Workflows')
 @ApiBearerAuth()
 @ApiUnauthorizedResponse({ description: 'Authentication is required' })
@@ -181,6 +245,8 @@ const updateWorkflowRequestSchema = {
 export class WorkflowsController {
   constructor(
     @Inject(CreateWorkflowUseCase) private readonly createWorkflow: CreateWorkflowUseCase,
+    @Inject(CreateWorkflowTestContractUseCase)
+    private readonly createWorkflowTestContract: CreateWorkflowTestContractUseCase,
     @Inject(ListWorkflowsUseCase) private readonly listWorkflows: ListWorkflowsUseCase,
     @Inject(GetWorkflowUseCase) private readonly getWorkflow: GetWorkflowUseCase,
     @Inject(UpdateWorkflowUseCase) private readonly updateWorkflow: UpdateWorkflowUseCase,
@@ -270,6 +336,32 @@ export class WorkflowsController {
       ip: readClientIp(request),
     });
   }
+
+  @Post(':id/test')
+  @ApiOperation({
+    operationId: 'createWorkflowTestContract',
+    summary: 'Create a workflow test execution contract',
+  })
+  @ApiParam({ name: 'id', schema: { type: 'string', format: 'uuid' } })
+  @ApiBody({ schema: workflowTestRequestSchema, required: false })
+  @ApiOkResponse({ schema: workflowTestResponseSchema })
+  test(
+    @Req() request: WorkflowHttpRequest,
+    @Param('id') id: string,
+    @Body() body: unknown,
+  ): Promise<WorkflowTestResponseDto> {
+    const payload = parseWorkflowTestRequest(body);
+
+    return this.createWorkflowTestContract.execute({
+      scope: readWorkspaceScope(request),
+      id: parseWorkflowId(id),
+      payload: payload.payload,
+      source: payload.source ?? null,
+      idempotencyKey: payload.idempotencyKey ?? null,
+      userAgent: readHeader(request, 'user-agent', 512),
+      ip: readClientIp(request),
+    });
+  }
 }
 
 type WorkflowHttpRequest = WorkspaceScopedHttpRequest & {
@@ -289,6 +381,12 @@ type ParsedUpdateWorkflowRequest = {
   readonly name?: string;
   readonly triggerType?: string;
   readonly definition?: unknown;
+};
+
+type ParsedWorkflowTestRequest = {
+  readonly payload?: unknown;
+  readonly source?: string;
+  readonly idempotencyKey?: string;
 };
 
 function parseCreateWorkflowRequest(body: unknown): ParsedCreateWorkflowRequest {
@@ -338,6 +436,33 @@ function parseUpdateWorkflowRequest(body: unknown): ParsedUpdateWorkflowRequest 
     ...(Object.prototype.hasOwnProperty.call(body, 'definition')
       ? { definition: body.definition }
       : {}),
+  };
+}
+
+function parseWorkflowTestRequest(body: unknown): ParsedWorkflowTestRequest {
+  if (body === undefined || body === null) {
+    return {};
+  }
+
+  if (!isRecord(body)) {
+    throw invalidWorkflowPayload('Workflow test payload must be an object');
+  }
+
+  const source = body.source;
+  const idempotencyKey = body.idempotencyKey;
+
+  if (source !== undefined && typeof source !== 'string') {
+    throw invalidWorkflowPayload('Workflow test source must be a string');
+  }
+
+  if (idempotencyKey !== undefined && typeof idempotencyKey !== 'string') {
+    throw invalidWorkflowPayload('Workflow test idempotencyKey must be a string');
+  }
+
+  return {
+    ...(Object.prototype.hasOwnProperty.call(body, 'payload') ? { payload: body.payload } : {}),
+    ...(source !== undefined ? { source } : {}),
+    ...(idempotencyKey !== undefined ? { idempotencyKey } : {}),
   };
 }
 

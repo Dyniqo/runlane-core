@@ -28,12 +28,15 @@ export {
 export type { WorkspaceAuthorizationScope, WorkspaceRole } from './workspace';
 export {
   DEFAULT_WORKFLOW_TRIGGER_TYPE,
+  createWorkflowPublicId,
   ensureWorkflowCanBePublished,
   ensureWorkflowCanBeUpdated,
   getWorkflowDefinitionTriggerType,
   normalizeWorkflowName,
+  normalizeWorkflowPublicId,
   normalizeWorkflowTriggerType,
   readWorkflowDefinition,
+  readWorkflowTestPayload,
   retargetWorkflowDefinitionTriggerType,
   WORKFLOW_SCHEMA_VERSION,
   WORKFLOW_STATUSES,

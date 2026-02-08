@@ -18,6 +18,7 @@ export function buildListWorkflowsResponse(
 function mapWorkflow(workflow: StoredWorkflowRecord): WorkflowDto {
   return {
     id: workflow.id,
+    publicId: workflow.publicId,
     workspaceId: workflow.workspaceId,
     name: workflow.name,
     status: workflow.status,

@@ -40,6 +40,7 @@ export type {
 } from './workspace';
 export {
   CreateWorkflowUseCase,
+  CreateWorkflowTestContractUseCase,
   GetWorkflowUseCase,
   ListWorkflowsUseCase,
   PublishWorkflowUseCase,
@@ -51,6 +52,7 @@ export {
 } from './workflow';
 export type {
   CreateWorkflowUseCaseInput,
+  CreateWorkflowTestContractUseCaseInput,
   GetWorkflowUseCaseInput,
   ListWorkflowsUseCaseInput,
   PublishWorkflowUseCaseInput,

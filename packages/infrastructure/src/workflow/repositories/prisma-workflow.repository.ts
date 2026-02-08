@@ -21,6 +21,7 @@ export class PrismaWorkflowRepository implements WorkflowRepositoryPort {
     const workflow = await this.persistence.client.workflow.create({
       data: {
         workspaceId: input.workspaceId,
+        publicId: input.publicId,
         name: input.name,
         triggerType: input.triggerType,
         definitionJson: input.definition as Prisma.InputJsonValue,
@@ -48,6 +49,21 @@ export class PrismaWorkflowRepository implements WorkflowRepositoryPort {
     const workflow = await this.persistence.client.workflow.findFirst({
       where: {
         id: input.id,
+        workspaceId: input.workspaceId,
+      },
+      select: workflowSelect,
+    });
+
+    return workflow ? mapWorkflowRecord(workflow) : null;
+  }
+
+  async findByPublicIdForWorkspace(input: {
+    readonly workspaceId: string;
+    readonly publicId: string;
+  }): Promise<StoredWorkflowRecord | null> {
+    const workflow = await this.persistence.client.workflow.findFirst({
+      where: {
+        publicId: input.publicId,
         workspaceId: input.workspaceId,
       },
       select: workflowSelect,
@@ -102,6 +118,7 @@ export class PrismaWorkflowRepository implements WorkflowRepositoryPort {
 const workflowSelect = {
   id: true,
   workspaceId: true,
+  publicId: true,
   name: true,
   status: true,
   version: true,
@@ -115,6 +132,7 @@ const workflowSelect = {
 type PrismaWorkflowRecord = {
   readonly id: string;
   readonly workspaceId: string;
+  readonly publicId: string;
   readonly name: string;
   readonly status: string;
   readonly version: number;
@@ -129,6 +147,7 @@ function mapWorkflowRecord(workflow: PrismaWorkflowRecord): StoredWorkflowRecord
   return {
     id: workflow.id,
     workspaceId: workflow.workspaceId,
+    publicId: workflow.publicId,
     name: workflow.name,
     status: mapWorkflowStatus(workflow.status),
     version: workflow.version,

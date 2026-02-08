@@ -143,11 +143,24 @@ function buildWorkflowUpdateInput(
 }
 
 function buildWorkflowUpdateMetadata(
-  before: Readonly<{ name: string; status: string; triggerType: string; version: number }>,
-  after: Readonly<{ name: string; status: string; triggerType: string; version: number }>,
+  before: Readonly<{
+    name: string;
+    publicId: string;
+    status: string;
+    triggerType: string;
+    version: number;
+  }>,
+  after: Readonly<{
+    name: string;
+    publicId: string;
+    status: string;
+    triggerType: string;
+    version: number;
+  }>,
   changes: Readonly<{ hasDefinition: boolean }>,
 ): JsonValue {
   return {
+    publicId: after.publicId,
     previousName: before.name,
     nextName: after.name,
     previousStatus: before.status,

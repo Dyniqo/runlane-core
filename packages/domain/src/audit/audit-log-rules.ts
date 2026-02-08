@@ -9,6 +9,7 @@ export const AUDIT_ACTIONS = [
   'workflow.created',
   'workflow.updated',
   'workflow.published',
+  'workflow.test_contract.created',
 ] as const;
 
 export const AUDIT_ENTITY_TYPES = ['user', 'session', 'workspace', 'api_key', 'workflow'] as const;

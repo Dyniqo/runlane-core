@@ -72,6 +72,7 @@ export class PublishWorkflowUseCase implements UseCase<
         entityId: workflow.id,
         metadata: {
           name: workflow.name,
+          publicId: workflow.publicId,
           version: workflow.version,
           triggerType: workflow.triggerType,
           publishedAt: workflow.publishedAt ? workflow.publishedAt.toISOString() : null,

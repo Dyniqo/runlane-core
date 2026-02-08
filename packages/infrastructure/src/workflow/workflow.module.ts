@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import {
   AUDIT_LOG_REPOSITORY,
   CreateWorkflowUseCase,
+  CreateWorkflowTestContractUseCase,
   GetWorkflowUseCase,
   ListWorkflowsUseCase,
   PublishWorkflowUseCase,
@@ -46,6 +47,15 @@ import { PrismaWorkflowRepository } from './repositories';
       useFactory: (workflows: WorkflowRepositoryPort) => new GetWorkflowUseCase(workflows),
     },
     {
+      provide: CreateWorkflowTestContractUseCase,
+      inject: [WORKFLOW_REPOSITORY, AUDIT_LOG_REPOSITORY, TRANSACTION_BOUNDARY],
+      useFactory: (
+        workflows: WorkflowRepositoryPort,
+        auditLogs: AuditLogRepositoryPort,
+        transactionBoundary: TransactionBoundary,
+      ) => new CreateWorkflowTestContractUseCase(workflows, auditLogs, transactionBoundary),
+    },
+    {
       provide: UpdateWorkflowUseCase,
       inject: [WORKFLOW_REPOSITORY, AUDIT_LOG_REPOSITORY, TRANSACTION_BOUNDARY],
       useFactory: (
@@ -66,6 +76,7 @@ import { PrismaWorkflowRepository } from './repositories';
   ],
   exports: [
     CreateWorkflowUseCase,
+    CreateWorkflowTestContractUseCase,
     GetWorkflowUseCase,
     ListWorkflowsUseCase,
     PublishWorkflowUseCase,

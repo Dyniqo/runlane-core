@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto';
+
 import { DomainError } from '../shared';
 
 export const WORKFLOW_SCHEMA_VERSION = 1 as const;
@@ -5,6 +7,7 @@ export const WORKFLOW_STATUSES = ['draft', 'published', 'archived'] as const;
 export const WORKFLOW_TRIGGER_TYPES = ['webhook', 'automation', 'manual'] as const;
 export const WORKFLOW_STEP_TYPES = ['http', 'ai_decision', 'notification', 'condition'] as const;
 export const DEFAULT_WORKFLOW_TRIGGER_TYPE = 'webhook';
+export const WORKFLOW_PUBLIC_ID_PREFIX = 'wf';
 
 export type WorkflowStatus = (typeof WORKFLOW_STATUSES)[number];
 export type WorkflowTriggerType = (typeof WORKFLOW_TRIGGER_TYPES)[number];
@@ -51,6 +54,8 @@ export interface ReadWorkflowDefinitionOptions {
   readonly triggerType?: string | null;
 }
 
+const WORKFLOW_PUBLIC_ID_RANDOM_BYTES = 16;
+const WORKFLOW_PUBLIC_ID_PATTERN = /^wf_[a-f0-9]{32}$/;
 const WORKFLOW_NAME_MIN_LENGTH = 2;
 const WORKFLOW_NAME_MAX_LENGTH = 140;
 const WORKFLOW_TRIGGER_TYPE_MIN_LENGTH = 2;
@@ -69,6 +74,40 @@ const WORKFLOW_STEP_KEY_PATTERN = /^[a-z][a-z0-9_:-]*$/;
 const WORKFLOW_BRANCH_KEY_PATTERN = /^[a-zA-Z0-9_.:-]{1,80}$/;
 const WORKFLOW_TRIGGER_TYPE_SET = new Set<string>(WORKFLOW_TRIGGER_TYPES);
 const WORKFLOW_STEP_TYPE_SET = new Set<string>(WORKFLOW_STEP_TYPES);
+
+export function createWorkflowPublicId(): string {
+  return `${WORKFLOW_PUBLIC_ID_PREFIX}_${randomBytes(WORKFLOW_PUBLIC_ID_RANDOM_BYTES).toString('hex')}`;
+}
+
+export function normalizeWorkflowPublicId(publicId: string): string {
+  const normalizedPublicId = publicId.trim().toLowerCase();
+
+  if (!WORKFLOW_PUBLIC_ID_PATTERN.test(normalizedPublicId)) {
+    throw new DomainError({
+      code: 'WORKFLOW_PUBLIC_ID_INVALID',
+      category: 'validation',
+      message: 'Workflow public id is invalid',
+    });
+  }
+
+  return normalizedPublicId;
+}
+
+export function readWorkflowTestPayload(payload: unknown): WorkflowDefinitionValue {
+  if (payload === undefined || payload === null) {
+    return {};
+  }
+
+  if (!isWorkflowDefinitionObject(payload)) {
+    throw new DomainError({
+      code: 'WORKFLOW_TEST_PAYLOAD_INVALID',
+      category: 'validation',
+      message: 'Workflow test payload must be a JSON object',
+    });
+  }
+
+  return payload;
+}
 
 export function normalizeWorkflowName(name: string): string {
   const normalizedName = name.trim().replace(/\s+/g, ' ');

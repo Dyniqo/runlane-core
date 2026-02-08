@@ -5,6 +5,7 @@ export const WORKFLOW_REPOSITORY = Symbol('WORKFLOW_REPOSITORY');
 
 export interface StoredWorkflowRecord {
   readonly id: string;
+  readonly publicId: string;
   readonly workspaceId: string;
   readonly name: string;
   readonly status: WorkflowStatus;
@@ -18,6 +19,7 @@ export interface StoredWorkflowRecord {
 
 export interface CreateWorkflowInput {
   readonly workspaceId: string;
+  readonly publicId: string;
   readonly name: string;
   readonly triggerType: string;
   readonly definition: JsonValue;
@@ -43,6 +45,9 @@ export interface WorkflowRepositoryPort {
   listForWorkspace(workspaceId: string): Promise<readonly StoredWorkflowRecord[]>;
   findByWorkspaceId(
     input: Readonly<{ workspaceId: string; id: string }>,
+  ): Promise<StoredWorkflowRecord | null>;
+  findByPublicIdForWorkspace(
+    input: Readonly<{ workspaceId: string; publicId: string }>,
   ): Promise<StoredWorkflowRecord | null>;
   updateForWorkspace(input: UpdateWorkflowInput): Promise<StoredWorkflowRecord | null>;
   publishForWorkspace(input: PublishWorkflowInput): Promise<StoredWorkflowRecord | null>;

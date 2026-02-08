@@ -1,9 +1,11 @@
 import { PrismaClient } from '@prisma/client';
 
-const [email, workflowId] = process.argv.slice(2);
+const [email, workflowId, workflowPublicId] = process.argv.slice(2);
 
-if (!email || !workflowId) {
-  process.stderr.write('Usage: node scripts/validate-workflow-database.mjs <email> <workflowId>\n');
+if (!email || !workflowId || !workflowPublicId) {
+  process.stderr.write(
+    'Usage: node scripts/validate-workflow-database.mjs <email> <workflowId> <workflowPublicId>\n',
+  );
   process.exit(1);
 }
 
@@ -36,10 +38,12 @@ try {
   const workflow = await prisma.workflow.findFirst({
     where: {
       id: workflowId,
+      publicId: workflowPublicId,
       workspaceId: membership.workspaceId,
     },
     select: {
       id: true,
+      publicId: true,
       workspaceId: true,
       name: true,
       status: true,
@@ -52,6 +56,12 @@ try {
 
   if (!workflow) {
     throw new Error(`Workflow ${workflowId} was not stored in the expected workspace.`);
+  }
+
+  if (!/^wf_[a-f0-9]{32}$/.test(workflow.publicId)) {
+    throw new Error(
+      `Expected workflow public id format mismatch but received ${workflow.publicId}.`,
+    );
   }
 
   if (workflow.status !== 'PUBLISHED') {
@@ -104,6 +114,10 @@ try {
 
   if (!actionNames.has('workflow.published')) {
     throw new Error('Workflow publish audit log was not persisted.');
+  }
+
+  if (!actionNames.has('workflow.test_contract.created')) {
+    throw new Error('Workflow test contract audit log was not persisted.');
   }
 } finally {
   await prisma.$disconnect();

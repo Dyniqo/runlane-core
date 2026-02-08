@@ -1,0 +1,296 @@
+{
+  "info": {
+    "name": "Runlane Core",
+    "description": "Base API collection for authentication, API keys and workflow draft, publish and test contract flows.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "apiBaseUrl",
+      "value": "http://localhost:4600"
+    },
+    {
+      "key": "email",
+      "value": "runlane.postman@example.com"
+    },
+    {
+      "key": "password",
+      "value": "RunlanePassword123!"
+    },
+    {
+      "key": "name",
+      "value": "Runlane Postman Operator"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "workflowId",
+      "value": ""
+    },
+    {
+      "key": "workflowPublicId",
+      "value": ""
+    },
+    {
+      "key": "apiKeyToken",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Identity",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"name\": \"{{name}}\"\n}"
+            },
+            "url": {
+              "raw": "{{apiBaseUrl}}/v1/auth/register",
+              "host": ["{{apiBaseUrl}}"],
+              "path": ["v1", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('accessToken', body.tokens.accessToken);",
+                  "pm.collectionVariables.set('refreshToken', body.tokens.refreshToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{apiBaseUrl}}/v1/auth/login",
+              "host": ["{{apiBaseUrl}}"],
+              "path": ["v1", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Current user",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiBaseUrl}}/v1/auth/me",
+              "host": ["{{apiBaseUrl}}"],
+              "path": ["v1", "auth", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Access",
+      "item": [
+        {
+          "name": "Create API key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('apiKeyToken', body.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Primary automation key\"\n}"
+            },
+            "url": {
+              "raw": "{{apiBaseUrl}}/v1/api-keys",
+              "host": ["{{apiBaseUrl}}"],
+              "path": ["v1", "api-keys"]
+            }
+          }
+        },
+        {
+          "name": "Current API key",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Runlane-Api-Key",
+                "value": "{{apiKeyToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{apiBaseUrl}}/v1/api-keys/current",
+              "host": ["{{apiBaseUrl}}"],
+              "path": ["v1", "api-keys", "current"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Workflows",
+      "item": [
+        {
+          "name": "Create workflow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('workflowId', body.workflow.id);",
+                  "pm.collectionVariables.set('workflowPublicId', body.workflow.publicId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"AI lead routing\",\n  \"triggerType\": \"webhook\",\n  \"definition\": {\n    \"schemaVersion\": 1,\n    \"trigger\": {\n      \"type\": \"webhook\",\n      \"config\": {}\n    },\n    \"entryStepKey\": \"qualify_lead\",\n    \"steps\": [\n      {\n        \"key\": \"qualify_lead\",\n        \"name\": \"Qualify lead\",\n        \"type\": \"condition\",\n        \"config\": {\n          \"expression\": \"payload.score >= 80\"\n        },\n        \"transitions\": {\n          \"onSuccess\": \"notify_team\"\n        }\n      },\n      {\n        \"key\": \"notify_team\",\n        \"name\": \"Notify team\",\n        \"type\": \"notification\",\n        \"config\": {\n          \"channel\": \"operations\"\n        }\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{apiBaseUrl}}/v1/workflows",
+              "host": ["{{apiBaseUrl}}"],
+              "path": ["v1", "workflows"]
+            }
+          }
+        },
+        {
+          "name": "Publish workflow",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{apiBaseUrl}}/v1/workflows/{{workflowId}}/publish",
+              "host": ["{{apiBaseUrl}}"],
+              "path": ["v1", "workflows", "{{workflowId}}", "publish"]
+            }
+          }
+        },
+        {
+          "name": "Create workflow test contract",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payload\": {\n    \"email\": \"lead@example.com\",\n    \"score\": 91\n  },\n  \"source\": \"manual_test\",\n  \"idempotencyKey\": \"postman-lead-0001\"\n}"
+            },
+            "url": {
+              "raw": "{{apiBaseUrl}}/v1/workflows/{{workflowId}}/test",
+              "host": ["{{apiBaseUrl}}"],
+              "path": ["v1", "workflows", "{{workflowId}}", "test"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

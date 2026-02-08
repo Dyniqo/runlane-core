@@ -135,6 +135,10 @@ $Created = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/workflows" -Head
 }
 Assert-Equal -Actual $Created.workflow.name -Expected 'AI lead routing' -Message 'Workflow name mismatch.'
 Assert-Equal -Actual $Created.workflow.workspaceId -Expected $Login.workspace.id -Message 'Workflow workspace mismatch.'
+
+if (-not ($Created.workflow.publicId -match '^wf_[a-f0-9]{32}$')) {
+  throw 'Workflow public id format mismatch.'
+}
 Assert-Equal -Actual $Created.workflow.status -Expected 'draft' -Message 'Workflow status mismatch.'
 Assert-Equal -Actual $Created.workflow.version -Expected 1 -Message 'Workflow version mismatch.'
 Assert-Equal -Actual $Created.workflow.triggerType -Expected 'webhook' -Message 'Workflow trigger type mismatch.'
@@ -150,6 +154,7 @@ if ($Listed.Count -ne 1) {
 
 $Read = Invoke-JsonRequest -Method Get -Uri "$ApiBaseUrl/v1/workflows/$($Created.workflow.id)" -Headers $Headers
 Assert-Equal -Actual $Read.workflow.id -Expected $Created.workflow.id -Message 'Workflow read id mismatch.'
+Assert-Equal -Actual $Read.workflow.publicId -Expected $Created.workflow.publicId -Message 'Workflow read public id mismatch.'
 
 $UpdatedDefinition = New-WorkflowDefinition -EntryStepKey 'qualify_lead' -Steps @(
   @{
@@ -215,6 +220,32 @@ if ([string]::IsNullOrWhiteSpace($Published.workflow.publishedAt)) {
   throw 'Published workflow did not include publishedAt.'
 }
 
+
+$TestContract = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/workflows/$($Created.workflow.id)/test" -Headers $Headers -Body @{
+  payload = @{
+    email = 'lead@example.com'
+    score = 91
+  }
+  source = 'manual_test'
+  idempotencyKey = "test-$Timestamp"
+}
+Assert-Equal -Actual $TestContract.contract.mode -Expected 'contract' -Message 'Workflow test contract mode mismatch.'
+Assert-Equal -Actual $TestContract.contract.workflowId -Expected $Created.workflow.id -Message 'Workflow test contract workflow id mismatch.'
+Assert-Equal -Actual $TestContract.contract.workflowPublicId -Expected $Created.workflow.publicId -Message 'Workflow test contract public id mismatch.'
+Assert-Equal -Actual $TestContract.contract.workspaceId -Expected $Login.workspace.id -Message 'Workflow test contract workspace mismatch.'
+Assert-Equal -Actual $TestContract.contract.workflowVersion -Expected 2 -Message 'Workflow test contract version mismatch.'
+Assert-Equal -Actual $TestContract.contract.entryStepKey -Expected 'qualify_lead' -Message 'Workflow test contract entry step mismatch.'
+Assert-Equal -Actual $TestContract.contract.stepCount -Expected 3 -Message 'Workflow test contract step count mismatch.'
+Assert-Equal -Actual $TestContract.contract.source -Expected 'manual_test' -Message 'Workflow test contract source mismatch.'
+Assert-Equal -Actual $TestContract.contract.idempotencyKey -Expected "test-$Timestamp" -Message 'Workflow test contract idempotency key mismatch.'
+Assert-Equal -Actual $TestContract.contract.payload.email -Expected 'lead@example.com' -Message 'Workflow test contract payload mismatch.'
+
+Invoke-ExpectedFailure -StatusCode 400 -Operation {
+  Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/workflows/$($Created.workflow.id)/test" -Headers $Headers -Body @{
+    payload = 'not-an-object'
+  }
+}
+
 Invoke-ExpectedFailure -StatusCode 409 -Operation {
   Invoke-JsonRequest -Method Patch -Uri "$ApiBaseUrl/v1/workflows/$($Created.workflow.id)" -Headers $Headers -Body @{
     name = 'Published workflow update'
@@ -245,6 +276,14 @@ Invoke-ExpectedFailure -StatusCode 403 -Operation {
   Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/workflows/$($Created.workflow.id)/publish" -Headers $OtherHeaders
 }
 
-node scripts/validate-workflow-database.mjs $Email $Created.workflow.id
+Invoke-ExpectedFailure -StatusCode 403 -Operation {
+  Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/workflows/$($Created.workflow.id)/test" -Headers $OtherHeaders -Body @{
+    payload = @{
+      email = 'other@example.com'
+    }
+  }
+}
+
+node scripts/validate-workflow-database.mjs $Email $Created.workflow.id $Created.workflow.publicId
 
 Write-Host "Workflow validation completed for $Email"

@@ -24,6 +24,24 @@ export function configureApiRuntime(
     .setDescription('Workflow orchestration API')
     .setVersion(RUNLANE_API_VERSION)
     .addServer(config.apiUrl)
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'Workspace-scoped access token',
+      },
+      'bearer',
+    )
+    .addApiKey(
+      {
+        type: 'apiKey',
+        in: 'header',
+        name: 'X-Runlane-Api-Key',
+        description: 'Workspace-scoped API key',
+      },
+      'apiKey',
+    )
     .build();
   const document = SwaggerModule.createDocument(application, documentConfig, {
     operationIdFactory: (_controllerKey, methodKey) => methodKey,

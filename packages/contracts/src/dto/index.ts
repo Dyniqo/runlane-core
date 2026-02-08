@@ -33,4 +33,8 @@ export type {
   WorkflowDto,
   WorkflowResponseDto,
   WorkflowStatusDto,
+  WorkflowTestExecutionContractDto,
+  WorkflowTestExecutionModeDto,
+  WorkflowTestRequestDto,
+  WorkflowTestResponseDto,
 } from './workflow.dto';

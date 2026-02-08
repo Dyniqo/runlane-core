@@ -8,7 +8,7 @@ export type PrismaTransactionClient = Omit<
   '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
 >;
 
-export type PrismaPersistenceClient = PrismaService | PrismaTransactionClient;
+export type PrismaPersistenceClient = PrismaTransactionClient;
 
 @Injectable()
 export class PrismaPersistenceContext {
@@ -18,7 +18,7 @@ export class PrismaPersistenceContext {
   ) {}
 
   get client(): PrismaPersistenceClient {
-    return this.transactionContext.current ?? this.prisma;
+    return (this.transactionContext.current ?? this.prisma) as PrismaPersistenceClient;
   }
 
   get isTransactionActive(): boolean {

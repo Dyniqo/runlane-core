@@ -1,6 +1,7 @@
 import type { WorkflowResponseDto } from '@runlane/contracts';
 import {
   assertWorkspaceRole,
+  createWorkflowPublicId,
   getWorkflowDefinitionTriggerType,
   normalizeWorkflowName,
   readWorkflowDefinition,
@@ -45,6 +46,7 @@ export class CreateWorkflowUseCase implements UseCase<
     return this.transactionBoundary.execute(async () => {
       const workflow = await this.workflows.createForWorkspace({
         workspaceId: input.scope.workspaceId,
+        publicId: createWorkflowPublicId(),
         name,
         triggerType,
         definition,
@@ -58,6 +60,7 @@ export class CreateWorkflowUseCase implements UseCase<
         entityId: workflow.id,
         metadata: {
           name: workflow.name,
+          publicId: workflow.publicId,
           status: workflow.status,
           version: workflow.version,
           triggerType: workflow.triggerType,
