@@ -58,3 +58,5 @@ export type {
   PublishWorkflowUseCaseInput,
   UpdateWorkflowUseCaseInput,
 } from './workflow';
+export { ReceivePublicWebhookUseCase } from './ingestion';
+export type { ReceivePublicWebhookUseCaseInput } from './ingestion';

@@ -38,3 +38,8 @@ export type {
   WorkflowTestRequestDto,
   WorkflowTestResponseDto,
 } from './workflow.dto';
+export type {
+  PublicWebhookResponseDto,
+  WebhookRequestDto,
+  WebhookRequestStatusDto,
+} from './webhook.dto';

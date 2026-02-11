@@ -16,6 +16,12 @@ export type {
   StoredApiKeyCredentialsRecord,
   StoredApiKeyRecord,
 } from './access';
+export { WEBHOOK_REQUEST_REPOSITORY } from './ingestion';
+export type {
+  CreateWebhookRequestInput,
+  StoredWebhookRequestRecord,
+  WebhookRequestRepositoryPort,
+} from './ingestion';
 export type {
   AccessTokenPrincipal,
   AccessTokenSubject,

@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Runlane Core",
-    "description": "Base API collection for authentication, API keys and workflow draft, publish and test contract flows.",
+    "description": "Base API collection for authentication, API keys, workflows and public webhook ingestion flows.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -40,6 +40,14 @@
     {
       "key": "apiKeyToken",
       "value": ""
+    },
+    {
+      "key": "webhookRequestId",
+      "value": ""
+    },
+    {
+      "key": "webhookIdempotencyKey",
+      "value": "lead-postman-0001"
     }
   ],
   "item": [
@@ -287,6 +295,56 @@
               "raw": "{{apiBaseUrl}}/v1/workflows/{{workflowId}}/test",
               "host": ["{{apiBaseUrl}}"],
               "path": ["v1", "workflows", "{{workflowId}}", "test"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public Webhooks",
+      "item": [
+        {
+          "name": "Receive webhook",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('webhookRequestId', body.webhookRequest.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Runlane-Source",
+                "value": "website_form"
+              },
+              {
+                "key": "X-Runlane-Idempotency-Key",
+                "value": "{{webhookIdempotencyKey}}"
+              },
+              {
+                "key": "X-Runlane-Signature",
+                "value": "t=1760000000,v1=postman"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"leadId\": \"lead-postman-0001\",\n  \"email\": \"ada@example.com\",\n  \"company\": \"Analytical Engines\",\n  \"score\": 82\n}"
+            },
+            "url": {
+              "raw": "{{apiBaseUrl}}/v1/hooks/{{workflowPublicId}}",
+              "host": ["{{apiBaseUrl}}"],
+              "path": ["v1", "hooks", "{{workflowPublicId}}"]
             }
           }
         }

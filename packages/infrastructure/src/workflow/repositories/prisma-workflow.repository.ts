@@ -72,6 +72,18 @@ export class PrismaWorkflowRepository implements WorkflowRepositoryPort {
     return workflow ? mapWorkflowRecord(workflow) : null;
   }
 
+  async findPublishedByPublicId(publicId: string): Promise<StoredWorkflowRecord | null> {
+    const workflow = await this.persistence.client.workflow.findFirst({
+      where: {
+        publicId,
+        status: 'PUBLISHED',
+      },
+      select: workflowSelect,
+    });
+
+    return workflow ? mapWorkflowRecord(workflow) : null;
+  }
+
   async updateForWorkspace(input: UpdateWorkflowInput): Promise<StoredWorkflowRecord | null> {
     const updated = await this.persistence.client.workflow.updateMany({
       where: {

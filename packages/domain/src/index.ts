@@ -18,6 +18,18 @@ export {
   validateRegistrationPassword,
 } from './identity';
 export {
+  DEFAULT_WEBHOOK_SOURCE,
+  hashWebhookPayload,
+  normalizeWebhookIdempotencyKey,
+  normalizeWebhookSignature,
+  normalizeWebhookSource,
+  readWebhookPayload,
+  webhookWorkflowNotAcceptingRequests,
+  webhookWorkflowNotFound,
+  WEBHOOK_REQUEST_STATUSES,
+} from './ingestion';
+export type { WebhookPayloadObject, WebhookPayloadValue, WebhookRequestStatus } from './ingestion';
+export {
   assertWorkspaceRole,
   assertWorkspaceScopeMatches,
   normalizeWorkspaceName,

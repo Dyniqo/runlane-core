@@ -25,6 +25,11 @@ enum WorkflowStatus {
   ARCHIVED
 }
 
+enum WebhookRequestStatus {
+  ACCEPTED
+  REJECTED
+}
+
 model User {
   id                   String            @id @default(uuid()) @db.Uuid
   email                String            @unique(map: "users_email_key") @db.VarChar(320)
@@ -69,7 +74,8 @@ model Workspace {
   members   WorkspaceMember[]
   apiKeys   ApiKey[]
   auditLogs AuditLog[]
-  workflows Workflow[]
+  workflows       Workflow[]
+  webhookRequests WebhookRequest[]
 
   @@index([ownerId], map: "workspaces_owner_id_idx")
   @@index([id, ownerId], map: "workspaces_id_owner_id_idx")
@@ -145,11 +151,34 @@ model Workflow {
   publishedAt    DateTime?      @map("published_at") @db.Timestamptz(3)
   createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
-  workspace      Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  webhookRequests WebhookRequest[]
 
   @@index([workspaceId, id], map: "workflows_workspace_id_id_idx")
   @@index([workspaceId, publicId], map: "workflows_workspace_id_public_id_idx")
   @@index([workspaceId, status, updatedAt], map: "workflows_workspace_id_status_updated_at_idx")
   @@index([workspaceId, createdAt, id], map: "workflows_workspace_id_created_at_id_idx")
   @@map("workflows")
+}
+
+model WebhookRequest {
+  id             String               @id @default(uuid()) @db.Uuid
+  workspaceId    String               @map("workspace_id") @db.Uuid
+  workflowId     String               @map("workflow_id") @db.Uuid
+  signature      String?              @db.VarChar(512)
+  idempotencyKey String?              @map("idempotency_key") @db.VarChar(160)
+  payloadHash    String               @map("payload_hash") @db.VarChar(64)
+  source         String               @db.VarChar(80)
+  ip             String?              @db.VarChar(64)
+  userAgent      String?              @map("user_agent") @db.VarChar(512)
+  status         WebhookRequestStatus @default(ACCEPTED)
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  workspace      Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  workflow       Workflow             @relation(fields: [workflowId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([workspaceId, id], map: "webhook_requests_workspace_id_id_idx")
+  @@index([workspaceId, workflowId, createdAt], map: "webhook_requests_workspace_id_workflow_id_created_at_idx")
+  @@index([workspaceId, idempotencyKey], map: "webhook_requests_workspace_id_idempotency_key_idx")
+  @@index([workflowId, createdAt], map: "webhook_requests_workflow_id_created_at_idx")
+  @@map("webhook_requests")
 }

@@ -49,6 +49,7 @@ export interface WorkflowRepositoryPort {
   findByPublicIdForWorkspace(
     input: Readonly<{ workspaceId: string; publicId: string }>,
   ): Promise<StoredWorkflowRecord | null>;
+  findPublishedByPublicId(publicId: string): Promise<StoredWorkflowRecord | null>;
   updateForWorkspace(input: UpdateWorkflowInput): Promise<StoredWorkflowRecord | null>;
   publishForWorkspace(input: PublishWorkflowInput): Promise<StoredWorkflowRecord | null>;
 }

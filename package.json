@@ -63,7 +63,8 @@
     "validate:api-keys": "powershell -ExecutionPolicy Bypass -File scripts/validate-api-keys.ps1",
     "validate:security": "powershell -ExecutionPolicy Bypass -File scripts/validate-security-baseline.ps1",
     "validate:audit": "powershell -ExecutionPolicy Bypass -File scripts/validate-audit-log-flow.ps1",
-    "validate:workflows": "powershell -ExecutionPolicy Bypass -File scripts/validate-workflows.ps1"
+    "validate:workflows": "powershell -ExecutionPolicy Bypass -File scripts/validate-workflows.ps1",
+    "validate:webhooks": "powershell -ExecutionPolicy Bypass -File scripts/validate-webhook-ingestion.ps1"
   },
   "dependencies": {
     "@nestjs/common": "11.1.24",

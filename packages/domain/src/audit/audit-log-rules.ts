@@ -10,9 +10,17 @@ export const AUDIT_ACTIONS = [
   'workflow.updated',
   'workflow.published',
   'workflow.test_contract.created',
+  'ingestion.webhook_received',
 ] as const;
 
-export const AUDIT_ENTITY_TYPES = ['user', 'session', 'workspace', 'api_key', 'workflow'] as const;
+export const AUDIT_ENTITY_TYPES = [
+  'user',
+  'session',
+  'workspace',
+  'api_key',
+  'workflow',
+  'webhook_request',
+] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 export type AuditEntityType = (typeof AUDIT_ENTITY_TYPES)[number];
