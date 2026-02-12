@@ -28,6 +28,15 @@ export interface CreateWebhookRequestInput {
   readonly status: WebhookRequestStatus;
 }
 
+export interface FindWebhookRequestByIdempotencyKeyInput {
+  readonly workspaceId: string;
+  readonly workflowId: string;
+  readonly idempotencyKey: string;
+}
+
 export interface WebhookRequestRepositoryPort {
   create(input: CreateWebhookRequestInput): Promise<StoredWebhookRequestRecord>;
+  findLatestByIdempotencyKey(
+    input: FindWebhookRequestByIdempotencyKeyInput,
+  ): Promise<StoredWebhookRequestRecord | null>;
 }

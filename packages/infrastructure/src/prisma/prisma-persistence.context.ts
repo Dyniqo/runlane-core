@@ -1,11 +1,18 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { PrismaClient } from '@prisma/client';
 import { PrismaService } from './prisma.service';
 import { PrismaTransactionContext } from './transactions/prisma-transaction.context';
 
 export type PrismaTransactionClient = Omit<
-  PrismaClient,
-  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+  PrismaService,
+  | '$connect'
+  | '$disconnect'
+  | '$on'
+  | '$transaction'
+  | '$use'
+  | '$extends'
+  | 'onModuleInit'
+  | 'onModuleDestroy'
+  | 'ping'
 >;
 
 export type PrismaPersistenceClient = PrismaTransactionClient;

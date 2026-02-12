@@ -1,9 +1,10 @@
-import { createHash } from 'node:crypto';
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 
 import { DomainError } from '../shared';
 
 export const WEBHOOK_REQUEST_STATUSES = ['accepted', 'rejected'] as const;
 export const DEFAULT_WEBHOOK_SOURCE = 'public_webhook';
+export const WEBHOOK_SIGNATURE_SCHEME = 'v1';
 
 export type WebhookRequestStatus = (typeof WEBHOOK_REQUEST_STATUSES)[number];
 export type WebhookPayloadValue =
@@ -17,12 +18,28 @@ export interface WebhookPayloadObject {
   readonly [key: string]: WebhookPayloadValue;
 }
 
+export interface VerifiedWebhookSignature {
+  readonly timestampSeconds: number;
+  readonly digest: string;
+  readonly replayKeyHash: string;
+}
+
+export interface VerifyWebhookSignatureInput {
+  readonly signature: string | null;
+  readonly payloadHash: string;
+  readonly signingSecret: string;
+  readonly now: Date;
+  readonly toleranceSeconds: number;
+}
+
 const WEBHOOK_PAYLOAD_MAX_BYTES = 128 * 1024;
 const WEBHOOK_SOURCE_MAX_LENGTH = 80;
 const WEBHOOK_SOURCE_PATTERN = /^[a-z][a-z0-9._:-]*$/;
 const WEBHOOK_SIGNATURE_MAX_LENGTH = 512;
 const WEBHOOK_IDEMPOTENCY_KEY_MAX_LENGTH = 160;
 const WEBHOOK_IDEMPOTENCY_KEY_PATTERN = /^[a-zA-Z0-9_.:-]+$/;
+const WEBHOOK_SIGNATURE_DIGEST_PATTERN = /^[a-f0-9]{64}$/i;
+const WEBHOOK_SIGNATURE_TIMESTAMP_MAX_AGE_SECONDS = 24 * 60 * 60;
 
 export function readWebhookPayload(payload: unknown): WebhookPayloadObject {
   if (!isWebhookPayloadObject(payload)) {
@@ -48,6 +65,10 @@ export function readWebhookPayload(payload: unknown): WebhookPayloadObject {
 
 export function hashWebhookPayload(payload: WebhookPayloadObject): string {
   return createHash('sha256').update(stableStringify(payload), 'utf8').digest('hex');
+}
+
+export function hashWebhookRuntimeKey(value: string): string {
+  return createHash('sha256').update(value, 'utf8').digest('hex');
 }
 
 export function normalizeWebhookSource(source: string | null | undefined): string {
@@ -117,6 +138,63 @@ export function normalizeWebhookIdempotencyKey(
   return normalizedKey;
 }
 
+export function verifyWebhookSignature(
+  input: VerifyWebhookSignatureInput,
+): VerifiedWebhookSignature {
+  if (!input.signature) {
+    throw new DomainError({
+      code: 'WEBHOOK_SIGNATURE_REQUIRED',
+      category: 'authentication',
+      message: 'Webhook signature is required',
+    });
+  }
+
+  const parsedSignature = parseWebhookSignature(input.signature);
+  const nowSeconds = Math.floor(input.now.getTime() / 1000);
+  const absoluteAgeSeconds = Math.abs(nowSeconds - parsedSignature.timestampSeconds);
+
+  if (
+    parsedSignature.timestampSeconds <= 0 ||
+    parsedSignature.timestampSeconds > nowSeconds + input.toleranceSeconds ||
+    absoluteAgeSeconds > input.toleranceSeconds ||
+    absoluteAgeSeconds > WEBHOOK_SIGNATURE_TIMESTAMP_MAX_AGE_SECONDS
+  ) {
+    throw new DomainError({
+      code: 'WEBHOOK_SIGNATURE_TIMESTAMP_INVALID',
+      category: 'authentication',
+      message: 'Webhook signature timestamp is outside the accepted window',
+    });
+  }
+
+  const expectedDigest = createHmac('sha256', input.signingSecret)
+    .update(
+      buildWebhookSignaturePayload(parsedSignature.timestampSeconds, input.payloadHash),
+      'utf8',
+    )
+    .digest('hex');
+
+  if (!timingSafeWebhookDigestEqual(parsedSignature.digest, expectedDigest)) {
+    throw new DomainError({
+      code: 'WEBHOOK_SIGNATURE_MISMATCH',
+      category: 'authentication',
+      message: 'Webhook signature verification failed',
+    });
+  }
+
+  return {
+    timestampSeconds: parsedSignature.timestampSeconds,
+    digest: parsedSignature.digest.toLowerCase(),
+    replayKeyHash: hashWebhookRuntimeKey(input.signature),
+  };
+}
+
+export function buildWebhookSignaturePayload(
+  timestampSeconds: number,
+  payloadHash: string,
+): string {
+  return `${timestampSeconds}.${payloadHash}`;
+}
+
 export function webhookWorkflowNotFound(): DomainError {
   return new DomainError({
     code: 'WEBHOOK_WORKFLOW_NOT_FOUND',
@@ -131,6 +209,87 @@ export function webhookWorkflowNotAcceptingRequests(): DomainError {
     category: 'conflict',
     message: 'Workflow is not configured for webhook ingestion',
   });
+}
+
+export function webhookReplayDetected(): DomainError {
+  return new DomainError({
+    code: 'WEBHOOK_REPLAY_DETECTED',
+    category: 'conflict',
+    message: 'Webhook signature has already been used',
+  });
+}
+
+export function webhookIdempotencyConflict(): DomainError {
+  return new DomainError({
+    code: 'WEBHOOK_IDEMPOTENCY_CONFLICT',
+    category: 'conflict',
+    message: 'Webhook idempotency key was already used with a different payload',
+  });
+}
+
+export function webhookIdempotencyInProgress(): DomainError {
+  return new DomainError({
+    code: 'WEBHOOK_IDEMPOTENCY_IN_PROGRESS',
+    category: 'conflict',
+    message: 'Webhook idempotency key is already being processed',
+  });
+}
+
+function parseWebhookSignature(signature: string): {
+  readonly timestampSeconds: number;
+  readonly digest: string;
+} {
+  const values = new Map<string, string>();
+
+  for (const segment of signature.split(',')) {
+    const separatorIndex = segment.indexOf('=');
+
+    if (separatorIndex <= 0) {
+      throw invalidWebhookSignature();
+    }
+
+    const key = segment.slice(0, separatorIndex).trim();
+    const value = segment.slice(separatorIndex + 1).trim();
+
+    if (!key || !value) {
+      throw invalidWebhookSignature();
+    }
+
+    values.set(key, value);
+  }
+
+  const timestamp = values.get('t');
+  const digest = values.get(WEBHOOK_SIGNATURE_SCHEME);
+
+  if (!timestamp || !digest || !/^\d{10,}$/.test(timestamp)) {
+    throw invalidWebhookSignature();
+  }
+
+  const timestampSeconds = Number(timestamp);
+
+  if (!Number.isSafeInteger(timestampSeconds) || !WEBHOOK_SIGNATURE_DIGEST_PATTERN.test(digest)) {
+    throw invalidWebhookSignature();
+  }
+
+  return {
+    timestampSeconds,
+    digest,
+  };
+}
+
+function invalidWebhookSignature(): DomainError {
+  return new DomainError({
+    code: 'WEBHOOK_SIGNATURE_INVALID',
+    category: 'authentication',
+    message: 'Webhook signature is invalid',
+  });
+}
+
+function timingSafeWebhookDigestEqual(left: string, right: string): boolean {
+  const leftBuffer = Buffer.from(left, 'hex');
+  const rightBuffer = Buffer.from(right, 'hex');
+
+  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
 }
 
 function isWebhookPayloadObject(value: unknown): value is WebhookPayloadObject {

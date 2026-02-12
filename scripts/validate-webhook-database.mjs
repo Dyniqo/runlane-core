@@ -61,8 +61,21 @@ try {
     throw new Error('Webhook source was not normalized and persisted.');
   }
 
-  if (request.signature !== 't=1760000000,v1=validation') {
-    throw new Error('Webhook signature metadata was not persisted.');
+  if (!/^t=\d{10,},v1=[a-f0-9]{64}$/.test(request.signature ?? '')) {
+    throw new Error('Webhook signature metadata was not persisted in the signed format.');
+  }
+
+  const idempotentRequestCount = await prisma.webhookRequest.count({
+    where: {
+      workspaceId,
+      workflowId,
+      idempotencyKey,
+      status: 'ACCEPTED',
+    },
+  });
+
+  if (idempotentRequestCount !== 1) {
+    throw new Error('Webhook idempotency did not preserve a single accepted request.');
   }
 
   const auditLog = await prisma.auditLog.findFirst({
@@ -84,6 +97,10 @@ try {
 
   if (auditLog.metadataJson?.workflowId !== workflowId) {
     throw new Error('Webhook audit metadata did not include the workflow id.');
+  }
+
+  if (typeof auditLog.metadataJson?.signatureTimestampSeconds !== 'number') {
+    throw new Error('Webhook audit metadata did not include the signature timestamp.');
   }
 } finally {
   await prisma.$disconnect();

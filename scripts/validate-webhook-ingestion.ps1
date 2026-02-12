@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $ApiBaseUrl = if ($env:RUNLANE_API_BASE_URL) { $env:RUNLANE_API_BASE_URL } else { 'http://localhost:4600' }
+$WebhookSigningSecret = if ($env:WEBHOOK_SIGNING_SECRET) { $env:WEBHOOK_SIGNING_SECRET } else { 'runlane_local_webhook_signing_secret_change_me_64_bytes_minimum_value' }
 $Timestamp = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
 $Email = "runlane.webhook.$Timestamp@example.com"
 $Password = 'RunlanePassword123!'
@@ -55,6 +56,81 @@ function Invoke-ExpectedFailure {
   throw "Expected request failure with HTTP $StatusCode."
 }
 
+function Convert-ToHex {
+  param([Parameter(Mandatory = $true)] [byte[]] $Bytes)
+
+  ($Bytes | ForEach-Object { $_.ToString('x2') }) -join ''
+}
+
+function ConvertTo-StableJson {
+  param([AllowNull()] [object] $Value)
+
+  if ($null -eq $Value) {
+    return 'null'
+  }
+
+  if ($Value -is [string]) {
+    return ($Value | ConvertTo-Json -Compress)
+  }
+
+  if ($Value -is [bool]) {
+    if ($Value) {
+      return 'true'
+    }
+
+    return 'false'
+  }
+
+  if ($Value -is [byte] -or $Value -is [sbyte] -or $Value -is [int16] -or $Value -is [uint16] -or $Value -is [int] -or $Value -is [uint32] -or $Value -is [long] -or $Value -is [uint64] -or $Value -is [float] -or $Value -is [double] -or $Value -is [decimal]) {
+    return ([System.Convert]::ToString($Value, [System.Globalization.CultureInfo]::InvariantCulture))
+  }
+
+  if ($Value -is [System.Collections.IDictionary]) {
+    $Entries = @()
+
+    foreach ($Key in @($Value.Keys | ForEach-Object { [string] $_ } | Sort-Object)) {
+      $Entries += "$(ConvertTo-StableJson $Key):$(ConvertTo-StableJson $Value[$Key])"
+    }
+
+    return "{$($Entries -join ',')}"
+  }
+
+  if ($Value -is [System.Collections.IEnumerable]) {
+    $Items = @()
+
+    foreach ($Item in $Value) {
+      $Items += ConvertTo-StableJson $Item
+    }
+
+    return "[$($Items -join ',')]"
+  }
+
+  $Properties = @{}
+
+  foreach ($Property in $Value.PSObject.Properties) {
+    $Properties[$Property.Name] = $Property.Value
+  }
+
+  return ConvertTo-StableJson $Properties
+}
+
+function New-RunlaneWebhookSignature {
+  param(
+    [Parameter(Mandatory = $true)] [object] $Payload,
+    [int] $TimestampOffsetSeconds = 0
+  )
+
+  $TimestampSeconds = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() + $TimestampOffsetSeconds
+  $PayloadJson = ConvertTo-StableJson $Payload
+  $Sha256 = [System.Security.Cryptography.SHA256]::Create()
+  $PayloadHash = Convert-ToHex $Sha256.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($PayloadJson))
+  $SignedPayload = "$TimestampSeconds.$PayloadHash"
+  $Hmac = [System.Security.Cryptography.HMACSHA256]::new([System.Text.Encoding]::UTF8.GetBytes($WebhookSigningSecret))
+  $Digest = Convert-ToHex $Hmac.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($SignedPayload))
+
+  "t=$TimestampSeconds,v1=$Digest"
+}
+
 Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/auth/register" -Body @{
   email = $Email
   password = $Password
@@ -98,18 +174,36 @@ Invoke-ExpectedFailure -StatusCode 404 -Operation {
 
 $Published = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/workflows/$($Workflow.workflow.id)/publish" -Headers $AuthHeaders
 
-$WebhookHeaders = @{
-  'X-Runlane-Source' = 'website_form'
-  'X-Runlane-Idempotency-Key' = $IdempotencyKey
-  'X-Runlane-Signature' = 't=1760000000,v1=validation'
-}
-
-$Accepted = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/hooks/$($Published.workflow.publicId)" -Headers $WebhookHeaders -Body @{
+$Payload = @{
   leadId = "lead-$Timestamp"
   email = 'ada@example.com'
   company = 'Analytical Engines'
   score = 82
 }
+
+Invoke-ExpectedFailure -StatusCode 401 -Operation {
+  Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/hooks/$($Published.workflow.publicId)" -Body $Payload
+}
+
+Invoke-ExpectedFailure -StatusCode 401 -Operation {
+  Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/hooks/$($Published.workflow.publicId)" -Headers @{
+    'X-Runlane-Signature' = 't=1760000000,v1=ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+  } -Body $Payload
+}
+
+Invoke-ExpectedFailure -StatusCode 401 -Operation {
+  Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/hooks/$($Published.workflow.publicId)" -Headers @{
+    'X-Runlane-Signature' = 't=1760000000,v1=validation'
+  } -Body $Payload
+}
+
+$WebhookHeaders = @{
+  'X-Runlane-Source' = 'website_form'
+  'X-Runlane-Idempotency-Key' = $IdempotencyKey
+  'X-Runlane-Signature' = (New-RunlaneWebhookSignature -Payload $Payload)
+}
+
+$Accepted = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/hooks/$($Published.workflow.publicId)" -Headers $WebhookHeaders -Body $Payload
 
 if ($Accepted.webhookRequest.workflowId -ne $Published.workflow.id) {
   throw 'Webhook response workflow id mismatch.'
@@ -139,8 +233,51 @@ if ([string]::IsNullOrWhiteSpace($Accepted.webhookRequest.payloadHash)) {
   throw 'Webhook response did not include a payload hash.'
 }
 
+$DuplicateHeaders = @{
+  'X-Runlane-Source' = 'website_form'
+  'X-Runlane-Idempotency-Key' = $IdempotencyKey
+  'X-Runlane-Signature' = (New-RunlaneWebhookSignature -Payload $Payload -TimestampOffsetSeconds 1)
+}
+$Duplicate = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/hooks/$($Published.workflow.publicId)" -Headers $DuplicateHeaders -Body $Payload
+
+if ($Duplicate.webhookRequest.id -ne $Accepted.webhookRequest.id) {
+  throw 'Idempotent webhook replay did not return the original request.'
+}
+
+$ConflictingPayload = @{
+  leadId = "lead-$Timestamp"
+  email = 'ada@example.com'
+  company = 'Analytical Engines'
+  score = 12
+}
+
+Invoke-ExpectedFailure -StatusCode 409 -Operation {
+  Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/hooks/$($Published.workflow.publicId)" -Headers @{
+    'X-Runlane-Source' = 'website_form'
+    'X-Runlane-Idempotency-Key' = $IdempotencyKey
+    'X-Runlane-Signature' = (New-RunlaneWebhookSignature -Payload $ConflictingPayload -TimestampOffsetSeconds 2)
+  } -Body $ConflictingPayload
+}
+
+$ReplayPayload = @{
+  leadId = "replay-$Timestamp"
+  email = 'grace@example.com'
+}
+$ReplaySignature = New-RunlaneWebhookSignature -Payload $ReplayPayload -TimestampOffsetSeconds 3
+$ReplayHeaders = @{
+  'X-Runlane-Source' = 'website_form'
+  'X-Runlane-Signature' = $ReplaySignature
+}
+Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/hooks/$($Published.workflow.publicId)" -Headers $ReplayHeaders -Body $ReplayPayload | Out-Null
+
+Invoke-ExpectedFailure -StatusCode 409 -Operation {
+  Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/hooks/$($Published.workflow.publicId)" -Headers $ReplayHeaders -Body $ReplayPayload
+}
+
 Invoke-ExpectedFailure -StatusCode 400 -Operation {
-  Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/hooks/$($Published.workflow.publicId)" -Body @('not', 'an', 'object')
+  Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/hooks/$($Published.workflow.publicId)" -Headers @{
+    'X-Runlane-Signature' = (New-RunlaneWebhookSignature -Payload @('not', 'an', 'object') -TimestampOffsetSeconds 4)
+  } -Body @('not', 'an', 'object')
 }
 
 Invoke-ExpectedFailure -StatusCode 404 -Operation {

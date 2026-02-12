@@ -24,6 +24,10 @@ export interface RuntimeEnvironment {
   readonly RATE_LIMIT_TTL: number;
   readonly RATE_LIMIT_MAX: number;
   readonly MAX_PAYLOAD_SIZE: number;
+  readonly WEBHOOK_SIGNING_SECRET: string;
+  readonly WEBHOOK_SIGNATURE_TOLERANCE_SECONDS: number;
+  readonly WEBHOOK_REPLAY_TTL_SECONDS: number;
+  readonly WEBHOOK_IDEMPOTENCY_TTL_SECONDS: number;
   readonly API_DOCS_ENABLED: boolean;
   readonly API_DOCS_PATH: string;
   readonly HEALTH_CHECK_TIMEOUT_MS: number;
@@ -49,6 +53,10 @@ const LOCAL_DEFAULTS = {
   RATE_LIMIT_TTL: 60,
   RATE_LIMIT_MAX: 25,
   MAX_PAYLOAD_SIZE: 1048576,
+  WEBHOOK_SIGNING_SECRET: 'runlane_local_webhook_signing_secret_change_me_64_bytes_minimum_value',
+  WEBHOOK_SIGNATURE_TOLERANCE_SECONDS: 300,
+  WEBHOOK_REPLAY_TTL_SECONDS: 600,
+  WEBHOOK_IDEMPOTENCY_TTL_SECONDS: 86400,
   API_DOCS_PATH: 'docs',
   HEALTH_CHECK_TIMEOUT_MS: 3000,
   REDIS_CONNECT_TIMEOUT_MS: 5000,
@@ -159,6 +167,36 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
       10485760,
       errors,
     ),
+    WEBHOOK_SIGNING_SECRET: readSecret(
+      source.WEBHOOK_SIGNING_SECRET,
+      'WEBHOOK_SIGNING_SECRET',
+      deployRequired ? undefined : LOCAL_DEFAULTS.WEBHOOK_SIGNING_SECRET,
+      errors,
+    ),
+    WEBHOOK_SIGNATURE_TOLERANCE_SECONDS: readInteger(
+      source.WEBHOOK_SIGNATURE_TOLERANCE_SECONDS,
+      'WEBHOOK_SIGNATURE_TOLERANCE_SECONDS',
+      LOCAL_DEFAULTS.WEBHOOK_SIGNATURE_TOLERANCE_SECONDS,
+      30,
+      3600,
+      errors,
+    ),
+    WEBHOOK_REPLAY_TTL_SECONDS: readInteger(
+      source.WEBHOOK_REPLAY_TTL_SECONDS,
+      'WEBHOOK_REPLAY_TTL_SECONDS',
+      LOCAL_DEFAULTS.WEBHOOK_REPLAY_TTL_SECONDS,
+      60,
+      86400,
+      errors,
+    ),
+    WEBHOOK_IDEMPOTENCY_TTL_SECONDS: readInteger(
+      source.WEBHOOK_IDEMPOTENCY_TTL_SECONDS,
+      'WEBHOOK_IDEMPOTENCY_TTL_SECONDS',
+      LOCAL_DEFAULTS.WEBHOOK_IDEMPOTENCY_TTL_SECONDS,
+      300,
+      604800,
+      errors,
+    ),
     API_DOCS_ENABLED: readBoolean(
       source.API_DOCS_ENABLED,
       'API_DOCS_ENABLED',
@@ -206,6 +244,12 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
 
   if (environment.JWT_ACCESS_SECRET === environment.JWT_REFRESH_SECRET) {
     errors.push('JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must be different values');
+  }
+
+  if (environment.WEBHOOK_REPLAY_TTL_SECONDS < environment.WEBHOOK_SIGNATURE_TOLERANCE_SECONDS) {
+    errors.push(
+      'WEBHOOK_REPLAY_TTL_SECONDS must be greater than or equal to WEBHOOK_SIGNATURE_TOLERANCE_SECONDS',
+    );
   }
 
   if (errors.length > 0) {

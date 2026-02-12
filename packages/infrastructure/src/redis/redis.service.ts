@@ -45,6 +45,15 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  async setIfAbsent(key: string, value: string, ttlSeconds: number): Promise<boolean> {
+    const result = await this.client.set(key, value, {
+      EX: ttlSeconds,
+      NX: true,
+    });
+
+    return result === 'OK';
+  }
+
   async consumeRateLimitWindow(
     key: string,
     ttlSeconds: number,

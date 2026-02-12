@@ -8,11 +8,16 @@ import {
   ApiOperation,
   ApiParam,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ReceivePublicWebhookUseCase } from '@runlane/application';
 import type { PublicWebhookResponseDto } from '@runlane/contracts';
 
-const webhookPayloadSchema = {
+type OpenApiSchema<T = Parameters<typeof ApiBody>[0]> = T extends { schema: infer Schema }
+  ? Schema
+  : never;
+
+const webhookPayloadSchema: OpenApiSchema = {
   type: 'object',
   additionalProperties: true,
   example: {
@@ -23,7 +28,7 @@ const webhookPayloadSchema = {
   },
 };
 
-const publicWebhookResponseSchema = {
+const publicWebhookResponseSchema: OpenApiSchema = {
   type: 'object',
   required: ['webhookRequest'],
   properties: {
@@ -69,7 +74,7 @@ export class HooksController {
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({
     operationId: 'receivePublicWebhook',
-    summary: 'Receive a public webhook payload for a published workflow',
+    summary: 'Receive a signed public webhook payload for a published workflow',
   })
   @ApiParam({
     name: 'workflowPublicId',
@@ -87,15 +92,22 @@ export class HooksController {
   })
   @ApiHeader({
     name: 'X-Runlane-Signature',
-    required: false,
-    schema: { type: 'string', example: 't=1760000000,v1=signature' },
+    required: true,
+    schema: {
+      type: 'string',
+      example: 't=1760000000,v1=2d7b5fb7f3d5e8d5dd276f4d5ef4c04c7d8dbfc225d0b7ec30ff4c95d6c19d9d',
+    },
   })
   @ApiBody({ schema: webhookPayloadSchema })
   @ApiAcceptedResponse({ schema: publicWebhookResponseSchema })
+  @ApiUnauthorizedResponse({ description: 'Webhook signature is missing, expired or invalid' })
   @ApiNotFoundResponse({
     description: 'Workflow public id does not resolve to a published workflow',
   })
-  @ApiConflictResponse({ description: 'Workflow is not configured for webhook ingestion' })
+  @ApiConflictResponse({
+    description:
+      'Workflow trigger, replay protection or idempotency validation rejected the request',
+  })
   receive(
     @Req() request: PublicWebhookHttpRequest,
     @Param('workflowPublicId') workflowPublicId: string,

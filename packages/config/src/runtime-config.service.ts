@@ -74,6 +74,22 @@ export class RuntimeConfigService {
     return this.environment.MAX_PAYLOAD_SIZE;
   }
 
+  get webhookSigningSecret(): string {
+    return this.environment.WEBHOOK_SIGNING_SECRET;
+  }
+
+  get webhookSignatureToleranceSeconds(): number {
+    return this.environment.WEBHOOK_SIGNATURE_TOLERANCE_SECONDS;
+  }
+
+  get webhookReplayTtlSeconds(): number {
+    return this.environment.WEBHOOK_REPLAY_TTL_SECONDS;
+  }
+
+  get webhookIdempotencyTtlSeconds(): number {
+    return this.environment.WEBHOOK_IDEMPOTENCY_TTL_SECONDS;
+  }
+
   get apiDocsEnabled(): boolean {
     return this.environment.API_DOCS_ENABLED;
   }

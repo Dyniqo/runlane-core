@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type {
   CreateWebhookRequestInput,
+  FindWebhookRequestByIdempotencyKeyInput,
   StoredWebhookRequestRecord,
   WebhookRequestRepositoryPort,
 } from '@runlane/application';
@@ -30,6 +31,23 @@ export class PrismaWebhookRequestRepository implements WebhookRequestRepositoryP
     });
 
     return mapWebhookRequestRecord(request);
+  }
+
+  async findLatestByIdempotencyKey(
+    input: FindWebhookRequestByIdempotencyKeyInput,
+  ): Promise<StoredWebhookRequestRecord | null> {
+    const request = await this.persistence.client.webhookRequest.findFirst({
+      where: {
+        workspaceId: input.workspaceId,
+        workflowId: input.workflowId,
+        idempotencyKey: input.idempotencyKey,
+        status: 'ACCEPTED',
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: webhookRequestSelect,
+    });
+
+    return request ? mapWebhookRequestRecord(request) : null;
   }
 }
 
