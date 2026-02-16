@@ -6,6 +6,14 @@ export {
   ResolveApiKeyUseCase,
   RevokeApiKeyUseCase,
 } from './access';
+export {
+  ExecuteAutomationWorkflowUseCase,
+  GetAutomationWorkflowContractUseCase,
+} from './automation';
+export type {
+  ExecuteAutomationWorkflowUseCaseInput,
+  GetAutomationWorkflowContractUseCaseInput,
+} from './automation';
 export type {
   ApiKeyScopeRecord,
   CreateApiKeyUseCaseInput,

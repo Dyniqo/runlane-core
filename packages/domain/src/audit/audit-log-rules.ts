@@ -11,6 +11,7 @@ export const AUDIT_ACTIONS = [
   'workflow.published',
   'workflow.test_contract.created',
   'ingestion.webhook_received',
+  'automation.bridge_request_received',
 ] as const;
 
 export const AUDIT_ENTITY_TYPES = [

@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Runlane Core",
-    "description": "Base API collection for authentication, API keys, workflows and public webhook ingestion flows.",
+    "description": "Base API collection for authentication, API keys, workflows, public webhooks and automation bridge flows.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -48,6 +48,10 @@
     {
       "key": "webhookIdempotencyKey",
       "value": "lead-postman-0001"
+    },
+    {
+      "key": "automationIdempotencyKey",
+      "value": "automation-postman-0001"
     }
   ],
   "item": [
@@ -345,6 +349,127 @@
               "raw": "{{apiBaseUrl}}/v1/hooks/{{workflowPublicId}}",
               "host": ["{{apiBaseUrl}}"],
               "path": ["v1", "hooks", "{{workflowPublicId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Automation Bridge",
+      "item": [
+        {
+          "name": "Create automation workflow",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('workflowId', body.workflow.id);",
+                  "pm.collectionVariables.set('workflowPublicId', body.workflow.publicId);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Automation bridge lead intake\",\n  \"triggerType\": \"automation\",\n  \"definition\": {\n    \"schemaVersion\": 1,\n    \"trigger\": {\n      \"type\": \"automation\",\n      \"config\": {}\n    },\n    \"entryStepKey\": \"normalize_lead\",\n    \"steps\": [\n      {\n        \"key\": \"normalize_lead\",\n        \"name\": \"Normalize lead\",\n        \"type\": \"condition\",\n        \"config\": {\n          \"expression\": \"payload.email != null\"\n        }\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{apiBaseUrl}}/v1/workflows",
+              "host": ["{{apiBaseUrl}}"],
+              "path": ["v1", "workflows"]
+            }
+          }
+        },
+        {
+          "name": "Publish automation workflow",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{apiBaseUrl}}/v1/workflows/{{workflowId}}/publish",
+              "host": ["{{apiBaseUrl}}"],
+              "path": ["v1", "workflows", "{{workflowId}}", "publish"]
+            }
+          }
+        },
+        {
+          "name": "Get automation contract",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Runlane-Api-Key",
+                "value": "{{apiKeyToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{apiBaseUrl}}/v1/automation/contracts/{{workflowPublicId}}",
+              "host": ["{{apiBaseUrl}}"],
+              "path": ["v1", "automation", "contracts", "{{workflowPublicId}}"]
+            }
+          }
+        },
+        {
+          "name": "Execute automation payload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Runlane-Api-Key",
+                "value": "{{apiKeyToken}}"
+              },
+              {
+                "key": "X-Runlane-Source",
+                "value": "n8n"
+              },
+              {
+                "key": "X-Runlane-Idempotency-Key",
+                "value": "{{automationIdempotencyKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payload\": {\n    \"leadId\": \"lead-postman-0001\",\n    \"email\": \"ada@example.com\",\n    \"company\": \"Analytical Engines\",\n    \"score\": 88\n  },\n  \"metadata\": {\n    \"scenarioId\": \"n8n-workflow-18\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{apiBaseUrl}}/v1/automation/execute/{{workflowPublicId}}",
+              "host": ["{{apiBaseUrl}}"],
+              "path": ["v1", "automation", "execute", "{{workflowPublicId}}"]
             }
           }
         }

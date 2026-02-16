@@ -8,6 +8,23 @@ export {
   readApiKeyCredential,
 } from './access';
 export {
+  AUTOMATION_BRIDGE_STATUSES,
+  DEFAULT_AUTOMATION_SOURCE,
+  automationWorkflowNotAcceptingRequests,
+  automationWorkflowNotFound,
+  hashAutomationPayload,
+  normalizeAutomationIdempotencyKey,
+  normalizeAutomationSource,
+  readAutomationBridgeRequest,
+} from './automation';
+export type {
+  AutomationBridgeRequest,
+  AutomationBridgeStatus,
+  AutomationPayloadObject,
+  AutomationPayloadValue,
+  ReadAutomationBridgeRequestInput,
+} from './automation';
+export {
   authenticationRequired,
   createDefaultWorkspaceName,
   invalidCredentials,

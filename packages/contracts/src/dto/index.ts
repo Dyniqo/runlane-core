@@ -1,3 +1,18 @@
+export type {
+  AutomationBridgeBodyContractDto,
+  AutomationBridgeBodyPropertyContractDto,
+  AutomationBridgeContractDto,
+  AutomationBridgeContractModeDto,
+  AutomationBridgeContractResponseDto,
+  AutomationBridgeExecutionAcceptedDto,
+  AutomationBridgeExecutionRequestDto,
+  AutomationBridgeHeaderContractDto,
+  AutomationBridgeRequestContractDto,
+  AutomationBridgeRequestDto,
+  AutomationBridgeRequestStatusDto,
+  AutomationBridgeResponseBodyContractDto,
+  AutomationBridgeResponseContractDto,
+} from './automation.dto';
 export type { AuditLogResponseDto, ListAuditLogsResponseDto } from './audit-log.dto';
 export type {
   ApiKeyResponseDto,
