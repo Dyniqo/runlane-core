@@ -1,12 +1,19 @@
 import type { PublicWebhookResponseDto, WebhookRequestDto } from '@runlane/contracts';
-import type { StoredWebhookRequestRecord, StoredWorkflowRecord } from '../../ports';
+import type {
+  StoredExecutionRecord,
+  StoredWebhookRequestRecord,
+  StoredWorkflowRecord,
+} from '../../ports';
+import { buildExecutionResponse } from '../execution';
 
 export function buildPublicWebhookResponse(
   request: StoredWebhookRequestRecord,
   workflow: StoredWorkflowRecord,
+  execution: StoredExecutionRecord,
 ): PublicWebhookResponseDto {
   return {
     webhookRequest: mapWebhookRequest(request, workflow),
+    execution: buildExecutionResponse(execution, workflow),
   };
 }
 

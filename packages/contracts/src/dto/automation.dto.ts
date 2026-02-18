@@ -1,4 +1,5 @@
 import type { JsonValue } from '../shared';
+import type { ExecutionDto } from './execution.dto';
 import type { WorkflowStatusDto } from './workflow.dto';
 
 export type AutomationBridgeContractModeDto = 'automation_bridge';
@@ -80,4 +81,5 @@ export interface AutomationBridgeRequestDto {
 
 export interface AutomationBridgeExecutionAcceptedDto {
   readonly automationRequest: AutomationBridgeRequestDto;
+  readonly execution: ExecutionDto;
 }

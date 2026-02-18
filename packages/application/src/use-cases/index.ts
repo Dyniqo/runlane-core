@@ -6,6 +6,7 @@ export {
   ResolveApiKeyUseCase,
   RevokeApiKeyUseCase,
 } from './access';
+export { buildExecutionResponse } from './execution';
 export {
   ExecuteAutomationWorkflowUseCase,
   GetAutomationWorkflowContractUseCase,

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import {
   AUDIT_LOG_REPOSITORY,
+  EXECUTION_REPOSITORY,
   ReceivePublicWebhookUseCase,
   TRANSACTION_BOUNDARY,
   WEBHOOK_REQUEST_REPOSITORY,
@@ -9,6 +10,7 @@ import {
 } from '@runlane/application';
 import type {
   AuditLogRepositoryPort,
+  ExecutionRepositoryPort,
   TransactionBoundary,
   WebhookRequestRepositoryPort,
   WebhookRuntimeStatePort,
@@ -16,6 +18,7 @@ import type {
 } from '@runlane/application';
 import { RuntimeConfigService, RunlaneConfigModule } from '@runlane/config';
 import { RunlaneAuditModule } from '../audit';
+import { RunlaneExecutionModule } from '../execution';
 import { RunlaneDatabaseModule } from '../prisma';
 import { RunlaneRedisModule } from '../redis';
 import { RunlaneWorkflowModule } from '../workflow';
@@ -28,6 +31,7 @@ import { RedisWebhookRuntimeState } from './runtime';
     RunlaneDatabaseModule,
     RunlaneRedisModule,
     RunlaneAuditModule,
+    RunlaneExecutionModule,
     RunlaneWorkflowModule,
   ],
   providers: [
@@ -46,6 +50,7 @@ import { RedisWebhookRuntimeState } from './runtime';
       inject: [
         WORKFLOW_REPOSITORY,
         WEBHOOK_REQUEST_REPOSITORY,
+        EXECUTION_REPOSITORY,
         AUDIT_LOG_REPOSITORY,
         WEBHOOK_RUNTIME_STATE,
         TRANSACTION_BOUNDARY,
@@ -54,6 +59,7 @@ import { RedisWebhookRuntimeState } from './runtime';
       useFactory: (
         workflows: WorkflowRepositoryPort,
         webhookRequests: WebhookRequestRepositoryPort,
+        executions: ExecutionRepositoryPort,
         auditLogs: AuditLogRepositoryPort,
         runtimeState: WebhookRuntimeStatePort,
         transactionBoundary: TransactionBoundary,
@@ -62,6 +68,7 @@ import { RedisWebhookRuntimeState } from './runtime';
         new ReceivePublicWebhookUseCase(
           workflows,
           webhookRequests,
+          executions,
           auditLogs,
           runtimeState,
           transactionBoundary,

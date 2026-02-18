@@ -1,10 +1,10 @@
 import { PrismaClient } from '@prisma/client';
 
-const [, , email, workflowId, webhookRequestId, idempotencyKey] = process.argv;
+const [, , email, workflowId, webhookRequestId, executionId, idempotencyKey] = process.argv;
 
-if (!email || !workflowId || !webhookRequestId || !idempotencyKey) {
+if (!email || !workflowId || !webhookRequestId || !executionId || !idempotencyKey) {
   throw new Error(
-    'Usage: node scripts/validate-webhook-database.mjs <email> <workflowId> <webhookRequestId> <idempotencyKey>',
+    'Usage: node scripts/validate-webhook-database.mjs <email> <workflowId> <webhookRequestId> <executionId> <idempotencyKey>',
   );
 }
 
@@ -65,6 +65,43 @@ try {
     throw new Error('Webhook signature metadata was not persisted in the signed format.');
   }
 
+  const execution = await prisma.execution.findFirst({
+    where: {
+      id: executionId,
+      workflowId,
+      workspaceId,
+      status: 'QUEUED',
+    },
+    select: {
+      id: true,
+      inputJson: true,
+      attempts: true,
+      queuedAt: true,
+      startedAt: true,
+      finishedAt: true,
+    },
+  });
+
+  if (!execution) {
+    throw new Error('Webhook execution was not persisted with the expected workspace scope.');
+  }
+
+  if (execution.attempts !== 0 || execution.startedAt !== null || execution.finishedAt !== null) {
+    throw new Error('Webhook execution lifecycle fields were not initialized correctly.');
+  }
+
+  if (execution.inputJson?.trigger?.type !== 'webhook') {
+    throw new Error('Webhook execution trigger type was not persisted.');
+  }
+
+  if (execution.inputJson?.trigger?.sourceId !== webhookRequestId) {
+    throw new Error('Webhook execution trigger source id does not match the webhook request.');
+  }
+
+  if (execution.inputJson?.metadata?.payloadHash !== request.payloadHash) {
+    throw new Error('Webhook execution metadata does not include the payload hash.');
+  }
+
   const idempotentRequestCount = await prisma.webhookRequest.count({
     where: {
       workspaceId,
@@ -76,6 +113,21 @@ try {
 
   if (idempotentRequestCount !== 1) {
     throw new Error('Webhook idempotency did not preserve a single accepted request.');
+  }
+
+  const idempotentExecutionCount = await prisma.execution.count({
+    where: {
+      workspaceId,
+      workflowId,
+      inputJson: {
+        path: ['trigger', 'sourceId'],
+        equals: webhookRequestId,
+      },
+    },
+  });
+
+  if (idempotentExecutionCount !== 1) {
+    throw new Error('Webhook idempotency did not preserve a single queued execution.');
   }
 
   const auditLog = await prisma.auditLog.findFirst({
@@ -97,6 +149,10 @@ try {
 
   if (auditLog.metadataJson?.workflowId !== workflowId) {
     throw new Error('Webhook audit metadata did not include the workflow id.');
+  }
+
+  if (auditLog.metadataJson?.executionId !== executionId) {
+    throw new Error('Webhook audit metadata did not include the execution id.');
   }
 
   if (typeof auditLog.metadataJson?.signatureTimestampSeconds !== 'number') {

@@ -65,7 +65,8 @@
     "validate:audit": "powershell -ExecutionPolicy Bypass -File scripts/validate-audit-log-flow.ps1",
     "validate:workflows": "powershell -ExecutionPolicy Bypass -File scripts/validate-workflows.ps1",
     "validate:webhooks": "powershell -ExecutionPolicy Bypass -File scripts/validate-webhook-ingestion.ps1",
-    "validate:automation": "powershell -ExecutionPolicy Bypass -File scripts/validate-automation-bridge.ps1"
+    "validate:automation": "powershell -ExecutionPolicy Bypass -File scripts/validate-automation-bridge.ps1",
+    "validate:executions": "powershell -ExecutionPolicy Bypass -File scripts/validate-execution-creation.ps1"
   },
   "dependencies": {
     "@nestjs/common": "11.1.24",

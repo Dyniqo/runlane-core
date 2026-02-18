@@ -53,6 +53,7 @@ export type {
   WorkflowTestRequestDto,
   WorkflowTestResponseDto,
 } from './workflow.dto';
+export type { ExecutionDto, ExecutionResponseDto, ExecutionStatusDto } from './execution.dto';
 export type {
   PublicWebhookResponseDto,
   WebhookRequestDto,

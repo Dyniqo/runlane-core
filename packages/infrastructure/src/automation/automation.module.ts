@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import {
   AUDIT_LOG_REPOSITORY,
+  EXECUTION_REPOSITORY,
   ExecuteAutomationWorkflowUseCase,
   GetAutomationWorkflowContractUseCase,
   TRANSACTION_BOUNDARY,
@@ -8,16 +9,24 @@ import {
 } from '@runlane/application';
 import type {
   AuditLogRepositoryPort,
+  ExecutionRepositoryPort,
   TransactionBoundary,
   WorkflowRepositoryPort,
 } from '@runlane/application';
 import { RunlaneAccessModule } from '../access';
 import { RunlaneAuditModule } from '../audit';
+import { RunlaneExecutionModule } from '../execution';
 import { RunlaneDatabaseModule } from '../prisma';
 import { RunlaneWorkflowModule } from '../workflow';
 
 @Module({
-  imports: [RunlaneAccessModule, RunlaneAuditModule, RunlaneDatabaseModule, RunlaneWorkflowModule],
+  imports: [
+    RunlaneAccessModule,
+    RunlaneAuditModule,
+    RunlaneDatabaseModule,
+    RunlaneExecutionModule,
+    RunlaneWorkflowModule,
+  ],
   providers: [
     {
       provide: GetAutomationWorkflowContractUseCase,
@@ -27,12 +36,19 @@ import { RunlaneWorkflowModule } from '../workflow';
     },
     {
       provide: ExecuteAutomationWorkflowUseCase,
-      inject: [WORKFLOW_REPOSITORY, AUDIT_LOG_REPOSITORY, TRANSACTION_BOUNDARY],
+      inject: [
+        WORKFLOW_REPOSITORY,
+        EXECUTION_REPOSITORY,
+        AUDIT_LOG_REPOSITORY,
+        TRANSACTION_BOUNDARY,
+      ],
       useFactory: (
         workflows: WorkflowRepositoryPort,
+        executions: ExecutionRepositoryPort,
         auditLogs: AuditLogRepositoryPort,
         transactionBoundary: TransactionBoundary,
-      ) => new ExecuteAutomationWorkflowUseCase(workflows, auditLogs, transactionBoundary),
+      ) =>
+        new ExecuteAutomationWorkflowUseCase(workflows, executions, auditLogs, transactionBoundary),
     },
   ],
   exports: [ExecuteAutomationWorkflowUseCase, GetAutomationWorkflowContractUseCase],

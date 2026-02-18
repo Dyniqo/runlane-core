@@ -115,9 +115,52 @@ const automationContractSchema = {
   },
 } satisfies OpenApiSchemaObject;
 
+const executionResponseSchema = {
+  type: 'object',
+  required: [
+    'id',
+    'workspaceId',
+    'workflowId',
+    'workflowPublicId',
+    'workflowVersion',
+    'status',
+    'attempts',
+    'input',
+    'output',
+    'errorCode',
+    'errorMessage',
+    'durationMs',
+    'queuedAt',
+    'startedAt',
+    'finishedAt',
+    'createdAt',
+  ],
+  properties: {
+    id: { type: 'string', format: 'uuid' },
+    workspaceId: { type: 'string', format: 'uuid' },
+    workflowId: { type: 'string', format: 'uuid' },
+    workflowPublicId: { type: 'string', example: 'wf_0123456789abcdef0123456789abcdef' },
+    workflowVersion: { type: 'integer' },
+    status: {
+      type: 'string',
+      enum: ['queued', 'running', 'succeeded', 'failed', 'retrying', 'dead_letter', 'cancelled'],
+    },
+    attempts: { type: 'integer' },
+    input: { type: 'object', additionalProperties: true },
+    output: { type: 'object', nullable: true, additionalProperties: true },
+    errorCode: { type: 'string', nullable: true },
+    errorMessage: { type: 'string', nullable: true },
+    durationMs: { type: 'integer', nullable: true },
+    queuedAt: { type: 'string', format: 'date-time' },
+    startedAt: { type: 'string', format: 'date-time', nullable: true },
+    finishedAt: { type: 'string', format: 'date-time', nullable: true },
+    createdAt: { type: 'string', format: 'date-time' },
+  },
+} satisfies OpenApiSchemaObject;
+
 const automationAcceptedSchema = {
   type: 'object',
-  required: ['automationRequest'],
+  required: ['automationRequest', 'execution'],
   properties: {
     automationRequest: {
       type: 'object',
@@ -146,6 +189,7 @@ const automationAcceptedSchema = {
         acceptedAt: { type: 'string', format: 'date-time' },
       },
     },
+    execution: executionResponseSchema,
   },
 } satisfies OpenApiSchemaObject;
 

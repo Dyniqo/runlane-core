@@ -16,6 +16,13 @@ export type {
   StoredApiKeyCredentialsRecord,
   StoredApiKeyRecord,
 } from './access';
+export { EXECUTION_REPOSITORY } from './execution';
+export type {
+  CreateQueuedExecutionInput,
+  ExecutionRepositoryPort,
+  FindExecutionByTriggerSourceInput,
+  StoredExecutionRecord,
+} from './execution';
 export { WEBHOOK_REQUEST_REPOSITORY, WEBHOOK_RUNTIME_STATE } from './ingestion';
 export type {
   CreateWebhookRequestInput,

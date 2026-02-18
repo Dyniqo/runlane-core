@@ -167,6 +167,19 @@ if ([string]::IsNullOrWhiteSpace($Accepted.automationRequest.acceptedAt)) {
   throw 'Automation response did not include acceptedAt.'
 }
 
+if ([string]::IsNullOrWhiteSpace($Accepted.execution.id)) {
+  throw 'Automation response did not include an execution id.'
+}
+
+Assert-Equal -Actual $Accepted.execution.workspaceId -Expected $Login.workspace.id -Message 'Automation execution workspace mismatch.'
+Assert-Equal -Actual $Accepted.execution.workflowId -Expected $Published.workflow.id -Message 'Automation execution workflow id mismatch.'
+Assert-Equal -Actual $Accepted.execution.workflowPublicId -Expected $Published.workflow.publicId -Message 'Automation execution public id mismatch.'
+Assert-Equal -Actual $Accepted.execution.workflowVersion -Expected $Published.workflow.version -Message 'Automation execution version mismatch.'
+Assert-Equal -Actual $Accepted.execution.status -Expected 'queued' -Message 'Automation execution status mismatch.'
+Assert-Equal -Actual $Accepted.execution.input.trigger.type -Expected 'automation_bridge' -Message 'Automation execution trigger type mismatch.'
+Assert-Equal -Actual $Accepted.execution.input.trigger.sourceId -Expected $Accepted.automationRequest.id -Message 'Automation execution trigger source mismatch.'
+Assert-Equal -Actual $Accepted.execution.input.payload.leadId -Expected "lead-$Timestamp" -Message 'Automation execution payload mismatch.'
+
 $BodySource = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/automation/execute/$($Published.workflow.publicId)" -Headers $ApiKeyHeaders -Body @{
   payload = @{
     leadId = "lead-body-$Timestamp"
@@ -177,6 +190,7 @@ $BodySource = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/automation/ex
 }
 Assert-Equal -Actual $BodySource.automationRequest.source -Expected 'n8n' -Message 'Automation body source was not applied.'
 Assert-Equal -Actual $BodySource.automationRequest.idempotencyKey -Expected "body-$IdempotencyKey" -Message 'Automation body idempotency was not applied.'
+Assert-Equal -Actual $BodySource.execution.input.trigger.sourceId -Expected $BodySource.automationRequest.id -Message 'Automation body execution source mismatch.'
 
 Invoke-ExpectedFailure -StatusCode 400 -Operation {
   Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/automation/execute/$($Published.workflow.publicId)" -Headers $ApiKeyHeaders -Body @{
@@ -224,5 +238,7 @@ $AutomationEvents = @($Audit.items | Where-Object { $_.action -eq 'automation.br
 if ($AutomationEvents.Count -lt 2) {
   throw 'Automation bridge audit events were not persisted.'
 }
+
+node scripts/validate-execution-database.mjs $Email $Accepted.execution.id $Accepted.automationRequest.id automation_bridge
 
 Write-Host "Automation bridge validation completed for $Email"

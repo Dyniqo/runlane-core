@@ -233,6 +233,42 @@ if ([string]::IsNullOrWhiteSpace($Accepted.webhookRequest.payloadHash)) {
   throw 'Webhook response did not include a payload hash.'
 }
 
+if ([string]::IsNullOrWhiteSpace($Accepted.execution.id)) {
+  throw 'Webhook response did not include an execution id.'
+}
+
+if ($Accepted.execution.workspaceId -ne $Login.workspace.id) {
+  throw 'Webhook execution workspace mismatch.'
+}
+
+if ($Accepted.execution.workflowId -ne $Published.workflow.id) {
+  throw 'Webhook execution workflow mismatch.'
+}
+
+if ($Accepted.execution.workflowPublicId -ne $Published.workflow.publicId) {
+  throw 'Webhook execution public id mismatch.'
+}
+
+if ($Accepted.execution.workflowVersion -ne $Published.workflow.version) {
+  throw 'Webhook execution workflow version mismatch.'
+}
+
+if ($Accepted.execution.status -ne 'queued') {
+  throw 'Webhook execution was not queued.'
+}
+
+if ($Accepted.execution.input.trigger.type -ne 'webhook') {
+  throw 'Webhook execution trigger type mismatch.'
+}
+
+if ($Accepted.execution.input.trigger.sourceId -ne $Accepted.webhookRequest.id) {
+  throw 'Webhook execution trigger source id mismatch.'
+}
+
+if ($Accepted.execution.input.payload.leadId -ne $Payload.leadId) {
+  throw 'Webhook execution payload was not persisted in the response.'
+}
+
 $DuplicateHeaders = @{
   'X-Runlane-Source' = 'website_form'
   'X-Runlane-Idempotency-Key' = $IdempotencyKey
@@ -242,6 +278,10 @@ $Duplicate = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/hooks/$($Publi
 
 if ($Duplicate.webhookRequest.id -ne $Accepted.webhookRequest.id) {
   throw 'Idempotent webhook replay did not return the original request.'
+}
+
+if ($Duplicate.execution.id -ne $Accepted.execution.id) {
+  throw 'Idempotent webhook replay did not return the original execution.'
 }
 
 $ConflictingPayload = @{
@@ -286,6 +326,6 @@ Invoke-ExpectedFailure -StatusCode 404 -Operation {
   }
 }
 
-node scripts/validate-webhook-database.mjs $Email $Published.workflow.id $Accepted.webhookRequest.id $IdempotencyKey
+node scripts/validate-webhook-database.mjs $Email $Published.workflow.id $Accepted.webhookRequest.id $Accepted.execution.id $IdempotencyKey
 
 Write-Host "Webhook ingestion validation completed for $Email"

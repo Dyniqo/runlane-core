@@ -1,3 +1,5 @@
+import type { ExecutionDto } from './execution.dto';
+
 export type WebhookRequestStatusDto = 'accepted' | 'rejected';
 
 export interface WebhookRequestDto {
@@ -15,4 +17,5 @@ export interface WebhookRequestDto {
 
 export interface PublicWebhookResponseDto {
   readonly webhookRequest: WebhookRequestDto;
+  readonly execution: ExecutionDto;
 }

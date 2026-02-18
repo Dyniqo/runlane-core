@@ -4,7 +4,12 @@ import type {
   JsonValue,
 } from '@runlane/contracts';
 import { readWorkflowDefinition } from '@runlane/domain';
-import type { StoredAuditLogRecord, StoredWorkflowRecord } from '../../ports';
+import type {
+  StoredAuditLogRecord,
+  StoredExecutionRecord,
+  StoredWorkflowRecord,
+} from '../../ports';
+import { buildExecutionResponse } from '../execution';
 
 export function buildAutomationBridgeContract(
   workflow: StoredWorkflowRecord,
@@ -75,7 +80,7 @@ export function buildAutomationBridgeContract(
       statusCode: 202,
       body: {
         type: 'object',
-        required: ['automationRequest'],
+        required: ['automationRequest', 'execution'],
       },
     },
   };
@@ -84,6 +89,7 @@ export function buildAutomationBridgeContract(
 export function buildAutomationBridgeAcceptedResponse(input: {
   readonly workflow: StoredWorkflowRecord;
   readonly auditLog: StoredAuditLogRecord;
+  readonly execution: StoredExecutionRecord;
   readonly source: string;
   readonly idempotencyKey: string | null;
   readonly payloadHash: string;
@@ -101,6 +107,7 @@ export function buildAutomationBridgeAcceptedResponse(input: {
       payloadHash: input.payloadHash,
       acceptedAt: input.auditLog.createdAt.toISOString(),
     },
+    execution: buildExecutionResponse(input.execution, input.workflow),
   };
 }
 

@@ -1,5 +1,6 @@
 import type { PublicWebhookResponseDto } from '@runlane/contracts';
 import {
+  buildExecutionInputEnvelope,
   hashWebhookPayload,
   hashWebhookRuntimeKey,
   normalizeWebhookIdempotencyKey,
@@ -16,6 +17,10 @@ import {
 } from '@runlane/domain';
 import type {
   AuditLogRepositoryPort,
+  ExecutionRepositoryPort,
+  StoredExecutionRecord,
+  StoredWebhookRequestRecord,
+  StoredWorkflowRecord,
   TransactionBoundary,
   WebhookRequestRepositoryPort,
   WebhookRuntimeStatePort,
@@ -48,6 +53,7 @@ export class ReceivePublicWebhookUseCase implements UseCase<
   constructor(
     private readonly workflows: WorkflowRepositoryPort,
     private readonly webhookRequests: WebhookRequestRepositoryPort,
+    private readonly executions: ExecutionRepositoryPort,
     private readonly auditLogs: AuditLogRepositoryPort,
     private readonly runtimeState: WebhookRuntimeStatePort,
     private readonly transactionBoundary: TransactionBoundary,
@@ -103,7 +109,13 @@ export class ReceivePublicWebhookUseCase implements UseCase<
             throw webhookIdempotencyConflict();
           }
 
-          return buildPublicWebhookResponse(existingWebhookRequest, workflow);
+          const existingExecution = await this.resolveOrCreateWebhookExecution({
+            webhookRequest: existingWebhookRequest,
+            workflow,
+            payload,
+          });
+
+          return buildPublicWebhookResponse(existingWebhookRequest, workflow, existingExecution);
         }
 
         const idempotencyKeyHash = hashWebhookRuntimeKey(idempotencyKey);
@@ -121,7 +133,17 @@ export class ReceivePublicWebhookUseCase implements UseCase<
           });
 
           if (concurrentlyCreatedRequest?.payloadHash === payloadHash) {
-            return buildPublicWebhookResponse(concurrentlyCreatedRequest, workflow);
+            const concurrentlyCreatedExecution = await this.resolveOrCreateWebhookExecution({
+              webhookRequest: concurrentlyCreatedRequest,
+              workflow,
+              payload,
+            });
+
+            return buildPublicWebhookResponse(
+              concurrentlyCreatedRequest,
+              workflow,
+              concurrentlyCreatedExecution,
+            );
           }
 
           throw webhookIdempotencyInProgress();
@@ -140,6 +162,12 @@ export class ReceivePublicWebhookUseCase implements UseCase<
         status: 'accepted',
       });
 
+      const execution = await this.createWebhookExecution({
+        webhookRequest,
+        workflow,
+        payload,
+      });
+
       await this.auditLogs.create({
         workspaceId: workflow.workspaceId,
         actorUserId: null,
@@ -150,6 +178,7 @@ export class ReceivePublicWebhookUseCase implements UseCase<
           workflowId: workflow.id,
           workflowPublicId: workflow.publicId,
           workflowVersion: workflow.version,
+          executionId: execution.id,
           source,
           idempotencyKey,
           payloadHash,
@@ -159,7 +188,66 @@ export class ReceivePublicWebhookUseCase implements UseCase<
         userAgent: input.userAgent,
       });
 
-      return buildPublicWebhookResponse(webhookRequest, workflow);
+      await this.auditLogs.create({
+        workspaceId: workflow.workspaceId,
+        actorUserId: null,
+        action: 'execution.created',
+        entityType: 'execution',
+        entityId: execution.id,
+        metadata: {
+          workflowId: workflow.id,
+          workflowPublicId: workflow.publicId,
+          workflowVersion: workflow.version,
+          triggerType: 'webhook',
+          sourceId: webhookRequest.id,
+          source,
+          idempotencyKey,
+        },
+        ip: input.ip,
+        userAgent: input.userAgent,
+      });
+
+      return buildPublicWebhookResponse(webhookRequest, workflow, execution);
+    });
+  }
+
+  private async resolveOrCreateWebhookExecution(input: {
+    readonly webhookRequest: StoredWebhookRequestRecord;
+    readonly workflow: StoredWorkflowRecord;
+    readonly payload: ReturnType<typeof readWebhookPayload>;
+  }): Promise<StoredExecutionRecord> {
+    const existingExecution = await this.executions.findLatestByTriggerSource({
+      workspaceId: input.workflow.workspaceId,
+      workflowId: input.workflow.id,
+      triggerType: 'webhook',
+      sourceId: input.webhookRequest.id,
+    });
+
+    return existingExecution ?? this.createWebhookExecution(input);
+  }
+
+  private createWebhookExecution(input: {
+    readonly webhookRequest: StoredWebhookRequestRecord;
+    readonly workflow: StoredWorkflowRecord;
+    readonly payload: ReturnType<typeof readWebhookPayload>;
+  }): Promise<StoredExecutionRecord> {
+    return this.executions.createQueued({
+      workspaceId: input.workflow.workspaceId,
+      workflowId: input.workflow.id,
+      input: buildExecutionInputEnvelope({
+        triggerType: 'webhook',
+        sourceId: input.webhookRequest.id,
+        source: input.webhookRequest.source,
+        idempotencyKey: input.webhookRequest.idempotencyKey,
+        workflowPublicId: input.workflow.publicId,
+        workflowVersion: input.workflow.version,
+        acceptedAt: input.webhookRequest.createdAt,
+        payload: input.payload,
+        metadata: {
+          payloadHash: input.webhookRequest.payloadHash,
+        },
+      }),
+      queuedAt: input.webhookRequest.createdAt,
     });
   }
 }
