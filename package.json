@@ -66,7 +66,8 @@
     "validate:workflows": "powershell -ExecutionPolicy Bypass -File scripts/validate-workflows.ps1",
     "validate:webhooks": "powershell -ExecutionPolicy Bypass -File scripts/validate-webhook-ingestion.ps1",
     "validate:automation": "powershell -ExecutionPolicy Bypass -File scripts/validate-automation-bridge.ps1",
-    "validate:executions": "powershell -ExecutionPolicy Bypass -File scripts/validate-execution-creation.ps1"
+    "validate:executions": "powershell -ExecutionPolicy Bypass -File scripts/validate-execution-creation.ps1",
+    "validate:queue": "powershell -ExecutionPolicy Bypass -File scripts/validate-execution-queue.ps1"
   },
   "dependencies": {
     "@nestjs/common": "11.1.24",
@@ -74,6 +75,7 @@
     "@nestjs/platform-express": "11.1.24",
     "@nestjs/swagger": "11.4.4",
     "@prisma/client": "6.19.3",
+    "bullmq": "5.63.0",
     "class-transformer": "0.5.1",
     "class-validator": "0.14.2",
     "helmet": "8.1.0",

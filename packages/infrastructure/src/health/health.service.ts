@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { EXECUTION_QUEUE, type ExecutionQueuePort } from '@runlane/application';
 import { RuntimeConfigService } from '@runlane/config';
 import type { RunlaneServiceName } from '@runlane/contracts';
 import { StructuredLoggerService, RUNLANE_SERVICE_NAME } from '../observability';
@@ -16,6 +17,7 @@ export class HealthService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(RedisService) private readonly redis: RedisService,
+    @Inject(EXECUTION_QUEUE) private readonly executionQueue: ExecutionQueuePort,
     @Inject(RuntimeConfigService) private readonly config: RuntimeConfigService,
     @Inject(StructuredLoggerService) private readonly logger: StructuredLoggerService,
     @Inject(RUNLANE_SERVICE_NAME) private readonly serviceName: RunlaneServiceName,
@@ -49,7 +51,9 @@ export class HealthService {
   }
 
   async getQueueHealth(): Promise<QueueHealthResponseDto> {
-    const queue = await this.checkDependency('queue', () => this.redis.ping());
+    const queue = await this.checkDependency('queue', async () => {
+      await this.executionQueue.getHealth();
+    });
 
     return {
       status: queue.status === 'up' ? 'ready' : 'unavailable',

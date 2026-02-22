@@ -3,6 +3,7 @@ export {
   API_KEY_TOKEN_SERVICE,
   AUDIT_LOG_REPOSITORY,
   AUTH_TOKEN_SERVICE,
+  EXECUTION_QUEUE,
   EXECUTION_REPOSITORY,
   WEBHOOK_REQUEST_REPOSITORY,
   WEBHOOK_RUNTIME_STATE,
@@ -18,6 +19,10 @@ export {
 export type {
   AuditLogRepositoryPort,
   CreateQueuedExecutionInput,
+  EnqueuedExecutionJobRecord,
+  EnqueueExecutionJobInput,
+  ExecutionQueueHealthRecord,
+  ExecutionQueuePort,
   CreateAuditLogInput,
   ListAuditLogsInput,
   StoredAuditLogRecord,

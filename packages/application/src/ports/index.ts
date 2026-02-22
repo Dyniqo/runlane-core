@@ -17,6 +17,7 @@ export type {
   StoredApiKeyRecord,
 } from './access';
 export { EXECUTION_REPOSITORY } from './execution';
+export { EXECUTION_QUEUE } from './queue';
 export type {
   CreateQueuedExecutionInput,
   ExecutionRepositoryPort,
@@ -56,6 +57,12 @@ export {
   SESSION_REPOSITORY,
   USER_REPOSITORY,
 } from './identity';
+export type {
+  EnqueuedExecutionJobRecord,
+  EnqueueExecutionJobInput,
+  ExecutionQueueHealthRecord,
+  ExecutionQueuePort,
+} from './queue';
 export type { ReadRepositoryPort, RepositoryPort, WriteRepositoryPort } from './repositories';
 export { TRANSACTION_BOUNDARY, TRANSACTION_ISOLATION_LEVELS } from './transactions';
 export type {
