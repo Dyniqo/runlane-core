@@ -40,5 +40,5 @@ export function createExecutionJob(input: CreateExecutionJobInput): ExecutionJob
 }
 
 export function executionJobId(workspaceId: string, executionId: string): string {
-  return `execution:${workspaceId}:${executionId}`;
+  return `execution.${workspaceId}.${executionId}`;
 }

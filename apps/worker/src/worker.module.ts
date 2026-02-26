@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 import { RunlaneConfigModule } from '@runlane/config';
-import { RunlaneHealthModule, RunlaneObservabilityModule } from '@runlane/infrastructure';
+import {
+  RunlaneBullMqWorkerModule,
+  RunlaneHealthModule,
+  RunlaneObservabilityModule,
+} from '@runlane/infrastructure';
 import { WorkerController } from './worker.controller';
 
 @Module({
@@ -8,6 +12,7 @@ import { WorkerController } from './worker.controller';
     RunlaneConfigModule,
     RunlaneObservabilityModule.forRoot({ serviceName: 'worker' }),
     RunlaneHealthModule,
+    RunlaneBullMqWorkerModule,
   ],
   controllers: [WorkerController],
 })

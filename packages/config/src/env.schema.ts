@@ -12,6 +12,9 @@ export interface RuntimeEnvironment {
   readonly API_PORT: number;
   readonly WORKER_HOST: string;
   readonly WORKER_PORT: number;
+  readonly WORKER_CONCURRENCY: number;
+  readonly WORKER_HEARTBEAT_INTERVAL_MS: number;
+  readonly WORKER_HEARTBEAT_TTL_SECONDS: number;
   readonly API_URL: string;
   readonly APP_URL: string;
   readonly DATABASE_URL: string;
@@ -41,6 +44,9 @@ const LOCAL_DEFAULTS = {
   API_PORT: 4600,
   WORKER_HOST: '0.0.0.0',
   WORKER_PORT: 4601,
+  WORKER_CONCURRENCY: 4,
+  WORKER_HEARTBEAT_INTERVAL_MS: 10000,
+  WORKER_HEARTBEAT_TTL_SECONDS: 45,
   API_URL: 'http://localhost:4600',
   APP_URL: 'http://localhost:4600',
   DATABASE_URL: 'postgresql://runlane:runlane_local_database@127.0.0.1:15432/runlane?schema=public',
@@ -81,6 +87,30 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
     API_PORT: readPort(source.API_PORT, 'API_PORT', LOCAL_DEFAULTS.API_PORT, errors),
     WORKER_HOST: readHost(source.WORKER_HOST, 'WORKER_HOST', LOCAL_DEFAULTS.WORKER_HOST, errors),
     WORKER_PORT: readPort(source.WORKER_PORT, 'WORKER_PORT', LOCAL_DEFAULTS.WORKER_PORT, errors),
+    WORKER_CONCURRENCY: readInteger(
+      source.WORKER_CONCURRENCY,
+      'WORKER_CONCURRENCY',
+      LOCAL_DEFAULTS.WORKER_CONCURRENCY,
+      1,
+      100,
+      errors,
+    ),
+    WORKER_HEARTBEAT_INTERVAL_MS: readInteger(
+      source.WORKER_HEARTBEAT_INTERVAL_MS,
+      'WORKER_HEARTBEAT_INTERVAL_MS',
+      LOCAL_DEFAULTS.WORKER_HEARTBEAT_INTERVAL_MS,
+      1000,
+      60000,
+      errors,
+    ),
+    WORKER_HEARTBEAT_TTL_SECONDS: readInteger(
+      source.WORKER_HEARTBEAT_TTL_SECONDS,
+      'WORKER_HEARTBEAT_TTL_SECONDS',
+      LOCAL_DEFAULTS.WORKER_HEARTBEAT_TTL_SECONDS,
+      5,
+      300,
+      errors,
+    ),
     API_URL: readUrl(
       source.API_URL,
       'API_URL',
@@ -244,6 +274,15 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
 
   if (environment.JWT_ACCESS_SECRET === environment.JWT_REFRESH_SECRET) {
     errors.push('JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must be different values');
+  }
+
+  if (
+    environment.WORKER_HEARTBEAT_TTL_SECONDS * 1000 <
+    environment.WORKER_HEARTBEAT_INTERVAL_MS * 2
+  ) {
+    errors.push(
+      'WORKER_HEARTBEAT_TTL_SECONDS converted to milliseconds must be at least twice WORKER_HEARTBEAT_INTERVAL_MS',
+    );
   }
 
   if (environment.WEBHOOK_REPLAY_TTL_SECONDS < environment.WEBHOOK_SIGNATURE_TOLERANCE_SECONDS) {

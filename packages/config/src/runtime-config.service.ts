@@ -26,6 +26,18 @@ export class RuntimeConfigService {
     return this.environment.WORKER_PORT;
   }
 
+  get workerConcurrency(): number {
+    return this.environment.WORKER_CONCURRENCY;
+  }
+
+  get workerHeartbeatIntervalMs(): number {
+    return this.environment.WORKER_HEARTBEAT_INTERVAL_MS;
+  }
+
+  get workerHeartbeatTtlSeconds(): number {
+    return this.environment.WORKER_HEARTBEAT_TTL_SECONDS;
+  }
+
   get apiUrl(): string {
     return this.environment.API_URL;
   }
