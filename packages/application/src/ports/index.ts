@@ -22,6 +22,7 @@ export type {
   CreateQueuedExecutionInput,
   ExecutionRepositoryPort,
   FindExecutionByTriggerSourceInput,
+  FindExecutionByWorkspaceAndIdInput,
   StoredExecutionRecord,
 } from './execution';
 export { WEBHOOK_REQUEST_REPOSITORY, WEBHOOK_RUNTIME_STATE } from './ingestion';

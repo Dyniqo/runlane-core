@@ -269,6 +269,8 @@ if ($Accepted.execution.input.payload.leadId -ne $Payload.leadId) {
   throw 'Webhook execution payload was not persisted in the response.'
 }
 
+node scripts/wait-for-execution-job.mjs $Accepted.execution.workspaceId $Accepted.execution.id $Accepted.execution.workflowId
+
 $DuplicateHeaders = @{
   'X-Runlane-Source' = 'website_form'
   'X-Runlane-Idempotency-Key' = $IdempotencyKey
@@ -308,7 +310,8 @@ $ReplayHeaders = @{
   'X-Runlane-Source' = 'website_form'
   'X-Runlane-Signature' = $ReplaySignature
 }
-Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/hooks/$($Published.workflow.publicId)" -Headers $ReplayHeaders -Body $ReplayPayload | Out-Null
+$ReplayAccepted = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/hooks/$($Published.workflow.publicId)" -Headers $ReplayHeaders -Body $ReplayPayload
+node scripts/wait-for-execution-job.mjs $ReplayAccepted.execution.workspaceId $ReplayAccepted.execution.id $ReplayAccepted.execution.workflowId
 
 Invoke-ExpectedFailure -StatusCode 409 -Operation {
   Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/hooks/$($Published.workflow.publicId)" -Headers $ReplayHeaders -Body $ReplayPayload

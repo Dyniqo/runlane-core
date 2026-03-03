@@ -180,6 +180,8 @@ Assert-Equal -Actual $Accepted.execution.input.trigger.type -Expected 'automatio
 Assert-Equal -Actual $Accepted.execution.input.trigger.sourceId -Expected $Accepted.automationRequest.id -Message 'Automation execution trigger source mismatch.'
 Assert-Equal -Actual $Accepted.execution.input.payload.leadId -Expected "lead-$Timestamp" -Message 'Automation execution payload mismatch.'
 
+node scripts/wait-for-execution-job.mjs $Accepted.execution.workspaceId $Accepted.execution.id $Accepted.execution.workflowId
+
 $BodySource = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/automation/execute/$($Published.workflow.publicId)" -Headers $ApiKeyHeaders -Body @{
   payload = @{
     leadId = "lead-body-$Timestamp"
@@ -191,6 +193,8 @@ $BodySource = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/automation/ex
 Assert-Equal -Actual $BodySource.automationRequest.source -Expected 'n8n' -Message 'Automation body source was not applied.'
 Assert-Equal -Actual $BodySource.automationRequest.idempotencyKey -Expected "body-$IdempotencyKey" -Message 'Automation body idempotency was not applied.'
 Assert-Equal -Actual $BodySource.execution.input.trigger.sourceId -Expected $BodySource.automationRequest.id -Message 'Automation body execution source mismatch.'
+
+node scripts/wait-for-execution-job.mjs $BodySource.execution.workspaceId $BodySource.execution.id $BodySource.execution.workflowId
 
 Invoke-ExpectedFailure -StatusCode 400 -Operation {
   Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/automation/execute/$($Published.workflow.publicId)" -Headers $ApiKeyHeaders -Body @{

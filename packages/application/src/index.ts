@@ -71,6 +71,7 @@ export type {
   UpdateWorkflowInput,
   CreateWebhookRequestInput,
   FindExecutionByTriggerSourceInput,
+  FindExecutionByWorkspaceAndIdInput,
   FindWebhookRequestByIdempotencyKeyInput,
   ReserveWebhookIdempotencyInput,
   ReserveWebhookReplayInput,
@@ -109,6 +110,7 @@ export {
   RevokeApiKeyUseCase,
   UpdateCurrentWorkspaceUseCase,
   UpdateWorkflowUseCase,
+  ValidateExecutionJobForProcessingUseCase,
 } from './use-cases';
 export type {
   ApiKeyScopeRecord,
@@ -136,4 +138,6 @@ export type {
   UpdateCurrentWorkspaceInput,
   UpdateWorkflowUseCaseInput,
   UseCase,
+  ValidateExecutionJobForProcessingInput,
+  ValidatedExecutionJobForProcessingRecord,
 } from './use-cases';

@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import type {
   CreateQueuedExecutionInput,
   FindExecutionByTriggerSourceInput,
+  FindExecutionByWorkspaceAndIdInput,
   StoredExecutionRecord,
   ExecutionRepositoryPort,
 } from '@runlane/application';
@@ -29,6 +30,20 @@ export class PrismaExecutionRepository implements ExecutionRepositoryPort {
     });
 
     return mapExecutionRecord(execution);
+  }
+
+  async findByWorkspaceAndId(
+    input: FindExecutionByWorkspaceAndIdInput,
+  ): Promise<StoredExecutionRecord | null> {
+    const execution = await this.persistence.client.execution.findFirst({
+      where: {
+        id: input.executionId,
+        workspaceId: input.workspaceId,
+      },
+      select: executionSelect,
+    });
+
+    return execution ? mapExecutionRecord(execution) : null;
   }
 
   async findLatestByTriggerSource(

@@ -164,6 +164,14 @@ export function executionNotFound(): DomainError {
   });
 }
 
+export function executionJobScopeMismatch(): DomainError {
+  return new DomainError({
+    code: 'EXECUTION_JOB_SCOPE_MISMATCH',
+    category: 'conflict',
+    message: 'Execution job scope does not match the persisted execution',
+  });
+}
+
 function readExecutionTriggerReference(value: unknown): ExecutionTriggerReference {
   if (!isExecutionInputJsonObject(value)) {
     throw invalidExecutionInput('Execution trigger must be a JSON object');
@@ -266,25 +274,23 @@ function isJsonValue(value: unknown): value is ExecutionInputJsonValue {
 
   const valueType = typeof value;
 
-  if (valueType === 'string' || valueType === 'boolean') {
-    return true;
-  }
-
-  if (valueType === 'number') {
-    return Number.isFinite(value);
+  if (valueType === 'string' || valueType === 'number' || valueType === 'boolean') {
+    return Number.isFinite(value as number) || valueType !== 'number';
   }
 
   if (Array.isArray(value)) {
     return value.every((item) => isJsonValue(item));
   }
 
-  if (isPlainObject(value)) {
-    return Object.values(value).every((item) => isJsonValue(item));
-  }
-
-  return false;
+  return isPlainObject(value) && Object.values(value).every((item) => isJsonValue(item));
 }
 
-function isPlainObject(value: unknown): value is Readonly<Record<string, unknown>> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return false;
+  }
+
+  const prototype = Object.getPrototypeOf(value);
+
+  return prototype === Object.prototype || prototype === null;
 }

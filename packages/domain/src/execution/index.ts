@@ -1,6 +1,7 @@
 export {
   buildExecutionInputEnvelope,
   ensureExecutionStatusTransition,
+  executionJobScopeMismatch,
   executionNotFound,
   EXECUTION_STATUSES,
   EXECUTION_TRIGGER_TYPES,

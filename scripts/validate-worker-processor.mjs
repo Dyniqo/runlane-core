@@ -1,7 +1,5 @@
-import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { Queue, QueueEvents } from 'bullmq';
 import { createClient } from 'redis';
 
 loadLocalEnvironment();
@@ -12,61 +10,11 @@ if (!redisUrl) {
   throw new Error('REDIS_URL is required');
 }
 
-const queueName = 'execution';
-const jobName = 'execution.process';
-const workspaceId = randomUUID();
-const executionId = randomUUID();
-const workflowId = randomUUID();
-const jobId = `execution.${workspaceId}.${executionId}`;
+const redis = createClient({ url: redisUrl });
 const startedAt = Date.now();
 
-const queue = new Queue(queueName, {
-  connection: createBullMqRedisConnectionOptions(redisUrl),
-  prefix: 'runlane',
-});
-const queueEvents = new QueueEvents(queueName, {
-  connection: createBullMqRedisConnectionOptions(redisUrl),
-  prefix: 'runlane',
-});
-const redis = createClient({ url: redisUrl });
-
 try {
-  await Promise.all([queue.waitUntilReady(), queueEvents.waitUntilReady(), redis.connect()]);
-
-  const job = await queue.add(
-    jobName,
-    {
-      contractVersion: 1,
-      jobId,
-      jobName,
-      correlationId: randomUUID(),
-      enqueuedAt: new Date().toISOString(),
-      payload: {
-        workspaceId,
-        executionId,
-        workflowId,
-        isDemo: false,
-      },
-    },
-    {
-      jobId,
-      attempts: 1,
-      removeOnComplete: false,
-      removeOnFail: false,
-    },
-  );
-
-  await job.waitUntilFinished(queueEvents, 15000);
-
-  const completedJob = await queue.getJob(jobId);
-  const state = await completedJob?.getState();
-
-  if (state !== 'completed') {
-    throw new Error(`Expected worker job to be completed but received '${state ?? 'missing'}'.`);
-  }
-
-  await completedJob?.remove();
-
+  await redis.connect();
   const heartbeatKeys = await redis.keys('worker:*:heartbeat');
 
   if (heartbeatKeys.length === 0) {
@@ -100,33 +48,7 @@ try {
     throw new Error('Worker heartbeat payload was missing or stale.');
   }
 } finally {
-  await Promise.allSettled([queue.close(), queueEvents.close(), redis.quit()]);
-}
-
-function createBullMqRedisConnectionOptions(url) {
-  const parsedUrl = new URL(url);
-  const database = Number.parseInt(parsedUrl.pathname.replace(/^\//, '') || '0', 10);
-  const options = {
-    host: parsedUrl.hostname,
-    port: Number.parseInt(parsedUrl.port || '6379', 10),
-    db: Number.isInteger(database) && database >= 0 ? database : 0,
-    maxRetriesPerRequest: null,
-    enableReadyCheck: true,
-  };
-
-  if (parsedUrl.username) {
-    options.username = decodeURIComponent(parsedUrl.username);
-  }
-
-  if (parsedUrl.password) {
-    options.password = decodeURIComponent(parsedUrl.password);
-  }
-
-  if (parsedUrl.protocol === 'rediss:') {
-    options.tls = {};
-  }
-
-  return options;
+  await redis.quit();
 }
 
 function loadLocalEnvironment() {

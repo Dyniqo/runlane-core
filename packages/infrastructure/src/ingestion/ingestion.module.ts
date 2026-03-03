@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import {
   AUDIT_LOG_REPOSITORY,
+  EXECUTION_QUEUE,
   EXECUTION_REPOSITORY,
   ReceivePublicWebhookUseCase,
   TRANSACTION_BOUNDARY,
@@ -10,6 +11,7 @@ import {
 } from '@runlane/application';
 import type {
   AuditLogRepositoryPort,
+  ExecutionQueuePort,
   ExecutionRepositoryPort,
   TransactionBoundary,
   WebhookRequestRepositoryPort,
@@ -18,6 +20,7 @@ import type {
 } from '@runlane/application';
 import { RuntimeConfigService, RunlaneConfigModule } from '@runlane/config';
 import { RunlaneAuditModule } from '../audit';
+import { RunlaneBullMqModule } from '../bullmq';
 import { RunlaneExecutionModule } from '../execution';
 import { RunlaneDatabaseModule } from '../prisma';
 import { RunlaneRedisModule } from '../redis';
@@ -31,6 +34,7 @@ import { RedisWebhookRuntimeState } from './runtime';
     RunlaneDatabaseModule,
     RunlaneRedisModule,
     RunlaneAuditModule,
+    RunlaneBullMqModule,
     RunlaneExecutionModule,
     RunlaneWorkflowModule,
   ],
@@ -53,6 +57,7 @@ import { RedisWebhookRuntimeState } from './runtime';
         EXECUTION_REPOSITORY,
         AUDIT_LOG_REPOSITORY,
         WEBHOOK_RUNTIME_STATE,
+        EXECUTION_QUEUE,
         TRANSACTION_BOUNDARY,
         RuntimeConfigService,
       ],
@@ -62,6 +67,7 @@ import { RedisWebhookRuntimeState } from './runtime';
         executions: ExecutionRepositoryPort,
         auditLogs: AuditLogRepositoryPort,
         runtimeState: WebhookRuntimeStatePort,
+        executionQueue: ExecutionQueuePort,
         transactionBoundary: TransactionBoundary,
         config: RuntimeConfigService,
       ) =>
@@ -71,6 +77,7 @@ import { RedisWebhookRuntimeState } from './runtime';
           executions,
           auditLogs,
           runtimeState,
+          executionQueue,
           transactionBoundary,
           {
             webhookSigningSecret: config.webhookSigningSecret,

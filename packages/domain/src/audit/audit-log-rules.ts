@@ -13,6 +13,7 @@ export const AUDIT_ACTIONS = [
   'ingestion.webhook_received',
   'automation.bridge_request_received',
   'execution.created',
+  'execution.enqueued',
 ] as const;
 
 export const AUDIT_ENTITY_TYPES = [

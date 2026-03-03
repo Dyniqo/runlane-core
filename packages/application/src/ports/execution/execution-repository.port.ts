@@ -27,6 +27,11 @@ export interface CreateQueuedExecutionInput {
   readonly queuedAt: Date;
 }
 
+export interface FindExecutionByWorkspaceAndIdInput {
+  readonly workspaceId: string;
+  readonly executionId: string;
+}
+
 export interface FindExecutionByTriggerSourceInput {
   readonly workspaceId: string;
   readonly workflowId: string;
@@ -36,6 +41,9 @@ export interface FindExecutionByTriggerSourceInput {
 
 export interface ExecutionRepositoryPort {
   createQueued(input: CreateQueuedExecutionInput): Promise<StoredExecutionRecord>;
+  findByWorkspaceAndId(
+    input: FindExecutionByWorkspaceAndIdInput,
+  ): Promise<StoredExecutionRecord | null>;
   findLatestByTriggerSource(
     input: FindExecutionByTriggerSourceInput,
   ): Promise<StoredExecutionRecord | null>;

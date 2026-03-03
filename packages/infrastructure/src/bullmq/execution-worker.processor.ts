@@ -1,4 +1,5 @@
 import { Inject, Injectable, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
+import { ValidateExecutionJobForProcessingUseCase } from '@runlane/application';
 import { RuntimeConfigService } from '@runlane/config';
 import {
   EXECUTION_JOB_NAME,
@@ -20,6 +21,8 @@ export class BullMqExecutionWorkerProcessor implements OnModuleInit, OnModuleDes
   constructor(
     @Inject(RuntimeConfigService) config: RuntimeConfigService,
     @Inject(StructuredLoggerService) private readonly logger: StructuredLoggerService,
+    @Inject(ValidateExecutionJobForProcessingUseCase)
+    private readonly validateExecutionJob: ValidateExecutionJobForProcessingUseCase,
   ) {
     this.worker = new Worker<ExecutionJob, void, ExecutionJobName>(
       EXECUTION_QUEUE_NAME,
@@ -101,15 +104,23 @@ export class BullMqExecutionWorkerProcessor implements OnModuleInit, OnModuleDes
   private async process(job: Job<ExecutionJob, void, ExecutionJobName>): Promise<void> {
     assertExecutionJob(job);
 
+    const validated = await this.validateExecutionJob.execute({
+      workspaceId: job.data.payload.workspaceId,
+      executionId: job.data.payload.executionId,
+      workflowId: job.data.payload.workflowId,
+    });
+
     this.logger.logEvent(
       'info',
       'Execution job accepted by worker',
       {
         jobId: job.id,
         jobName: job.name,
-        workspaceId: job.data.payload.workspaceId,
-        executionId: job.data.payload.executionId,
-        workflowId: job.data.payload.workflowId,
+        workspaceId: validated.execution.workspaceId,
+        executionId: validated.execution.id,
+        workflowId: validated.execution.workflowId,
+        executionStatus: validated.execution.status,
+        attempts: validated.execution.attempts,
         correlationId: job.data.correlationId,
       },
       BullMqExecutionWorkerProcessor.name,
