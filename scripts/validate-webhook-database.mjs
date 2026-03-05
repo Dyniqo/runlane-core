@@ -70,15 +70,17 @@ try {
       id: executionId,
       workflowId,
       workspaceId,
-      status: 'QUEUED',
+      status: 'SUCCEEDED',
     },
     select: {
       id: true,
       inputJson: true,
+      outputJson: true,
       attempts: true,
       queuedAt: true,
       startedAt: true,
       finishedAt: true,
+      durationMs: true,
     },
   });
 
@@ -86,8 +88,14 @@ try {
     throw new Error('Webhook execution was not persisted with the expected workspace scope.');
   }
 
-  if (execution.attempts !== 0 || execution.startedAt !== null || execution.finishedAt !== null) {
-    throw new Error('Webhook execution lifecycle fields were not initialized correctly.');
+  if (
+    execution.attempts !== 1 ||
+    execution.startedAt === null ||
+    execution.finishedAt === null ||
+    execution.durationMs === null ||
+    execution.outputJson === null
+  ) {
+    throw new Error('Webhook execution lifecycle fields were not finalized correctly.');
   }
 
   if (execution.inputJson?.trigger?.type !== 'webhook') {
@@ -100,6 +108,10 @@ try {
 
   if (execution.inputJson?.metadata?.payloadHash !== request.payloadHash) {
     throw new Error('Webhook execution metadata does not include the payload hash.');
+  }
+
+  if (execution.outputJson?.status !== 'succeeded') {
+    throw new Error('Webhook execution output was not finalized as succeeded.');
   }
 
   const idempotentRequestCount = await prisma.webhookRequest.count({
@@ -127,7 +139,7 @@ try {
   });
 
   if (idempotentExecutionCount !== 1) {
-    throw new Error('Webhook idempotency did not preserve a single queued execution.');
+    throw new Error('Webhook idempotency did not preserve a single execution.');
   }
 
   const auditLog = await prisma.auditLog.findFirst({

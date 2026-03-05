@@ -4,80 +4,86 @@ import { Queue } from 'bullmq';
 
 loadLocalEnvironment();
 
-const [, , workspaceId, executionId, workflowId] = process.argv;
+await main();
 
-if (!workspaceId || !executionId || !workflowId) {
-  throw new Error(
-    'Usage: node scripts/wait-for-execution-job.mjs <workspaceId> <executionId> <workflowId>',
-  );
-}
+async function main() {
+  const [, , workspaceId, executionId, workflowId] = process.argv;
 
-const redisUrl = process.env.REDIS_URL;
-
-if (!redisUrl) {
-  throw new Error('REDIS_URL is required');
-}
-
-const queueName = 'execution';
-const jobName = 'execution.process';
-const jobId = `execution.${workspaceId}.${executionId}`;
-const timeoutMs = 20000;
-const pollIntervalMs = 250;
-const startedAt = Date.now();
-
-const queue = new Queue(queueName, {
-  connection: createBullMqRedisConnectionOptions(redisUrl),
-  prefix: 'runlane',
-});
-
-try {
-  await queue.waitUntilReady();
-
-  while (Date.now() - startedAt < timeoutMs) {
-    const job = await queue.getJob(jobId);
-
-    if (!job) {
-      await delay(pollIntervalMs);
-      continue;
-    }
-
-    assertExecutionJob(job.data, job.id, workspaceId, executionId, workflowId);
-
-    const state = await job.getState();
-
-    if (state === 'completed') {
-      process.stdout.write(`Execution job completed for ${executionId}\n`);
-      return;
-    }
-
-    if (state === 'failed') {
-      throw new Error(`Execution job ${jobId} failed: ${job.failedReason ?? 'unknown failure'}`);
-    }
-
-    await delay(pollIntervalMs);
+  if (!workspaceId || !executionId || !workflowId) {
+    throw new Error(
+      'Usage: node scripts/wait-for-execution-job.mjs <workspaceId> <executionId> <workflowId>',
+    );
   }
 
-  throw new Error(`Timed out waiting for execution job ${jobId} to complete.`);
-} finally {
-  await queue.close();
+  const redisUrl = process.env.REDIS_URL;
+
+  if (!redisUrl) {
+    throw new Error('REDIS_URL is required');
+  }
+
+  const queueName = 'execution';
+  const jobName = 'execution.process';
+  const jobId = `execution.${workspaceId}.${executionId}`;
+  const timeoutMs = 20000;
+  const pollIntervalMs = 250;
+  const startedAt = Date.now();
+
+  const queue = new Queue(queueName, {
+    connection: createBullMqRedisConnectionOptions(redisUrl),
+    prefix: 'runlane',
+  });
+
+  try {
+    await queue.waitUntilReady();
+
+    while (Date.now() - startedAt < timeoutMs) {
+      const job = await queue.getJob(jobId);
+
+      if (!job) {
+        await delay(pollIntervalMs);
+        continue;
+      }
+
+      assertExecutionJob(job.data, job.id, jobId, workspaceId, executionId, workflowId, jobName);
+
+      const state = await job.getState();
+
+      if (state === 'completed') {
+        process.stdout.write(`Execution job completed for ${executionId}\n`);
+        return;
+      }
+
+      if (state === 'failed') {
+        throw new Error(`Execution job ${jobId} failed: ${job.failedReason ?? 'unknown failure'}`);
+      }
+
+      await delay(pollIntervalMs);
+    }
+
+    throw new Error(`Timed out waiting for execution job ${jobId} to complete.`);
+  } finally {
+    await queue.close();
+  }
 }
 
 function assertExecutionJob(
   data,
   actualJobId,
+  expectedJobId,
   expectedWorkspaceId,
   expectedExecutionId,
   expectedWorkflowId,
+  expectedJobName,
 ) {
   if (!data || typeof data !== 'object') {
     throw new Error('Execution job data was missing.');
   }
 
-  if (actualJobId !== jobId || data.jobId !== jobId) {
+  if (actualJobId !== expectedJobId || data.jobId !== expectedJobId) {
     throw new Error('Execution job id mismatch.');
   }
 
-  if (data.jobName !== jobName) {
+  if (data.jobName !== expectedJobName) {
     throw new Error('Execution job name mismatch.');
   }
 

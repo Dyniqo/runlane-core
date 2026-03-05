@@ -23,6 +23,9 @@ export type {
   ExecutionRepositoryPort,
   FindExecutionByTriggerSourceInput,
   FindExecutionByWorkspaceAndIdInput,
+  MarkExecutionFailedInput,
+  MarkExecutionRunningInput,
+  MarkExecutionSucceededInput,
   StoredExecutionRecord,
 } from './execution';
 export { WEBHOOK_REQUEST_REPOSITORY, WEBHOOK_RUNTIME_STATE } from './ingestion';

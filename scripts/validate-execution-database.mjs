@@ -32,7 +32,7 @@ try {
     where: {
       id: executionId,
       workspaceId,
-      status: 'QUEUED',
+      status: 'SUCCEEDED',
     },
     select: {
       id: true,
@@ -51,22 +51,22 @@ try {
   });
 
   if (!execution) {
-    throw new Error('Queued execution was not persisted.');
+    throw new Error('Processed execution was not persisted.');
   }
 
-  if (execution.attempts !== 0) {
-    throw new Error('Queued execution attempts must start at zero.');
+  if (execution.attempts !== 1) {
+    throw new Error('Processed execution attempts must be incremented once.');
   }
 
   if (
-    execution.outputJson !== null ||
+    execution.outputJson === null ||
     execution.errorCode !== null ||
     execution.errorMessage !== null ||
-    execution.durationMs !== null ||
-    execution.startedAt !== null ||
-    execution.finishedAt !== null
+    execution.durationMs === null ||
+    execution.startedAt === null ||
+    execution.finishedAt === null
   ) {
-    throw new Error('Queued execution lifecycle fields were not initialized correctly.');
+    throw new Error('Processed execution lifecycle fields were not finalized correctly.');
   }
 
   if (execution.inputJson?.trigger?.type !== triggerType) {
@@ -79,6 +79,14 @@ try {
 
   if (execution.inputJson?.trigger?.workflowVersion < 1) {
     throw new Error('Execution trigger did not include workflow version.');
+  }
+
+  if (execution.outputJson?.status !== 'succeeded') {
+    throw new Error('Execution output did not include a succeeded status.');
+  }
+
+  if (execution.outputJson?.stepCount < 1) {
+    throw new Error('Execution output did not include processed steps.');
   }
 
   const executionAuditLog = await prisma.auditLog.findFirst({
@@ -104,6 +112,34 @@ try {
 
   if (executionAuditLog.metadataJson?.sourceId !== sourceId) {
     throw new Error('Execution audit source id mismatch.');
+  }
+
+  const startedAuditLog = await prisma.auditLog.findFirst({
+    where: {
+      workspaceId,
+      action: 'execution.started',
+      entityType: 'execution',
+      entityId: executionId,
+    },
+    select: { id: true },
+  });
+
+  if (!startedAuditLog) {
+    throw new Error('Execution started audit log was not persisted.');
+  }
+
+  const succeededAuditLog = await prisma.auditLog.findFirst({
+    where: {
+      workspaceId,
+      action: 'execution.succeeded',
+      entityType: 'execution',
+      entityId: executionId,
+    },
+    select: { id: true },
+  });
+
+  if (!succeededAuditLog) {
+    throw new Error('Execution succeeded audit log was not persisted.');
   }
 } finally {
   await prisma.$disconnect();

@@ -1,5 +1,5 @@
 import { Inject, Injectable, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
-import { ValidateExecutionJobForProcessingUseCase } from '@runlane/application';
+import { ProcessExecutionUseCase } from '@runlane/application';
 import { RuntimeConfigService } from '@runlane/config';
 import {
   EXECUTION_JOB_NAME,
@@ -21,8 +21,8 @@ export class BullMqExecutionWorkerProcessor implements OnModuleInit, OnModuleDes
   constructor(
     @Inject(RuntimeConfigService) config: RuntimeConfigService,
     @Inject(StructuredLoggerService) private readonly logger: StructuredLoggerService,
-    @Inject(ValidateExecutionJobForProcessingUseCase)
-    private readonly validateExecutionJob: ValidateExecutionJobForProcessingUseCase,
+    @Inject(ProcessExecutionUseCase)
+    private readonly processExecution: ProcessExecutionUseCase,
   ) {
     this.worker = new Worker<ExecutionJob, void, ExecutionJobName>(
       EXECUTION_QUEUE_NAME,
@@ -104,10 +104,12 @@ export class BullMqExecutionWorkerProcessor implements OnModuleInit, OnModuleDes
   private async process(job: Job<ExecutionJob, void, ExecutionJobName>): Promise<void> {
     assertExecutionJob(job);
 
-    const validated = await this.validateExecutionJob.execute({
+    const processed = await this.processExecution.execute({
       workspaceId: job.data.payload.workspaceId,
       executionId: job.data.payload.executionId,
       workflowId: job.data.payload.workflowId,
+      jobId: job.id ?? job.data.jobId,
+      correlationId: job.data.correlationId,
     });
 
     this.logger.logEvent(
@@ -116,11 +118,12 @@ export class BullMqExecutionWorkerProcessor implements OnModuleInit, OnModuleDes
       {
         jobId: job.id,
         jobName: job.name,
-        workspaceId: validated.execution.workspaceId,
-        executionId: validated.execution.id,
-        workflowId: validated.execution.workflowId,
-        executionStatus: validated.execution.status,
-        attempts: validated.execution.attempts,
+        workspaceId: processed.execution.workspaceId,
+        executionId: processed.execution.id,
+        workflowId: processed.execution.workflowId,
+        executionStatus: processed.execution.status,
+        attempts: processed.execution.attempts,
+        durationMs: processed.execution.durationMs,
         correlationId: job.data.correlationId,
       },
       BullMqExecutionWorkerProcessor.name,

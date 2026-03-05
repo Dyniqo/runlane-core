@@ -39,6 +39,29 @@ export interface FindExecutionByTriggerSourceInput {
   readonly sourceId: string;
 }
 
+export interface MarkExecutionRunningInput {
+  readonly workspaceId: string;
+  readonly executionId: string;
+  readonly startedAt: Date;
+}
+
+export interface MarkExecutionSucceededInput {
+  readonly workspaceId: string;
+  readonly executionId: string;
+  readonly output: JsonObject;
+  readonly finishedAt: Date;
+  readonly durationMs: number;
+}
+
+export interface MarkExecutionFailedInput {
+  readonly workspaceId: string;
+  readonly executionId: string;
+  readonly errorCode: string;
+  readonly errorMessage: string;
+  readonly finishedAt: Date;
+  readonly durationMs: number;
+}
+
 export interface ExecutionRepositoryPort {
   createQueued(input: CreateQueuedExecutionInput): Promise<StoredExecutionRecord>;
   findByWorkspaceAndId(
@@ -47,4 +70,7 @@ export interface ExecutionRepositoryPort {
   findLatestByTriggerSource(
     input: FindExecutionByTriggerSourceInput,
   ): Promise<StoredExecutionRecord | null>;
+  markRunning(input: MarkExecutionRunningInput): Promise<StoredExecutionRecord | null>;
+  markSucceeded(input: MarkExecutionSucceededInput): Promise<StoredExecutionRecord | null>;
+  markFailed(input: MarkExecutionFailedInput): Promise<StoredExecutionRecord | null>;
 }

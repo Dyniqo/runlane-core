@@ -131,6 +131,16 @@ function New-RunlaneWebhookSignature {
   "t=$TimestampSeconds,v1=$Digest"
 }
 
+function Invoke-NodeScript {
+  param([Parameter(Mandatory = $true)] [string[]] $Arguments)
+
+  & node @Arguments
+
+  if ($LASTEXITCODE -ne 0) {
+    throw ("Node script failed with exit code {0}: node {1}" -f $LASTEXITCODE, ($Arguments -join ' '))
+  }
+}
+
 Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/auth/register" -Body @{
   email = $Email
   password = $Password
@@ -269,7 +279,7 @@ if ($Accepted.execution.input.payload.leadId -ne $Payload.leadId) {
   throw 'Webhook execution payload was not persisted in the response.'
 }
 
-node scripts/wait-for-execution-job.mjs $Accepted.execution.workspaceId $Accepted.execution.id $Accepted.execution.workflowId
+Invoke-NodeScript -Arguments @('scripts/wait-for-execution-job.mjs', $Accepted.execution.workspaceId, $Accepted.execution.id, $Accepted.execution.workflowId)
 
 $DuplicateHeaders = @{
   'X-Runlane-Source' = 'website_form'
@@ -311,7 +321,7 @@ $ReplayHeaders = @{
   'X-Runlane-Signature' = $ReplaySignature
 }
 $ReplayAccepted = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/hooks/$($Published.workflow.publicId)" -Headers $ReplayHeaders -Body $ReplayPayload
-node scripts/wait-for-execution-job.mjs $ReplayAccepted.execution.workspaceId $ReplayAccepted.execution.id $ReplayAccepted.execution.workflowId
+Invoke-NodeScript -Arguments @('scripts/wait-for-execution-job.mjs', $ReplayAccepted.execution.workspaceId, $ReplayAccepted.execution.id, $ReplayAccepted.execution.workflowId)
 
 Invoke-ExpectedFailure -StatusCode 409 -Operation {
   Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/hooks/$($Published.workflow.publicId)" -Headers $ReplayHeaders -Body $ReplayPayload
@@ -329,6 +339,6 @@ Invoke-ExpectedFailure -StatusCode 404 -Operation {
   }
 }
 
-node scripts/validate-webhook-database.mjs $Email $Published.workflow.id $Accepted.webhookRequest.id $Accepted.execution.id $IdempotencyKey
+Invoke-NodeScript -Arguments @('scripts/validate-webhook-database.mjs', $Email, $Published.workflow.id, $Accepted.webhookRequest.id, $Accepted.execution.id, $IdempotencyKey)
 
 Write-Host "Webhook ingestion validation completed for $Email"

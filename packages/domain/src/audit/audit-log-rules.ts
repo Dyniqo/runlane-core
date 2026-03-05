@@ -14,6 +14,9 @@ export const AUDIT_ACTIONS = [
   'automation.bridge_request_received',
   'execution.created',
   'execution.enqueued',
+  'execution.started',
+  'execution.succeeded',
+  'execution.failed',
 ] as const;
 
 export const AUDIT_ENTITY_TYPES = [

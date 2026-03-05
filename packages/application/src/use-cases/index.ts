@@ -6,7 +6,12 @@ export {
   ResolveApiKeyUseCase,
   RevokeApiKeyUseCase,
 } from './access';
-export { buildExecutionResponse, ValidateExecutionJobForProcessingUseCase } from './execution';
+export {
+  buildExecutionResponse,
+  ProcessExecutionUseCase,
+  ValidateExecutionJobForProcessingUseCase,
+  WorkflowExecutionEngine,
+} from './execution';
 export {
   ExecuteAutomationWorkflowUseCase,
   GetAutomationWorkflowContractUseCase,
@@ -37,8 +42,12 @@ export type {
   RegisterUserInput,
 } from './identity';
 export type {
+  ProcessExecutionUseCaseInput,
+  ProcessExecutionUseCaseResult,
   ValidateExecutionJobForProcessingInput,
   ValidatedExecutionJobForProcessingRecord,
+  WorkflowExecutionEngineInput,
+  WorkflowExecutionEngineResult,
 } from './execution';
 export type { UseCase } from './use-case';
 export {

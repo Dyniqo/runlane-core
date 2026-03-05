@@ -41,6 +41,9 @@ export type {
   IssuedAccessToken,
   IssuedRefreshToken,
   MarkApiKeyLastUsedInput,
+  MarkExecutionFailedInput,
+  MarkExecutionRunningInput,
+  MarkExecutionSucceededInput,
   PasswordHasherPort,
   ReadRepositoryPort,
   RepositoryPort,
@@ -101,6 +104,7 @@ export {
   ListWorkflowsUseCase,
   ListWorkspacesUseCase,
   LoginUserUseCase,
+  ProcessExecutionUseCase,
   PublishWorkflowUseCase,
   ReceivePublicWebhookUseCase,
   LogoutSessionUseCase,
@@ -111,6 +115,7 @@ export {
   UpdateCurrentWorkspaceUseCase,
   UpdateWorkflowUseCase,
   ValidateExecutionJobForProcessingUseCase,
+  WorkflowExecutionEngine,
 } from './use-cases';
 export type {
   ApiKeyScopeRecord,
@@ -125,6 +130,8 @@ export type {
   GetCurrentWorkspaceInput,
   ListApiKeysUseCaseInput,
   ListWorkflowsUseCaseInput,
+  ProcessExecutionUseCaseInput,
+  ProcessExecutionUseCaseResult,
   PublishWorkflowUseCaseInput,
   ReceivePublicWebhookUseCaseInput,
   ReceivePublicWebhookUseCaseOptions,
@@ -140,4 +147,6 @@ export type {
   UseCase,
   ValidateExecutionJobForProcessingInput,
   ValidatedExecutionJobForProcessingRecord,
+  WorkflowExecutionEngineInput,
+  WorkflowExecutionEngineResult,
 } from './use-cases';

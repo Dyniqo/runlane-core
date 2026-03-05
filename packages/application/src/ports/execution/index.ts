@@ -2,7 +2,10 @@ export { EXECUTION_REPOSITORY } from './execution-repository.port';
 export type {
   CreateQueuedExecutionInput,
   ExecutionRepositoryPort,
-  FindExecutionByWorkspaceAndIdInput,
   FindExecutionByTriggerSourceInput,
+  FindExecutionByWorkspaceAndIdInput,
+  MarkExecutionFailedInput,
+  MarkExecutionRunningInput,
+  MarkExecutionSucceededInput,
   StoredExecutionRecord,
 } from './execution-repository.port';

@@ -92,6 +92,16 @@ function New-WorkflowDefinition {
   }
 }
 
+function Invoke-NodeScript {
+  param([Parameter(Mandatory = $true)] [string[]] $Arguments)
+
+  & node @Arguments
+
+  if ($LASTEXITCODE -ne 0) {
+    throw ("Node script failed with exit code {0}: node {1}" -f $LASTEXITCODE, ($Arguments -join ' '))
+  }
+}
+
 Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/auth/register" -Body @{
   email = $Email
   password = $Password
@@ -180,7 +190,7 @@ Assert-Equal -Actual $Accepted.execution.input.trigger.type -Expected 'automatio
 Assert-Equal -Actual $Accepted.execution.input.trigger.sourceId -Expected $Accepted.automationRequest.id -Message 'Automation execution trigger source mismatch.'
 Assert-Equal -Actual $Accepted.execution.input.payload.leadId -Expected "lead-$Timestamp" -Message 'Automation execution payload mismatch.'
 
-node scripts/wait-for-execution-job.mjs $Accepted.execution.workspaceId $Accepted.execution.id $Accepted.execution.workflowId
+Invoke-NodeScript -Arguments @('scripts/wait-for-execution-job.mjs', $Accepted.execution.workspaceId, $Accepted.execution.id, $Accepted.execution.workflowId)
 
 $BodySource = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/automation/execute/$($Published.workflow.publicId)" -Headers $ApiKeyHeaders -Body @{
   payload = @{
@@ -194,7 +204,7 @@ Assert-Equal -Actual $BodySource.automationRequest.source -Expected 'n8n' -Messa
 Assert-Equal -Actual $BodySource.automationRequest.idempotencyKey -Expected "body-$IdempotencyKey" -Message 'Automation body idempotency was not applied.'
 Assert-Equal -Actual $BodySource.execution.input.trigger.sourceId -Expected $BodySource.automationRequest.id -Message 'Automation body execution source mismatch.'
 
-node scripts/wait-for-execution-job.mjs $BodySource.execution.workspaceId $BodySource.execution.id $BodySource.execution.workflowId
+Invoke-NodeScript -Arguments @('scripts/wait-for-execution-job.mjs', $BodySource.execution.workspaceId, $BodySource.execution.id, $BodySource.execution.workflowId)
 
 Invoke-ExpectedFailure -StatusCode 400 -Operation {
   Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/automation/execute/$($Published.workflow.publicId)" -Headers $ApiKeyHeaders -Body @{
@@ -243,6 +253,6 @@ if ($AutomationEvents.Count -lt 2) {
   throw 'Automation bridge audit events were not persisted.'
 }
 
-node scripts/validate-execution-database.mjs $Email $Accepted.execution.id $Accepted.automationRequest.id automation_bridge
+Invoke-NodeScript -Arguments @('scripts/validate-execution-database.mjs', $Email, $Accepted.execution.id, $Accepted.automationRequest.id, 'automation_bridge')
 
 Write-Host "Automation bridge validation completed for $Email"

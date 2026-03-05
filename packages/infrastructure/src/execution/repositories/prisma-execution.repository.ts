@@ -1,9 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import type {
   CreateQueuedExecutionInput,
   FindExecutionByTriggerSourceInput,
   FindExecutionByWorkspaceAndIdInput,
+  MarkExecutionFailedInput,
+  MarkExecutionRunningInput,
+  MarkExecutionSucceededInput,
   StoredExecutionRecord,
   ExecutionRepositoryPort,
 } from '@runlane/application';
@@ -71,6 +74,79 @@ export class PrismaExecutionRepository implements ExecutionRepositoryPort {
     });
 
     return execution ? mapExecutionRecord(execution) : null;
+  }
+
+  async markRunning(input: MarkExecutionRunningInput): Promise<StoredExecutionRecord | null> {
+    const updated = await this.persistence.client.execution.updateMany({
+      where: {
+        id: input.executionId,
+        workspaceId: input.workspaceId,
+        status: 'QUEUED',
+      },
+      data: {
+        status: 'RUNNING',
+        startedAt: input.startedAt,
+        attempts: { increment: 1 },
+        finishedAt: null,
+        durationMs: null,
+        outputJson: Prisma.DbNull,
+        errorCode: null,
+        errorMessage: null,
+      },
+    });
+
+    if (updated.count !== 1) {
+      return null;
+    }
+
+    return this.findByWorkspaceAndId(input);
+  }
+
+  async markSucceeded(input: MarkExecutionSucceededInput): Promise<StoredExecutionRecord | null> {
+    const updated = await this.persistence.client.execution.updateMany({
+      where: {
+        id: input.executionId,
+        workspaceId: input.workspaceId,
+        status: 'RUNNING',
+      },
+      data: {
+        status: 'SUCCEEDED',
+        outputJson: input.output as Prisma.InputJsonValue,
+        errorCode: null,
+        errorMessage: null,
+        durationMs: input.durationMs,
+        finishedAt: input.finishedAt,
+      },
+    });
+
+    if (updated.count !== 1) {
+      return null;
+    }
+
+    return this.findByWorkspaceAndId(input);
+  }
+
+  async markFailed(input: MarkExecutionFailedInput): Promise<StoredExecutionRecord | null> {
+    const updated = await this.persistence.client.execution.updateMany({
+      where: {
+        id: input.executionId,
+        workspaceId: input.workspaceId,
+        status: 'RUNNING',
+      },
+      data: {
+        status: 'FAILED',
+        errorCode: input.errorCode,
+        errorMessage: input.errorMessage,
+        durationMs: input.durationMs,
+        finishedAt: input.finishedAt,
+      },
+    });
+
+    if (updated.count !== 1) {
+      return null;
+    }
+
+    return this.findByWorkspaceAndId(input);
   }
 }
 

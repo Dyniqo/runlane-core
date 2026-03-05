@@ -172,6 +172,54 @@ export function executionJobScopeMismatch(): DomainError {
   });
 }
 
+export function executionWorkflowNotFound(): DomainError {
+  return new DomainError({
+    code: 'EXECUTION_WORKFLOW_NOT_FOUND',
+    category: 'not_found',
+    message: 'Execution workflow was not found',
+  });
+}
+
+export function executionWorkflowNotPublished(): DomainError {
+  return new DomainError({
+    code: 'EXECUTION_WORKFLOW_NOT_PUBLISHED',
+    category: 'conflict',
+    message: 'Execution workflow is not published',
+  });
+}
+
+export function executionNotReadyForProcessing(status: ExecutionStatus): DomainError {
+  return new DomainError({
+    code: 'EXECUTION_NOT_READY_FOR_PROCESSING',
+    category: 'conflict',
+    message: `Execution with status ${status} cannot be processed`,
+  });
+}
+
+export function executionStepCycleDetected(stepKey: string): DomainError {
+  return new DomainError({
+    code: 'EXECUTION_STEP_CYCLE_DETECTED',
+    category: 'conflict',
+    message: `Workflow execution detected a repeated step '${stepKey}'`,
+  });
+}
+
+export function executionStepTargetMissing(stepKey: string): DomainError {
+  return new DomainError({
+    code: 'EXECUTION_STEP_TARGET_MISSING',
+    category: 'conflict',
+    message: `Workflow execution could not resolve step '${stepKey}'`,
+  });
+}
+
+export function executionStepRunnerMissing(stepKey: string, stepType: string): DomainError {
+  return new DomainError({
+    code: 'EXECUTION_STEP_RUNNER_MISSING',
+    category: 'conflict',
+    message: `No execution step runner is available for step '${stepKey}' with type '${stepType}'`,
+  });
+}
+
 function readExecutionTriggerReference(value: unknown): ExecutionTriggerReference {
   if (!isExecutionInputJsonObject(value)) {
     throw invalidExecutionInput('Execution trigger must be a JSON object');
