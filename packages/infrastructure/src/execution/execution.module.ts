@@ -4,6 +4,7 @@ import {
   EXECUTION_REPOSITORY,
   EXECUTION_STEP_REPOSITORY,
   ProcessExecutionUseCase,
+  SafeTemplateResolver,
   TRANSACTION_BOUNDARY,
   ValidateExecutionJobForProcessingUseCase,
   WorkflowExecutionEngine,
@@ -34,10 +35,12 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
       provide: EXECUTION_STEP_REPOSITORY,
       useExisting: PrismaExecutionStepRepository,
     },
+    SafeTemplateResolver,
     {
       provide: WorkflowExecutionEngine,
-      inject: [EXECUTION_STEP_REPOSITORY],
-      useFactory: (steps: ExecutionStepRepositoryPort) => new WorkflowExecutionEngine(steps),
+      inject: [EXECUTION_STEP_REPOSITORY, SafeTemplateResolver],
+      useFactory: (steps: ExecutionStepRepositoryPort, templates: SafeTemplateResolver) =>
+        new WorkflowExecutionEngine(steps, templates),
     },
     {
       provide: ValidateExecutionJobForProcessingUseCase,

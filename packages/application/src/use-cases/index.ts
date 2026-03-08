@@ -10,6 +10,7 @@ export {
   buildExecutionResponse,
   ProcessExecutionUseCase,
   ValidateExecutionJobForProcessingUseCase,
+  SafeTemplateResolver,
   WorkflowExecutionEngine,
 } from './execution';
 export {
@@ -47,6 +48,10 @@ export type {
   ValidateExecutionJobForProcessingInput,
   ValidatedExecutionJobForProcessingRecord,
   WorkflowExecutionEngineInput,
+  SafeTemplatePreviousStepOutput,
+  SafeTemplateResolutionResult,
+  SafeTemplateResolverContext,
+  SafeTemplateSecretReference,
   WorkflowExecutionEngineResult,
 } from './execution';
 export type { UseCase } from './use-case';

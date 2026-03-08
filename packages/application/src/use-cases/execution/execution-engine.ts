@@ -19,6 +19,7 @@ import type {
   StoredExecutionRecord,
   StoredWorkflowRecord,
 } from '../../ports';
+import type { SafeTemplateResolver, SafeTemplateResolutionResult } from './safe-template-resolver';
 
 export interface WorkflowExecutionEngineInput {
   readonly execution: StoredExecutionRecord;
@@ -52,7 +53,10 @@ interface StepExecutionContext {
 const DEFAULT_STEP_TIMEOUT_MS = 30_000;
 
 export class WorkflowExecutionEngine {
-  constructor(private readonly steps: ExecutionStepRepositoryPort) {}
+  constructor(
+    private readonly steps: ExecutionStepRepositoryPort,
+    private readonly templates: SafeTemplateResolver,
+  ) {}
 
   async execute(input: WorkflowExecutionEngineInput): Promise<WorkflowExecutionEngineResult> {
     const definition = readWorkflowDefinition(input.workflow.definition, {
@@ -114,7 +118,15 @@ export class WorkflowExecutionEngine {
     context: StepExecutionContext,
   ): Promise<ExecutedStepSnapshot> {
     const startedAt = new Date();
-    const stepInput = buildStepInput(step, context);
+    const resolvedConfig = this.templates.resolveObject(step.config as JsonObject, {
+      payload: context.input.payload,
+      steps: buildPreviousStepOutputIndex(context.previousSteps),
+    });
+    const stepInput = buildStepInput(step, context, resolvedConfig);
+    const executableStep: WorkflowStepDefinitionValue = {
+      ...step,
+      config: resolvedConfig.value as unknown as WorkflowStepDefinitionValue['config'],
+    };
 
     await this.steps.createRunning({
       workspaceId: context.execution.workspaceId,
@@ -126,7 +138,7 @@ export class WorkflowExecutionEngine {
     });
 
     try {
-      const output = await runWithTimeout(step, context);
+      const output = await runWithTimeout(executableStep, context);
       const finishedAt = new Date();
       const durationMs = Math.max(0, finishedAt.getTime() - startedAt.getTime());
       await this.steps.markSucceeded({
@@ -216,13 +228,18 @@ function runConditionStep(
 function buildStepInput(
   step: WorkflowStepDefinitionValue,
   context: StepExecutionContext,
+  resolvedConfig: SafeTemplateResolutionResult,
 ): JsonObject {
   return {
     step: {
       key: step.key,
       name: step.name,
       type: step.type,
-      config: step.config,
+      config: resolvedConfig.value,
+      secretReferences: resolvedConfig.secretReferences.map((reference) => ({
+        key: reference.key,
+        path: reference.path,
+      })),
       timeoutMs: step.timeoutMs ?? DEFAULT_STEP_TIMEOUT_MS,
     },
     workflow: {
@@ -238,6 +255,14 @@ function buildStepInput(
       output: previousStep.output,
     })),
   };
+}
+
+function buildPreviousStepOutputIndex(
+  previousSteps: readonly ExecutedStepSnapshot[],
+): Readonly<Record<string, { readonly output: JsonObject }>> {
+  return Object.fromEntries(
+    previousSteps.map((previousStep) => [previousStep.key, { output: previousStep.output }]),
+  );
 }
 
 function resolveNextStepKey(

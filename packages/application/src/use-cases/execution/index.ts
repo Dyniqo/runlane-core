@@ -14,3 +14,11 @@ export type {
   WorkflowExecutionEngineInput,
   WorkflowExecutionEngineResult,
 } from './execution-engine';
+
+export { SafeTemplateResolver, isSecretReferenceValue } from './safe-template-resolver';
+export type {
+  SafeTemplatePreviousStepOutput,
+  SafeTemplateResolutionResult,
+  SafeTemplateResolverContext,
+  SafeTemplateSecretReference,
+} from './safe-template-resolver';
