@@ -40,6 +40,12 @@ enum ExecutionStatus {
   CANCELLED
 }
 
+enum ExecutionStepStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
 model User {
   id                   String            @id @default(uuid()) @db.Uuid
   email                String            @unique(map: "users_email_key") @db.VarChar(320)
@@ -87,6 +93,7 @@ model Workspace {
   workflows       Workflow[]
   webhookRequests WebhookRequest[]
   executions      Execution[]
+  executionSteps  ExecutionStep[]
 
   @@index([ownerId], map: "workspaces_owner_id_idx")
   @@index([id, ownerId], map: "workspaces_id_owner_id_idx")
@@ -196,6 +203,32 @@ model WebhookRequest {
 }
 
 
+model ExecutionStep {
+  id           String              @id @default(uuid()) @db.Uuid
+  workspaceId  String              @map("workspace_id") @db.Uuid
+  executionId  String              @map("execution_id") @db.Uuid
+  stepKey      String              @map("step_key") @db.VarChar(80)
+  type         String              @db.VarChar(64)
+  status       ExecutionStepStatus @default(RUNNING)
+  inputJson    Json                @map("input_json")
+  outputJson   Json?               @map("output_json")
+  errorCode    String?             @map("error_code") @db.VarChar(96)
+  errorMessage String?             @map("error_message") @db.Text
+  durationMs   Int?                @map("duration_ms")
+  startedAt    DateTime            @map("started_at") @db.Timestamptz(3)
+  finishedAt   DateTime?           @map("finished_at") @db.Timestamptz(3)
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
+  workspace    Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  execution    Execution           @relation(fields: [executionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([workspaceId, executionId, stepKey], map: "execution_steps_workspace_id_execution_id_step_key_key")
+  @@index([workspaceId, executionId], map: "execution_steps_workspace_id_execution_id_idx")
+  @@index([workspaceId, status, startedAt], map: "execution_steps_workspace_id_status_started_at_idx")
+  @@index([executionId, startedAt], map: "execution_steps_execution_id_started_at_idx")
+  @@map("execution_steps")
+}
+
 model Execution {
   id           String          @id @default(uuid()) @db.Uuid
   workspaceId  String          @map("workspace_id") @db.Uuid
@@ -214,6 +247,7 @@ model Execution {
   updatedAt    DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
   workspace    Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   workflow     Workflow        @relation(fields: [workflowId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  steps        ExecutionStep[]
 
   @@index([workspaceId, id], map: "executions_workspace_id_id_idx")
   @@index([workspaceId, workflowId], map: "executions_workspace_id_workflow_id_idx")

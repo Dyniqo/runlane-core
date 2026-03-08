@@ -69,7 +69,8 @@
     "validate:executions": "powershell -ExecutionPolicy Bypass -File scripts/validate-execution-creation.ps1",
     "validate:queue": "powershell -ExecutionPolicy Bypass -File scripts/validate-execution-queue.ps1",
     "validate:worker": "powershell -ExecutionPolicy Bypass -File scripts/validate-worker-processor.ps1",
-    "validate:engine": "powershell -ExecutionPolicy Bypass -File scripts/validate-execution-engine.ps1"
+    "validate:engine": "powershell -ExecutionPolicy Bypass -File scripts/validate-execution-engine.ps1",
+    "validate:steps": "powershell -ExecutionPolicy Bypass -File scripts/validate-execution-steps.ps1"
   },
   "dependencies": {
     "@nestjs/common": "11.1.24",

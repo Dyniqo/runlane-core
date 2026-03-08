@@ -1,2 +1,2 @@
 export { RunlaneExecutionModule } from './execution.module';
-export { PrismaExecutionRepository } from './repositories';
+export { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repositories';

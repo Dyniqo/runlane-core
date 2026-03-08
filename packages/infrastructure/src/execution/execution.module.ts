@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import {
   AUDIT_LOG_REPOSITORY,
   EXECUTION_REPOSITORY,
+  EXECUTION_STEP_REPOSITORY,
   ProcessExecutionUseCase,
   TRANSACTION_BOUNDARY,
   ValidateExecutionJobForProcessingUseCase,
@@ -11,22 +12,32 @@ import {
 import type {
   AuditLogRepositoryPort,
   ExecutionRepositoryPort,
+  ExecutionStepRepositoryPort,
   TransactionBoundary,
   WorkflowRepositoryPort,
 } from '@runlane/application';
 import { RunlaneAuditModule } from '../audit';
 import { RunlaneDatabaseModule } from '../prisma';
 import { RunlaneWorkflowModule } from '../workflow';
-import { PrismaExecutionRepository } from './repositories';
+import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repositories';
 
 @Module({
   imports: [RunlaneDatabaseModule, RunlaneAuditModule, RunlaneWorkflowModule],
   providers: [
     PrismaExecutionRepository,
-    WorkflowExecutionEngine,
+    PrismaExecutionStepRepository,
     {
       provide: EXECUTION_REPOSITORY,
       useExisting: PrismaExecutionRepository,
+    },
+    {
+      provide: EXECUTION_STEP_REPOSITORY,
+      useExisting: PrismaExecutionStepRepository,
+    },
+    {
+      provide: WorkflowExecutionEngine,
+      inject: [EXECUTION_STEP_REPOSITORY],
+      useFactory: (steps: ExecutionStepRepositoryPort) => new WorkflowExecutionEngine(steps),
     },
     {
       provide: ValidateExecutionJobForProcessingUseCase,
@@ -55,6 +66,7 @@ import { PrismaExecutionRepository } from './repositories';
   ],
   exports: [
     EXECUTION_REPOSITORY,
+    EXECUTION_STEP_REPOSITORY,
     ProcessExecutionUseCase,
     ValidateExecutionJobForProcessingUseCase,
     WorkflowExecutionEngine,

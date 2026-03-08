@@ -16,17 +16,23 @@ export type {
   StoredApiKeyCredentialsRecord,
   StoredApiKeyRecord,
 } from './access';
-export { EXECUTION_REPOSITORY } from './execution';
+export { EXECUTION_REPOSITORY, EXECUTION_STEP_REPOSITORY } from './execution';
 export { EXECUTION_QUEUE } from './queue';
 export type {
   CreateQueuedExecutionInput,
+  CreateRunningExecutionStepInput,
   ExecutionRepositoryPort,
+  ExecutionStepRepositoryPort,
   FindExecutionByTriggerSourceInput,
   FindExecutionByWorkspaceAndIdInput,
   MarkExecutionFailedInput,
+  ListExecutionStepsInput,
   MarkExecutionRunningInput,
+  MarkExecutionStepFailedInput,
+  MarkExecutionStepSucceededInput,
   MarkExecutionSucceededInput,
   StoredExecutionRecord,
+  StoredExecutionStepRecord,
 } from './execution';
 export { WEBHOOK_REQUEST_REPOSITORY, WEBHOOK_RUNTIME_STATE } from './ingestion';
 export type {

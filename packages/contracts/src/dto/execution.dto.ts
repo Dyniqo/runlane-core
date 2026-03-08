@@ -9,6 +9,25 @@ export type ExecutionStatusDto =
   | 'dead_letter'
   | 'cancelled';
 
+export type ExecutionStepStatusDto = 'running' | 'succeeded' | 'failed';
+
+export interface ExecutionStepDto {
+  readonly id: string;
+  readonly workspaceId: string;
+  readonly executionId: string;
+  readonly stepKey: string;
+  readonly type: string;
+  readonly status: ExecutionStepStatusDto;
+  readonly input: JsonObject;
+  readonly output: JsonObject | null;
+  readonly errorCode: string | null;
+  readonly errorMessage: string | null;
+  readonly durationMs: number | null;
+  readonly startedAt: string;
+  readonly finishedAt: string | null;
+  readonly createdAt: string;
+}
+
 export interface ExecutionDto {
   readonly id: string;
   readonly workspaceId: string;
@@ -30,4 +49,8 @@ export interface ExecutionDto {
 
 export interface ExecutionResponseDto {
   readonly execution: ExecutionDto;
+}
+
+export interface ExecutionStepsResponseDto {
+  readonly items: readonly ExecutionStepDto[];
 }

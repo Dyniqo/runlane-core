@@ -4,6 +4,8 @@ import {
   executionStepCycleDetected,
   executionStepRunnerMissing,
   executionStepTargetMissing,
+  executionStepTimedOut,
+  isDomainError,
   readExecutionInput,
   readWorkflowDefinition,
 } from '@runlane/domain';
@@ -12,7 +14,11 @@ import type {
   WorkflowDefinition,
   WorkflowStepDefinitionValue,
 } from '@runlane/domain';
-import type { StoredExecutionRecord, StoredWorkflowRecord } from '../../ports';
+import type {
+  ExecutionStepRepositoryPort,
+  StoredExecutionRecord,
+  StoredWorkflowRecord,
+} from '../../ports';
 
 export interface WorkflowExecutionEngineInput {
   readonly execution: StoredExecutionRecord;
@@ -43,7 +49,11 @@ interface StepExecutionContext {
   readonly previousSteps: readonly ExecutedStepSnapshot[];
 }
 
+const DEFAULT_STEP_TIMEOUT_MS = 30_000;
+
 export class WorkflowExecutionEngine {
+  constructor(private readonly steps: ExecutionStepRepositoryPort) {}
+
   async execute(input: WorkflowExecutionEngineInput): Promise<WorkflowExecutionEngineResult> {
     const definition = readWorkflowDefinition(input.workflow.definition, {
       triggerType: input.workflow.triggerType,
@@ -104,19 +114,75 @@ export class WorkflowExecutionEngine {
     context: StepExecutionContext,
   ): Promise<ExecutedStepSnapshot> {
     const startedAt = new Date();
-    const output = await runStep(step, context);
-    const finishedAt = new Date();
+    const stepInput = buildStepInput(step, context);
 
-    return {
-      key: step.key,
-      name: step.name,
+    await this.steps.createRunning({
+      workspaceId: context.execution.workspaceId,
+      executionId: context.execution.id,
+      stepKey: step.key,
       type: step.type,
-      status: 'succeeded',
-      output,
-      startedAt: startedAt.toISOString(),
-      finishedAt: finishedAt.toISOString(),
-      durationMs: Math.max(0, finishedAt.getTime() - startedAt.getTime()),
-    };
+      input: stepInput,
+      startedAt,
+    });
+
+    try {
+      const output = await runWithTimeout(step, context);
+      const finishedAt = new Date();
+      const durationMs = Math.max(0, finishedAt.getTime() - startedAt.getTime());
+      await this.steps.markSucceeded({
+        workspaceId: context.execution.workspaceId,
+        executionId: context.execution.id,
+        stepKey: step.key,
+        output,
+        finishedAt,
+        durationMs,
+      });
+
+      return {
+        key: step.key,
+        name: step.name,
+        type: step.type,
+        status: 'succeeded',
+        output,
+        startedAt: startedAt.toISOString(),
+        finishedAt: finishedAt.toISOString(),
+        durationMs,
+      };
+    } catch (error) {
+      const finishedAt = new Date();
+      const durationMs = Math.max(0, finishedAt.getTime() - startedAt.getTime());
+      await this.steps.markFailed({
+        workspaceId: context.execution.workspaceId,
+        executionId: context.execution.id,
+        stepKey: step.key,
+        errorCode: resolveStepErrorCode(error),
+        errorMessage: resolveStepErrorMessage(error),
+        finishedAt,
+        durationMs,
+      });
+      throw error;
+    }
+  }
+}
+
+async function runWithTimeout(
+  step: WorkflowStepDefinitionValue,
+  context: StepExecutionContext,
+): Promise<JsonObject> {
+  const timeoutMs = step.timeoutMs ?? DEFAULT_STEP_TIMEOUT_MS;
+  let timeout: NodeJS.Timeout | undefined;
+
+  try {
+    return await Promise.race([
+      runStep(step, context),
+      new Promise<JsonObject>((_, reject) => {
+        timeout = setTimeout(() => reject(executionStepTimedOut(step.key, timeoutMs)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeout) {
+      clearTimeout(timeout);
+    }
   }
 }
 
@@ -144,6 +210,33 @@ function runConditionStep(
     branch: selectedBranch,
     triggerType: context.input.trigger.type,
     previousStepCount: context.previousSteps.length,
+  };
+}
+
+function buildStepInput(
+  step: WorkflowStepDefinitionValue,
+  context: StepExecutionContext,
+): JsonObject {
+  return {
+    step: {
+      key: step.key,
+      name: step.name,
+      type: step.type,
+      config: step.config,
+      timeoutMs: step.timeoutMs ?? DEFAULT_STEP_TIMEOUT_MS,
+    },
+    workflow: {
+      id: context.workflow.id,
+      publicId: context.workflow.publicId,
+      version: context.workflow.version,
+    },
+    trigger: context.input.trigger,
+    payload: context.input.payload,
+    previousSteps: context.previousSteps.map((previousStep) => ({
+      key: previousStep.key,
+      status: previousStep.status,
+      output: previousStep.output,
+    })),
   };
 }
 
@@ -197,6 +290,26 @@ function readOptionalBoolean(value: unknown): boolean | null {
   }
 
   return value;
+}
+
+function resolveStepErrorCode(error: unknown): string {
+  if (isDomainError(error)) {
+    return error.code;
+  }
+
+  return 'EXECUTION_STEP_FAILED';
+}
+
+function resolveStepErrorMessage(error: unknown): string {
+  if (isDomainError(error)) {
+    return error.message;
+  }
+
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  return 'Execution step failed';
 }
 
 function invalidConditionConfig(message: string): DomainError {

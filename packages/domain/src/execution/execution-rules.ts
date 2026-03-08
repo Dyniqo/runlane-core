@@ -11,9 +11,11 @@ export const EXECUTION_STATUSES = [
 ] as const;
 
 export const EXECUTION_TRIGGER_TYPES = ['webhook', 'automation_bridge', 'manual'] as const;
+export const EXECUTION_STEP_STATUSES = ['running', 'succeeded', 'failed'] as const;
 
 export type ExecutionStatus = (typeof EXECUTION_STATUSES)[number];
 export type ExecutionTriggerType = (typeof EXECUTION_TRIGGER_TYPES)[number];
+export type ExecutionStepStatus = (typeof EXECUTION_STEP_STATUSES)[number];
 export type ExecutionInputJsonValue =
   | boolean
   | null
@@ -217,6 +219,14 @@ export function executionStepRunnerMissing(stepKey: string, stepType: string): D
     code: 'EXECUTION_STEP_RUNNER_MISSING',
     category: 'conflict',
     message: `No execution step runner is available for step '${stepKey}' with type '${stepType}'`,
+  });
+}
+
+export function executionStepTimedOut(stepKey: string, timeoutMs: number): DomainError {
+  return new DomainError({
+    code: 'EXECUTION_STEP_TIMEOUT',
+    category: 'conflict',
+    message: `Execution step '${stepKey}' exceeded timeout ${timeoutMs}ms`,
   });
 }
 
