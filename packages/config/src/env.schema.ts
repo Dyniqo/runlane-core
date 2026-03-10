@@ -15,6 +15,9 @@ export interface RuntimeEnvironment {
   readonly WORKER_CONCURRENCY: number;
   readonly WORKER_HEARTBEAT_INTERVAL_MS: number;
   readonly WORKER_HEARTBEAT_TTL_SECONDS: number;
+  readonly EXECUTION_RETRY_MAX_ATTEMPTS: number;
+  readonly EXECUTION_RETRY_BASE_DELAY_MS: number;
+  readonly EXECUTION_RETRY_MAX_DELAY_MS: number;
   readonly API_URL: string;
   readonly APP_URL: string;
   readonly DATABASE_URL: string;
@@ -47,6 +50,9 @@ const LOCAL_DEFAULTS = {
   WORKER_CONCURRENCY: 4,
   WORKER_HEARTBEAT_INTERVAL_MS: 10000,
   WORKER_HEARTBEAT_TTL_SECONDS: 45,
+  EXECUTION_RETRY_MAX_ATTEMPTS: 3,
+  EXECUTION_RETRY_BASE_DELAY_MS: 500,
+  EXECUTION_RETRY_MAX_DELAY_MS: 30000,
   API_URL: 'http://localhost:4600',
   APP_URL: 'http://localhost:4600',
   DATABASE_URL: 'postgresql://runlane:runlane_local_database@127.0.0.1:15432/runlane?schema=public',
@@ -109,6 +115,30 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
       LOCAL_DEFAULTS.WORKER_HEARTBEAT_TTL_SECONDS,
       5,
       300,
+      errors,
+    ),
+    EXECUTION_RETRY_MAX_ATTEMPTS: readInteger(
+      source.EXECUTION_RETRY_MAX_ATTEMPTS,
+      'EXECUTION_RETRY_MAX_ATTEMPTS',
+      LOCAL_DEFAULTS.EXECUTION_RETRY_MAX_ATTEMPTS,
+      1,
+      10,
+      errors,
+    ),
+    EXECUTION_RETRY_BASE_DELAY_MS: readInteger(
+      source.EXECUTION_RETRY_BASE_DELAY_MS,
+      'EXECUTION_RETRY_BASE_DELAY_MS',
+      LOCAL_DEFAULTS.EXECUTION_RETRY_BASE_DELAY_MS,
+      0,
+      60000,
+      errors,
+    ),
+    EXECUTION_RETRY_MAX_DELAY_MS: readInteger(
+      source.EXECUTION_RETRY_MAX_DELAY_MS,
+      'EXECUTION_RETRY_MAX_DELAY_MS',
+      LOCAL_DEFAULTS.EXECUTION_RETRY_MAX_DELAY_MS,
+      0,
+      300000,
       errors,
     ),
     API_URL: readUrl(
@@ -282,6 +312,12 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
   ) {
     errors.push(
       'WORKER_HEARTBEAT_TTL_SECONDS converted to milliseconds must be at least twice WORKER_HEARTBEAT_INTERVAL_MS',
+    );
+  }
+
+  if (environment.EXECUTION_RETRY_MAX_DELAY_MS < environment.EXECUTION_RETRY_BASE_DELAY_MS) {
+    errors.push(
+      'EXECUTION_RETRY_MAX_DELAY_MS must be greater than or equal to EXECUTION_RETRY_BASE_DELAY_MS',
     );
   }
 

@@ -26,16 +26,24 @@ export class BullMqExecutionQueueProducer
   implements ExecutionQueuePort, OnModuleInit, OnModuleDestroy
 {
   private readonly queue: Queue<ExecutionJob, void, ExecutionJobName>;
+  private readonly retryMaxAttempts: number;
+  private readonly retryBaseDelayMs: number;
 
   constructor(
     @Inject(RuntimeConfigService) config: RuntimeConfigService,
     @Inject(StructuredLoggerService) private readonly logger: StructuredLoggerService,
   ) {
+    this.retryMaxAttempts = config.executionRetryMaxAttempts;
+    this.retryBaseDelayMs = config.executionRetryBaseDelayMs;
     this.queue = new Queue<ExecutionJob, void, ExecutionJobName>(EXECUTION_QUEUE_NAME, {
       connection: createBullMqRedisConnectionOptions(config.redisUrl),
       prefix: BULLMQ_KEY_PREFIX,
       defaultJobOptions: {
-        attempts: 1,
+        attempts: this.retryMaxAttempts,
+        backoff: {
+          type: 'exponential',
+          delay: this.retryBaseDelayMs,
+        },
         removeOnComplete: COMPLETED_JOB_RETENTION,
         removeOnFail: FAILED_JOB_RETENTION,
       },
@@ -70,7 +78,12 @@ export class BullMqExecutionQueueProducer
 
     const queuedJob = await this.queue.add(job.jobName, job, {
       jobId: job.jobId,
-      attempts: 1,
+      attempts: this.retryMaxAttempts,
+      backoff: {
+        type: 'exponential',
+        delay: this.retryBaseDelayMs,
+      },
+      delay: input.retryDelayMs ?? 0,
       removeOnComplete: COMPLETED_JOB_RETENTION,
       removeOnFail: FAILED_JOB_RETENTION,
     });
@@ -84,6 +97,8 @@ export class BullMqExecutionQueueProducer
         workspaceId: input.workspaceId,
         executionId: input.executionId,
         workflowId: input.workflowId,
+        retryDelayMs: input.retryDelayMs ?? 0,
+        retryMaxAttempts: this.retryMaxAttempts,
       },
       BullMqExecutionQueueProducer.name,
     );

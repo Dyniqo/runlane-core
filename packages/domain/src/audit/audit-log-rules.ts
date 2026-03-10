@@ -15,6 +15,7 @@ export const AUDIT_ACTIONS = [
   'execution.created',
   'execution.enqueued',
   'execution.started',
+  'execution.retrying',
   'execution.succeeded',
   'execution.failed',
 ] as const;

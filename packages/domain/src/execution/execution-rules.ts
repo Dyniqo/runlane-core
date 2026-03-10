@@ -68,10 +68,101 @@ const EXECUTION_TRANSITIONS: Readonly<Record<ExecutionStatus, readonly Execution
   running: ['succeeded', 'failed', 'retrying', 'cancelled'],
   succeeded: [],
   failed: ['queued', 'dead_letter', 'cancelled'],
-  retrying: ['queued', 'dead_letter', 'cancelled'],
+  retrying: ['running', 'queued', 'dead_letter', 'cancelled'],
   dead_letter: ['queued'],
   cancelled: [],
 };
+
+export interface ClassifyExecutionRetryErrorInput {
+  readonly errorCode: string;
+  readonly errorCategory: string;
+  readonly attempt: number;
+  readonly maxAttempts: number;
+  readonly baseDelayMs: number;
+  readonly maxDelayMs: number;
+}
+
+export interface ExecutionRetryDecision {
+  readonly shouldRetry: boolean;
+  readonly delayMs: number;
+  readonly retryable: boolean;
+  readonly attemptsRemaining: number;
+}
+
+const RETRYABLE_EXECUTION_ERROR_CODES = new Set<string>([
+  'EXECUTION_PROCESSING_FAILED',
+  'EXECUTION_STEP_TIMEOUT',
+  'HTTP_CONNECTOR_TIMEOUT',
+  'HTTP_CONNECTOR_NETWORK_ERROR',
+  'HTTP_CONNECTOR_RETRYABLE_STATUS',
+  'AI_PROVIDER_TIMEOUT',
+  'AI_PROVIDER_RATE_LIMITED',
+  'AI_PROVIDER_TEMPORARY_FAILURE',
+  'NOTIFICATION_DELIVERY_FAILED',
+]);
+const NON_RETRYABLE_EXECUTION_ERROR_CODES = new Set<string>([
+  'EXECUTION_INPUT_INVALID',
+  'EXECUTION_INPUT_TOO_LARGE',
+  'EXECUTION_JOB_SCOPE_MISMATCH',
+  'EXECUTION_NOT_FOUND',
+  'EXECUTION_NOT_READY_FOR_PROCESSING',
+  'EXECUTION_STEP_CYCLE_DETECTED',
+  'EXECUTION_STEP_RUNNER_MISSING',
+  'EXECUTION_STEP_TARGET_MISSING',
+  'EXECUTION_WORKFLOW_NOT_FOUND',
+  'EXECUTION_WORKFLOW_NOT_PUBLISHED',
+  'WORKFLOW_DEFINITION_INVALID',
+]);
+const NON_RETRYABLE_ERROR_CATEGORIES = new Set<string>([
+  'authentication',
+  'authorization',
+  'not_found',
+  'validation',
+]);
+
+export function classifyExecutionRetryError(
+  input: ClassifyExecutionRetryErrorInput,
+): ExecutionRetryDecision {
+  const attemptsRemaining = Math.max(0, input.maxAttempts - input.attempt);
+  const retryable = isRetryableExecutionError(input.errorCode, input.errorCategory);
+  const shouldRetry = retryable && attemptsRemaining > 0;
+
+  return {
+    shouldRetry,
+    retryable,
+    attemptsRemaining,
+    delayMs: shouldRetry
+      ? calculateExecutionRetryDelayMs({
+          attempt: input.attempt,
+          baseDelayMs: input.baseDelayMs,
+          maxDelayMs: input.maxDelayMs,
+        })
+      : 0,
+  };
+}
+
+export function calculateExecutionRetryDelayMs(input: {
+  readonly attempt: number;
+  readonly baseDelayMs: number;
+  readonly maxDelayMs: number;
+}): number {
+  const exponent = Math.max(0, input.attempt - 1);
+  const delay = Math.min(input.maxDelayMs, input.baseDelayMs * 2 ** exponent);
+
+  return Math.max(0, Math.floor(delay));
+}
+
+export function isRetryableExecutionError(errorCode: string, errorCategory: string): boolean {
+  if (RETRYABLE_EXECUTION_ERROR_CODES.has(errorCode)) {
+    return true;
+  }
+
+  if (NON_RETRYABLE_EXECUTION_ERROR_CODES.has(errorCode)) {
+    return false;
+  }
+
+  return !NON_RETRYABLE_ERROR_CATEGORIES.has(errorCategory);
+}
 
 export function buildExecutionInputEnvelope(
   input: BuildExecutionInputEnvelopeInput,

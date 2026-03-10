@@ -1,5 +1,8 @@
 export { buildExecutionResponse } from './execution-response';
-export { ProcessExecutionUseCase } from './process-execution.use-case';
+export {
+  ExecutionRetryScheduledError,
+  ProcessExecutionUseCase,
+} from './process-execution.use-case';
 export type {
   ProcessExecutionUseCaseInput,
   ProcessExecutionUseCaseResult,

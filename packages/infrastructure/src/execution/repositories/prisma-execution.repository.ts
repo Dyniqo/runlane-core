@@ -5,6 +5,7 @@ import type {
   FindExecutionByTriggerSourceInput,
   FindExecutionByWorkspaceAndIdInput,
   MarkExecutionFailedInput,
+  MarkExecutionRetryingInput,
   MarkExecutionRunningInput,
   MarkExecutionSucceededInput,
   StoredExecutionRecord,
@@ -81,7 +82,7 @@ export class PrismaExecutionRepository implements ExecutionRepositoryPort {
       where: {
         id: input.executionId,
         workspaceId: input.workspaceId,
-        status: 'QUEUED',
+        status: { in: ['QUEUED', 'RETRYING'] },
       },
       data: {
         status: 'RUNNING',
@@ -114,6 +115,29 @@ export class PrismaExecutionRepository implements ExecutionRepositoryPort {
         outputJson: input.output as Prisma.InputJsonValue,
         errorCode: null,
         errorMessage: null,
+        durationMs: input.durationMs,
+        finishedAt: input.finishedAt,
+      },
+    });
+
+    if (updated.count !== 1) {
+      return null;
+    }
+
+    return this.findByWorkspaceAndId(input);
+  }
+
+  async markRetrying(input: MarkExecutionRetryingInput): Promise<StoredExecutionRecord | null> {
+    const updated = await this.persistence.client.execution.updateMany({
+      where: {
+        id: input.executionId,
+        workspaceId: input.workspaceId,
+        status: 'RUNNING',
+      },
+      data: {
+        status: 'RETRYING',
+        errorCode: input.errorCode,
+        errorMessage: input.errorMessage,
         durationMs: input.durationMs,
         finishedAt: input.finishedAt,
       },

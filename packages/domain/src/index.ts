@@ -26,6 +26,8 @@ export type {
 } from './automation';
 export {
   buildExecutionInputEnvelope,
+  calculateExecutionRetryDelayMs,
+  classifyExecutionRetryError,
   ensureExecutionStatusTransition,
   executionJobScopeMismatch,
   executionNotFound,
@@ -36,6 +38,7 @@ export {
   executionStepTimedOut,
   executionWorkflowNotFound,
   executionWorkflowNotPublished,
+  isRetryableExecutionError,
   EXECUTION_STATUSES,
   EXECUTION_STEP_STATUSES,
   EXECUTION_TRIGGER_TYPES,
@@ -43,6 +46,8 @@ export {
 } from './execution';
 export type {
   BuildExecutionInputEnvelopeInput,
+  ClassifyExecutionRetryErrorInput,
+  ExecutionRetryDecision,
   ExecutionInputEnvelope,
   ExecutionInputJsonObject,
   ExecutionInputJsonValue,

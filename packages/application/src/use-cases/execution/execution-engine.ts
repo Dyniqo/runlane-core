@@ -19,7 +19,7 @@ import type {
   StoredExecutionRecord,
   StoredWorkflowRecord,
 } from '../../ports';
-import type { SafeTemplateResolver, SafeTemplateResolutionResult } from './safe-template-resolver';
+import type { SafeTemplateResolutionResult, SafeTemplateResolver } from './safe-template-resolver';
 
 export interface WorkflowExecutionEngineInput {
   readonly execution: StoredExecutionRecord;
@@ -209,10 +209,16 @@ async function runStep(
   throw executionStepRunnerMissing(step.key, step.type);
 }
 
-function runConditionStep(
+async function runConditionStep(
   step: WorkflowStepDefinitionValue,
   context: StepExecutionContext,
-): JsonObject {
+): Promise<JsonObject> {
+  const delayMs = readOptionalDelayMs(step.config.delayMs);
+
+  if (delayMs > 0) {
+    await delay(delayMs);
+  }
+
   const branch = readOptionalString(step.config.branch);
   const pass = readOptionalBoolean(step.config.pass);
   const selectedBranch = branch ?? (pass === false ? 'failure' : 'success');
@@ -223,6 +229,24 @@ function runConditionStep(
     triggerType: context.input.trigger.type,
     previousStepCount: context.previousSteps.length,
   };
+}
+
+function readOptionalDelayMs(value: unknown): number {
+  if (value === undefined || value === null) {
+    return 0;
+  }
+
+  if (!Number.isInteger(value) || typeof value !== 'number' || value < 0 || value > 300_000) {
+    return 0;
+  }
+
+  return value;
+}
+
+function delay(durationMs: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, durationMs);
+  });
 }
 
 function buildStepInput(

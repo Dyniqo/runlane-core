@@ -53,6 +53,15 @@ export interface MarkExecutionSucceededInput {
   readonly durationMs: number;
 }
 
+export interface MarkExecutionRetryingInput {
+  readonly workspaceId: string;
+  readonly executionId: string;
+  readonly errorCode: string;
+  readonly errorMessage: string;
+  readonly finishedAt: Date;
+  readonly durationMs: number;
+}
+
 export interface MarkExecutionFailedInput {
   readonly workspaceId: string;
   readonly executionId: string;
@@ -60,6 +69,12 @@ export interface MarkExecutionFailedInput {
   readonly errorMessage: string;
   readonly finishedAt: Date;
   readonly durationMs: number;
+}
+
+export interface ExecutionRetryPolicy {
+  readonly maxAttempts: number;
+  readonly baseDelayMs: number;
+  readonly maxDelayMs: number;
 }
 
 export interface ExecutionRepositoryPort {
@@ -72,5 +87,6 @@ export interface ExecutionRepositoryPort {
   ): Promise<StoredExecutionRecord | null>;
   markRunning(input: MarkExecutionRunningInput): Promise<StoredExecutionRecord | null>;
   markSucceeded(input: MarkExecutionSucceededInput): Promise<StoredExecutionRecord | null>;
+  markRetrying(input: MarkExecutionRetryingInput): Promise<StoredExecutionRecord | null>;
   markFailed(input: MarkExecutionFailedInput): Promise<StoredExecutionRecord | null>;
 }

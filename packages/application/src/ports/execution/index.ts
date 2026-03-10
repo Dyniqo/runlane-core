@@ -6,6 +6,8 @@ export type {
   FindExecutionByTriggerSourceInput,
   FindExecutionByWorkspaceAndIdInput,
   MarkExecutionFailedInput,
+  ExecutionRetryPolicy,
+  MarkExecutionRetryingInput,
   MarkExecutionRunningInput,
   MarkExecutionSucceededInput,
   StoredExecutionRecord,

@@ -8,6 +8,7 @@ export {
 } from './access';
 export {
   buildExecutionResponse,
+  ExecutionRetryScheduledError,
   ProcessExecutionUseCase,
   ValidateExecutionJobForProcessingUseCase,
   SafeTemplateResolver,

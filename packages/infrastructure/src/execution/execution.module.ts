@@ -17,13 +17,14 @@ import type {
   TransactionBoundary,
   WorkflowRepositoryPort,
 } from '@runlane/application';
+import { RuntimeConfigService, RunlaneConfigModule } from '@runlane/config';
 import { RunlaneAuditModule } from '../audit';
 import { RunlaneDatabaseModule } from '../prisma';
 import { RunlaneWorkflowModule } from '../workflow';
 import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repositories';
 
 @Module({
-  imports: [RunlaneDatabaseModule, RunlaneAuditModule, RunlaneWorkflowModule],
+  imports: [RunlaneConfigModule, RunlaneDatabaseModule, RunlaneAuditModule, RunlaneWorkflowModule],
   providers: [
     PrismaExecutionRepository,
     PrismaExecutionStepRepository,
@@ -56,6 +57,7 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
         AUDIT_LOG_REPOSITORY,
         TRANSACTION_BOUNDARY,
         WorkflowExecutionEngine,
+        RuntimeConfigService,
       ],
       useFactory: (
         executions: ExecutionRepositoryPort,
@@ -63,8 +65,13 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
         auditLogs: AuditLogRepositoryPort,
         transactionBoundary: TransactionBoundary,
         engine: WorkflowExecutionEngine,
+        config: RuntimeConfigService,
       ) =>
-        new ProcessExecutionUseCase(executions, workflows, auditLogs, transactionBoundary, engine),
+        new ProcessExecutionUseCase(executions, workflows, auditLogs, transactionBoundary, engine, {
+          maxAttempts: config.executionRetryMaxAttempts,
+          baseDelayMs: config.executionRetryBaseDelayMs,
+          maxDelayMs: config.executionRetryMaxDelayMs,
+        }),
     },
   ],
   exports: [

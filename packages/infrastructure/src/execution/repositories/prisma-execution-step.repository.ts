@@ -19,8 +19,15 @@ export class PrismaExecutionStepRepository implements ExecutionStepRepositoryPor
   ) {}
 
   async createRunning(input: CreateRunningExecutionStepInput): Promise<StoredExecutionStepRecord> {
-    const step = await this.persistence.client.executionStep.create({
-      data: {
+    const step = await this.persistence.client.executionStep.upsert({
+      where: {
+        workspaceId_executionId_stepKey: {
+          workspaceId: input.workspaceId,
+          executionId: input.executionId,
+          stepKey: input.stepKey,
+        },
+      },
+      create: {
         workspaceId: input.workspaceId,
         executionId: input.executionId,
         stepKey: input.stepKey,
@@ -28,6 +35,17 @@ export class PrismaExecutionStepRepository implements ExecutionStepRepositoryPor
         status: 'RUNNING',
         inputJson: input.input as Prisma.InputJsonValue,
         startedAt: input.startedAt,
+      },
+      update: {
+        type: input.type,
+        status: 'RUNNING',
+        inputJson: input.input as Prisma.InputJsonValue,
+        outputJson: Prisma.DbNull,
+        errorCode: null,
+        errorMessage: null,
+        durationMs: null,
+        startedAt: input.startedAt,
+        finishedAt: null,
       },
       select: executionStepSelect,
     });

@@ -1,5 +1,5 @@
 import { Inject, Injectable, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common';
-import { ProcessExecutionUseCase } from '@runlane/application';
+import { ExecutionRetryScheduledError, ProcessExecutionUseCase } from '@runlane/application';
 import { RuntimeConfigService } from '@runlane/config';
 import {
   EXECUTION_JOB_NAME,
@@ -104,13 +104,41 @@ export class BullMqExecutionWorkerProcessor implements OnModuleInit, OnModuleDes
   private async process(job: Job<ExecutionJob, void, ExecutionJobName>): Promise<void> {
     assertExecutionJob(job);
 
-    const processed = await this.processExecution.execute({
-      workspaceId: job.data.payload.workspaceId,
-      executionId: job.data.payload.executionId,
-      workflowId: job.data.payload.workflowId,
-      jobId: job.id ?? job.data.jobId,
-      correlationId: job.data.correlationId,
-    });
+    let processed: Awaited<ReturnType<ProcessExecutionUseCase['execute']>>;
+
+    try {
+      processed = await this.processExecution.execute({
+        workspaceId: job.data.payload.workspaceId,
+        executionId: job.data.payload.executionId,
+        workflowId: job.data.payload.workflowId,
+        jobId: job.id ?? job.data.jobId,
+        correlationId: job.data.correlationId,
+      });
+    } catch (error) {
+      const retryError = error instanceof ExecutionRetryScheduledError ? error : null;
+
+      if (retryError) {
+        this.logger.logEvent(
+          'warn',
+          'Execution job scheduled for retry',
+          {
+            jobId: job.id,
+            jobName: job.name,
+            workspaceId: job.data.payload.workspaceId,
+            executionId: retryError.executionId,
+            workflowId: job.data.payload.workflowId,
+            attempt: retryError.attempt,
+            maxAttempts: retryError.maxAttempts,
+            retryDelayMs: retryError.retryDelayMs,
+            errorCode: retryError.errorCode,
+            correlationId: job.data.correlationId,
+          },
+          BullMqExecutionWorkerProcessor.name,
+        );
+      }
+
+      throw error;
+    }
 
     this.logger.logEvent(
       'info',

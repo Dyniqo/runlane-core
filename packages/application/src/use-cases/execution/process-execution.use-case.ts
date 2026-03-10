@@ -1,4 +1,5 @@
 import {
+  classifyExecutionRetryError,
   ensureExecutionStatusTransition,
   executionJobScopeMismatch,
   executionNotFound,
@@ -10,6 +11,7 @@ import {
 import type {
   AuditLogRepositoryPort,
   ExecutionRepositoryPort,
+  ExecutionRetryPolicy,
   StoredExecutionRecord,
   TransactionBoundary,
   WorkflowRepositoryPort,
@@ -29,6 +31,19 @@ export interface ProcessExecutionUseCaseResult {
   readonly execution: StoredExecutionRecord;
 }
 
+export class ExecutionRetryScheduledError extends Error {
+  constructor(
+    readonly executionId: string,
+    readonly attempt: number,
+    readonly maxAttempts: number,
+    readonly retryDelayMs: number,
+    readonly errorCode: string,
+  ) {
+    super('Execution retry has been scheduled');
+    this.name = 'ExecutionRetryScheduledError';
+  }
+}
+
 export class ProcessExecutionUseCase implements UseCase<
   ProcessExecutionUseCaseInput,
   ProcessExecutionUseCaseResult
@@ -39,6 +54,7 @@ export class ProcessExecutionUseCase implements UseCase<
     private readonly auditLogs: AuditLogRepositoryPort,
     private readonly transactionBoundary: TransactionBoundary,
     private readonly engine: WorkflowExecutionEngine,
+    private readonly retryPolicy: ExecutionRetryPolicy,
   ) {}
 
   async execute(input: ProcessExecutionUseCaseInput): Promise<ProcessExecutionUseCaseResult> {
@@ -57,7 +73,7 @@ export class ProcessExecutionUseCase implements UseCase<
         throw executionJobScopeMismatch();
       }
 
-      if (execution.status !== 'queued') {
+      if (execution.status !== 'queued' && execution.status !== 'retrying') {
         throw executionNotReadyForProcessing(execution.status);
       }
 
@@ -84,6 +100,7 @@ export class ProcessExecutionUseCase implements UseCase<
           correlationId: input.correlationId,
           startedAt: startedAt.toISOString(),
           attempt: markedRunning.attempts,
+          maxAttempts: this.retryPolicy.maxAttempts,
         },
         ip: null,
         userAgent: null,
@@ -102,6 +119,7 @@ export class ProcessExecutionUseCase implements UseCase<
         execution: await this.failExecution({
           input,
           startedAt,
+          running,
           errorCode: 'EXECUTION_WORKFLOW_NOT_FOUND',
           errorMessage: executionWorkflowNotFound().message,
         }),
@@ -113,6 +131,7 @@ export class ProcessExecutionUseCase implements UseCase<
         execution: await this.failExecution({
           input,
           startedAt,
+          running,
           errorCode: 'EXECUTION_WORKFLOW_NOT_PUBLISHED',
           errorMessage: executionWorkflowNotPublished().message,
         }),
@@ -149,6 +168,7 @@ export class ProcessExecutionUseCase implements UseCase<
             correlationId: input.correlationId,
             durationMs,
             attempts: markedSucceeded.attempts,
+            maxAttempts: this.retryPolicy.maxAttempts,
           },
           ip: null,
           userAgent: null,
@@ -159,20 +179,102 @@ export class ProcessExecutionUseCase implements UseCase<
 
       return { execution: succeeded };
     } catch (error) {
+      const errorCode = resolveExecutionErrorCode(error);
+      const errorMessage = resolveExecutionErrorMessage(error);
+      const retry = classifyExecutionRetryError({
+        errorCode,
+        errorCategory: isDomainError(error) ? error.category : 'internal',
+        attempt: running.attempts,
+        maxAttempts: this.retryPolicy.maxAttempts,
+        baseDelayMs: this.retryPolicy.baseDelayMs,
+        maxDelayMs: this.retryPolicy.maxDelayMs,
+      });
+
+      if (retry.shouldRetry) {
+        await this.retryExecution({
+          input,
+          startedAt,
+          running,
+          errorCode,
+          errorMessage,
+          retryDelayMs: retry.delayMs,
+        });
+
+        throw new ExecutionRetryScheduledError(
+          input.executionId,
+          running.attempts,
+          this.retryPolicy.maxAttempts,
+          retry.delayMs,
+          errorCode,
+        );
+      }
+
       return {
         execution: await this.failExecution({
           input,
           startedAt,
-          errorCode: resolveExecutionErrorCode(error),
-          errorMessage: resolveExecutionErrorMessage(error),
+          running,
+          errorCode,
+          errorMessage,
         }),
       };
     }
   }
 
+  private async retryExecution(input: {
+    readonly input: ProcessExecutionUseCaseInput;
+    readonly startedAt: Date;
+    readonly running: StoredExecutionRecord;
+    readonly errorCode: string;
+    readonly errorMessage: string;
+    readonly retryDelayMs: number;
+  }): Promise<StoredExecutionRecord> {
+    const finishedAt = new Date();
+    const durationMs = Math.max(0, finishedAt.getTime() - input.startedAt.getTime());
+    return this.transactionBoundary.execute(async () => {
+      ensureExecutionStatusTransition('running', 'retrying');
+      const retrying = await this.executions.markRetrying({
+        workspaceId: input.input.workspaceId,
+        executionId: input.input.executionId,
+        errorCode: input.errorCode,
+        errorMessage: input.errorMessage,
+        finishedAt,
+        durationMs,
+      });
+
+      if (!retrying) {
+        throw executionNotReadyForProcessing('running');
+      }
+
+      await this.auditLogs.create({
+        workspaceId: input.input.workspaceId,
+        actorUserId: null,
+        action: 'execution.retrying',
+        entityType: 'execution',
+        entityId: input.input.executionId,
+        metadata: {
+          workflowId: input.input.workflowId,
+          jobId: input.input.jobId,
+          correlationId: input.input.correlationId,
+          errorCode: input.errorCode,
+          errorMessage: input.errorMessage,
+          durationMs,
+          attempt: input.running.attempts,
+          maxAttempts: this.retryPolicy.maxAttempts,
+          retryDelayMs: input.retryDelayMs,
+        },
+        ip: null,
+        userAgent: null,
+      });
+
+      return retrying;
+    });
+  }
+
   private async failExecution(input: {
     readonly input: ProcessExecutionUseCaseInput;
     readonly startedAt: Date;
+    readonly running: StoredExecutionRecord;
     readonly errorCode: string;
     readonly errorMessage: string;
   }): Promise<StoredExecutionRecord> {
@@ -207,6 +309,7 @@ export class ProcessExecutionUseCase implements UseCase<
           errorMessage: input.errorMessage,
           durationMs,
           attempts: failed.attempts,
+          maxAttempts: this.retryPolicy.maxAttempts,
         },
         ip: null,
         userAgent: null,

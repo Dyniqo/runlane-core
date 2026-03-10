@@ -38,6 +38,18 @@ export class RuntimeConfigService {
     return this.environment.WORKER_HEARTBEAT_TTL_SECONDS;
   }
 
+  get executionRetryMaxAttempts(): number {
+    return this.environment.EXECUTION_RETRY_MAX_ATTEMPTS;
+  }
+
+  get executionRetryBaseDelayMs(): number {
+    return this.environment.EXECUTION_RETRY_BASE_DELAY_MS;
+  }
+
+  get executionRetryMaxDelayMs(): number {
+    return this.environment.EXECUTION_RETRY_MAX_DELAY_MS;
+  }
+
   get apiUrl(): string {
     return this.environment.API_URL;
   }

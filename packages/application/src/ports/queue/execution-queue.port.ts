@@ -11,6 +11,7 @@ export interface EnqueueExecutionJobInput {
   readonly correlationId: string;
   readonly causationId?: string;
   readonly enqueuedAt: Date;
+  readonly retryDelayMs?: number;
 }
 
 export interface EnqueuedExecutionJobRecord {
@@ -21,6 +22,7 @@ export interface EnqueuedExecutionJobRecord {
   readonly executionId: string;
   readonly workflowId: string;
   readonly enqueuedAt: Date;
+  readonly retryDelayMs?: number;
 }
 
 export interface ExecutionQueueHealthRecord {
