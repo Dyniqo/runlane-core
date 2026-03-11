@@ -8,6 +8,11 @@ export {
 } from './access';
 export {
   buildExecutionResponse,
+  invalidExecutionQuery,
+  GetExecutionUseCase,
+  ListExecutionsUseCase,
+  ListExecutionStepsUseCase,
+  RetryExecutionUseCase,
   ExecutionRetryScheduledError,
   ProcessExecutionUseCase,
   ValidateExecutionJobForProcessingUseCase,
@@ -44,6 +49,10 @@ export type {
   RegisterUserInput,
 } from './identity';
 export type {
+  GetExecutionUseCaseInput,
+  ListExecutionsUseCaseInput,
+  ListExecutionStepsUseCaseInput,
+  RetryExecutionUseCaseInput,
   ProcessExecutionUseCaseInput,
   ProcessExecutionUseCaseResult,
   ValidateExecutionJobForProcessingInput,

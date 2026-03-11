@@ -23,7 +23,7 @@ try {
   }
 
   const execution = await prisma.execution.findFirst({
-    where: { id: executionId, workspaceId, status: 'FAILED' },
+    where: { id: executionId, workspaceId, status: 'DEAD_LETTER' },
     select: {
       id: true,
       attempts: true,
@@ -36,7 +36,7 @@ try {
   });
 
   if (!execution) {
-    throw new Error('Retry policy did not finalize the execution as failed after retries.');
+    throw new Error('Retry policy did not finalize the execution as dead letter after retries.');
   }
 
   if (execution.attempts !== expectedAttempts) {

@@ -65,9 +65,9 @@ const EXECUTION_TERMINAL_STATUSES = new Set<ExecutionStatus>([
 ]);
 const EXECUTION_TRANSITIONS: Readonly<Record<ExecutionStatus, readonly ExecutionStatus[]>> = {
   queued: ['running', 'cancelled'],
-  running: ['succeeded', 'failed', 'retrying', 'cancelled'],
+  running: ['succeeded', 'failed', 'retrying', 'dead_letter', 'cancelled'],
   succeeded: [],
-  failed: ['queued', 'dead_letter', 'cancelled'],
+  failed: ['dead_letter', 'cancelled'],
   retrying: ['running', 'queued', 'dead_letter', 'cancelled'],
   dead_letter: ['queued'],
   cancelled: [],
@@ -162,6 +162,24 @@ export function isRetryableExecutionError(errorCode: string, errorCategory: stri
   }
 
   return !NON_RETRYABLE_ERROR_CATEGORIES.has(errorCategory);
+}
+
+export function executionManualRetryNotAllowed(status: string): DomainError {
+  return new DomainError({
+    code: 'EXECUTION_MANUAL_RETRY_NOT_ALLOWED',
+    category: 'conflict',
+    message: `Execution with status '${status}' cannot be retried manually`,
+    details: { status },
+  });
+}
+
+export function executionDeadLetterNotReady(status: string): DomainError {
+  return new DomainError({
+    code: 'EXECUTION_DEAD_LETTER_NOT_READY',
+    category: 'conflict',
+    message: `Execution with status '${status}' cannot be moved to dead letter`,
+    details: { status },
+  });
 }
 
 export function buildExecutionInputEnvelope(

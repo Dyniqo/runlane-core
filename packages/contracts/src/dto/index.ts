@@ -56,6 +56,7 @@ export type {
 export type {
   ExecutionDto,
   ExecutionResponseDto,
+  ListExecutionsResponseDto,
   ExecutionStatusDto,
   ExecutionStepDto,
   ExecutionStepsResponseDto,

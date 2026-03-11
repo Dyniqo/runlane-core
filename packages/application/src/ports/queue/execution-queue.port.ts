@@ -12,6 +12,7 @@ export interface EnqueueExecutionJobInput {
   readonly causationId?: string;
   readonly enqueuedAt: Date;
   readonly retryDelayMs?: number;
+  readonly replaceExisting?: boolean;
 }
 
 export interface EnqueuedExecutionJobRecord {
@@ -23,6 +24,7 @@ export interface EnqueuedExecutionJobRecord {
   readonly workflowId: string;
   readonly enqueuedAt: Date;
   readonly retryDelayMs?: number;
+  readonly replaceExisting?: boolean;
 }
 
 export interface ExecutionQueueHealthRecord {

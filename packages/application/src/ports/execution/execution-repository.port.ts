@@ -39,6 +39,12 @@ export interface FindExecutionByTriggerSourceInput {
   readonly sourceId: string;
 }
 
+export interface ListExecutionsByWorkspaceInput {
+  readonly workspaceId: string;
+  readonly cursor: string | null;
+  readonly limit: number;
+}
+
 export interface MarkExecutionRunningInput {
   readonly workspaceId: string;
   readonly executionId: string;
@@ -71,6 +77,21 @@ export interface MarkExecutionFailedInput {
   readonly durationMs: number;
 }
 
+export interface MarkExecutionDeadLetterInput {
+  readonly workspaceId: string;
+  readonly executionId: string;
+  readonly errorCode: string;
+  readonly errorMessage: string;
+  readonly finishedAt: Date;
+  readonly durationMs: number;
+}
+
+export interface MarkExecutionQueuedForManualRetryInput {
+  readonly workspaceId: string;
+  readonly executionId: string;
+  readonly queuedAt: Date;
+}
+
 export interface ExecutionRetryPolicy {
   readonly maxAttempts: number;
   readonly baseDelayMs: number;
@@ -85,8 +106,13 @@ export interface ExecutionRepositoryPort {
   findLatestByTriggerSource(
     input: FindExecutionByTriggerSourceInput,
   ): Promise<StoredExecutionRecord | null>;
+  listByWorkspace(input: ListExecutionsByWorkspaceInput): Promise<readonly StoredExecutionRecord[]>;
   markRunning(input: MarkExecutionRunningInput): Promise<StoredExecutionRecord | null>;
   markSucceeded(input: MarkExecutionSucceededInput): Promise<StoredExecutionRecord | null>;
   markRetrying(input: MarkExecutionRetryingInput): Promise<StoredExecutionRecord | null>;
   markFailed(input: MarkExecutionFailedInput): Promise<StoredExecutionRecord | null>;
+  markDeadLetter(input: MarkExecutionDeadLetterInput): Promise<StoredExecutionRecord | null>;
+  markQueuedForManualRetry(
+    input: MarkExecutionQueuedForManualRetryInput,
+  ): Promise<StoredExecutionRecord | null>;
 }

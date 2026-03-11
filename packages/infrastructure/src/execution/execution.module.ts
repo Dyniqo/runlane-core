@@ -1,9 +1,14 @@
 import { Module } from '@nestjs/common';
 import {
   AUDIT_LOG_REPOSITORY,
+  EXECUTION_QUEUE,
   EXECUTION_REPOSITORY,
   EXECUTION_STEP_REPOSITORY,
+  GetExecutionUseCase,
+  ListExecutionsUseCase,
+  ListExecutionStepsUseCase,
   ProcessExecutionUseCase,
+  RetryExecutionUseCase,
   SafeTemplateResolver,
   TRANSACTION_BOUNDARY,
   ValidateExecutionJobForProcessingUseCase,
@@ -12,6 +17,7 @@ import {
 } from '@runlane/application';
 import type {
   AuditLogRepositoryPort,
+  ExecutionQueuePort,
   ExecutionRepositoryPort,
   ExecutionStepRepositoryPort,
   TransactionBoundary,
@@ -19,12 +25,19 @@ import type {
 } from '@runlane/application';
 import { RuntimeConfigService, RunlaneConfigModule } from '@runlane/config';
 import { RunlaneAuditModule } from '../audit';
+import { RunlaneBullMqModule } from '../bullmq/bullmq.module';
 import { RunlaneDatabaseModule } from '../prisma';
 import { RunlaneWorkflowModule } from '../workflow';
 import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repositories';
 
 @Module({
-  imports: [RunlaneConfigModule, RunlaneDatabaseModule, RunlaneAuditModule, RunlaneWorkflowModule],
+  imports: [
+    RunlaneConfigModule,
+    RunlaneDatabaseModule,
+    RunlaneAuditModule,
+    RunlaneWorkflowModule,
+    RunlaneBullMqModule,
+  ],
   providers: [
     PrismaExecutionRepository,
     PrismaExecutionStepRepository,
@@ -48,6 +61,48 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
       inject: [EXECUTION_REPOSITORY],
       useFactory: (executions: ExecutionRepositoryPort) =>
         new ValidateExecutionJobForProcessingUseCase(executions),
+    },
+    {
+      provide: ListExecutionsUseCase,
+      inject: [EXECUTION_REPOSITORY, WORKFLOW_REPOSITORY],
+      useFactory: (executions: ExecutionRepositoryPort, workflows: WorkflowRepositoryPort) =>
+        new ListExecutionsUseCase(executions, workflows),
+    },
+    {
+      provide: GetExecutionUseCase,
+      inject: [EXECUTION_REPOSITORY, WORKFLOW_REPOSITORY],
+      useFactory: (executions: ExecutionRepositoryPort, workflows: WorkflowRepositoryPort) =>
+        new GetExecutionUseCase(executions, workflows),
+    },
+    {
+      provide: ListExecutionStepsUseCase,
+      inject: [EXECUTION_REPOSITORY, EXECUTION_STEP_REPOSITORY],
+      useFactory: (executions: ExecutionRepositoryPort, steps: ExecutionStepRepositoryPort) =>
+        new ListExecutionStepsUseCase(executions, steps),
+    },
+    {
+      provide: RetryExecutionUseCase,
+      inject: [
+        EXECUTION_REPOSITORY,
+        WORKFLOW_REPOSITORY,
+        AUDIT_LOG_REPOSITORY,
+        EXECUTION_QUEUE,
+        TRANSACTION_BOUNDARY,
+      ],
+      useFactory: (
+        executions: ExecutionRepositoryPort,
+        workflows: WorkflowRepositoryPort,
+        auditLogs: AuditLogRepositoryPort,
+        executionQueue: ExecutionQueuePort,
+        transactionBoundary: TransactionBoundary,
+      ) =>
+        new RetryExecutionUseCase(
+          executions,
+          workflows,
+          auditLogs,
+          executionQueue,
+          transactionBoundary,
+        ),
     },
     {
       provide: ProcessExecutionUseCase,
@@ -77,7 +132,11 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
   exports: [
     EXECUTION_REPOSITORY,
     EXECUTION_STEP_REPOSITORY,
+    GetExecutionUseCase,
+    ListExecutionsUseCase,
+    ListExecutionStepsUseCase,
     ProcessExecutionUseCase,
+    RetryExecutionUseCase,
     ValidateExecutionJobForProcessingUseCase,
     WorkflowExecutionEngine,
   ],

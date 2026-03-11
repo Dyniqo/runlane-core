@@ -29,6 +29,8 @@ export {
   calculateExecutionRetryDelayMs,
   classifyExecutionRetryError,
   ensureExecutionStatusTransition,
+  executionDeadLetterNotReady,
+  executionManualRetryNotAllowed,
   executionJobScopeMismatch,
   executionNotFound,
   executionNotReadyForProcessing,

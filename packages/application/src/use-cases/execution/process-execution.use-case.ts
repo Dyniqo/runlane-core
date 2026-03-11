@@ -1,6 +1,7 @@
 import {
   classifyExecutionRetryError,
   ensureExecutionStatusTransition,
+  executionDeadLetterNotReady,
   executionJobScopeMismatch,
   executionNotFound,
   executionNotReadyForProcessing,
@@ -210,13 +211,21 @@ export class ProcessExecutionUseCase implements UseCase<
       }
 
       return {
-        execution: await this.failExecution({
-          input,
-          startedAt,
-          running,
-          errorCode,
-          errorMessage,
-        }),
+        execution: retry.retryable
+          ? await this.deadLetterExecution({
+              input,
+              startedAt,
+              running,
+              errorCode,
+              errorMessage,
+            })
+          : await this.failExecution({
+              input,
+              startedAt,
+              running,
+              errorCode,
+              errorMessage,
+            }),
       };
     }
   }
@@ -268,6 +277,54 @@ export class ProcessExecutionUseCase implements UseCase<
       });
 
       return retrying;
+    });
+  }
+
+  private async deadLetterExecution(input: {
+    readonly input: ProcessExecutionUseCaseInput;
+    readonly startedAt: Date;
+    readonly running: StoredExecutionRecord;
+    readonly errorCode: string;
+    readonly errorMessage: string;
+  }): Promise<StoredExecutionRecord> {
+    const finishedAt = new Date();
+    const durationMs = Math.max(0, finishedAt.getTime() - input.startedAt.getTime());
+    return this.transactionBoundary.execute(async () => {
+      ensureExecutionStatusTransition('running', 'dead_letter');
+      const deadLettered = await this.executions.markDeadLetter({
+        workspaceId: input.input.workspaceId,
+        executionId: input.input.executionId,
+        errorCode: input.errorCode,
+        errorMessage: input.errorMessage,
+        finishedAt,
+        durationMs,
+      });
+
+      if (!deadLettered) {
+        throw executionDeadLetterNotReady('running');
+      }
+
+      await this.auditLogs.create({
+        workspaceId: input.input.workspaceId,
+        actorUserId: null,
+        action: 'execution.dead_lettered',
+        entityType: 'execution',
+        entityId: input.input.executionId,
+        metadata: {
+          workflowId: input.input.workflowId,
+          jobId: input.input.jobId,
+          correlationId: input.input.correlationId,
+          errorCode: input.errorCode,
+          errorMessage: input.errorMessage,
+          durationMs,
+          attempts: deadLettered.attempts,
+          maxAttempts: this.retryPolicy.maxAttempts,
+        },
+        ip: null,
+        userAgent: null,
+      });
+
+      return deadLettered;
     });
   }
 

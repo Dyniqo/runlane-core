@@ -1,3 +1,4 @@
+import type { CursorPageDto } from './cursor-page.dto';
 import type { JsonObject } from '../shared';
 
 export type ExecutionStatusDto =
@@ -50,6 +51,8 @@ export interface ExecutionDto {
 export interface ExecutionResponseDto {
   readonly execution: ExecutionDto;
 }
+
+export type ListExecutionsResponseDto = CursorPageDto<ExecutionDto>;
 
 export interface ExecutionStepsResponseDto {
   readonly items: readonly ExecutionStepDto[];

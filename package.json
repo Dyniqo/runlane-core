@@ -72,7 +72,8 @@
     "validate:engine": "powershell -ExecutionPolicy Bypass -File scripts/validate-execution-engine.ps1",
     "validate:steps": "powershell -ExecutionPolicy Bypass -File scripts/validate-execution-steps.ps1",
     "validate:templates": "powershell -ExecutionPolicy Bypass -File scripts/validate-template-resolver.ps1",
-    "validate:retries": "powershell -ExecutionPolicy Bypass -File scripts/validate-retry-policy.ps1"
+    "validate:retries": "powershell -ExecutionPolicy Bypass -File scripts/validate-retry-policy.ps1",
+    "validate:dead-letter": "powershell -ExecutionPolicy Bypass -File scripts/validate-dead-letter-retry.ps1"
   },
   "dependencies": {
     "@nestjs/common": "11.1.24",

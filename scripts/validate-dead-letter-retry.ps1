@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 
 $ApiBaseUrl = if ($env:RUNLANE_API_BASE_URL) { $env:RUNLANE_API_BASE_URL } else { 'http://localhost:4600' }
 $Timestamp = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
-$Email = "runlane.retry.$Timestamp@example.com"
+$Email = "runlane.deadletter.$Timestamp@example.com"
 $Password = 'RunlanePassword123!'
 
 function Invoke-JsonRequest {
@@ -40,7 +40,7 @@ function Invoke-NodeScript {
 Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/auth/register" -Body @{
   email = $Email
   password = $Password
-  name = 'Runlane Retry Operator'
+  name = 'Runlane Dead Letter Operator'
 } | Out-Null
 
 $Login = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/auth/login" -Body @{
@@ -50,7 +50,7 @@ $Login = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/auth/login" -Body 
 
 $AuthHeaders = @{ Authorization = "Bearer $($Login.tokens.accessToken)" }
 $ApiKey = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/api-keys" -Headers $AuthHeaders -Body @{
-  name = "Retry validation key $Timestamp"
+  name = "Dead letter validation key $Timestamp"
 }
 
 $Definition = @{
@@ -59,11 +59,11 @@ $Definition = @{
     type = 'automation'
     config = @{}
   }
-  entryStepKey = 'transient_timeout'
+  entryStepKey = 'always_timeout'
   steps = @(
     @{
-      key = 'transient_timeout'
-      name = 'Transient timeout'
+      key = 'always_timeout'
+      name = 'Always timeout'
       type = 'condition'
       timeoutMs = 100
       config = @{
@@ -75,15 +75,15 @@ $Definition = @{
 }
 
 $Workflow = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/workflows" -Headers $AuthHeaders -Body @{
-  name = "Retry policy workflow $Timestamp"
+  name = "Dead letter workflow $Timestamp"
   triggerType = 'automation'
   definition = $Definition
 }
 $Published = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/workflows/$($Workflow.workflow.id)/publish" -Headers $AuthHeaders
 $Accepted = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/automation/execute/$($Published.workflow.publicId)" -Headers @{
   'X-Runlane-Api-Key' = $ApiKey.token
-  'X-Runlane-Source' = 'retry_validation'
-  'X-Runlane-Idempotency-Key' = "retry-$Timestamp"
+  'X-Runlane-Source' = 'dead_letter_validation'
+  'X-Runlane-Idempotency-Key' = "dead-letter-$Timestamp"
 } -Body @{
   payload = @{
     leadId = "lead-$Timestamp"
@@ -92,10 +92,36 @@ $Accepted = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/automation/exec
 }
 
 if ($Accepted.execution.status -ne 'queued') {
-  throw 'Retry validation execution was not queued before worker processing.'
+  throw 'Dead letter validation execution was not queued before worker processing.'
 }
 
 Invoke-NodeScript -Arguments @('scripts/wait-for-execution-job.mjs', $Accepted.execution.workspaceId, $Accepted.execution.id, $Accepted.execution.workflowId)
-Invoke-NodeScript -Arguments @('scripts/validate-retry-policy-database.mjs', $Email, $Accepted.execution.id, '3')
+Invoke-NodeScript -Arguments @('scripts/validate-dead-letter-database.mjs', $Email, $Accepted.execution.id, 'initial')
 
-Write-Host "Retry policy validation completed for $Email"
+$BeforeRetry = Invoke-JsonRequest -Method Get -Uri "$ApiBaseUrl/v1/executions/$($Accepted.execution.id)" -Headers $AuthHeaders
+
+if ($BeforeRetry.execution.status -ne 'dead_letter') {
+  throw 'Execution was not visible as dead_letter before manual retry.'
+}
+
+$Retry = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/executions/$($Accepted.execution.id)/retry" -Headers $AuthHeaders
+
+if ($Retry.execution.status -ne 'queued') {
+  throw 'Manual retry did not move the execution back to queued.'
+}
+
+if ($Retry.execution.attempts -ne 0) {
+  throw 'Manual retry did not reset execution attempts.'
+}
+
+Invoke-NodeScript -Arguments @('scripts/wait-for-execution-job.mjs', $Accepted.execution.workspaceId, $Accepted.execution.id, $Accepted.execution.workflowId)
+Invoke-NodeScript -Arguments @('scripts/validate-dead-letter-database.mjs', $Email, $Accepted.execution.id, 'manual')
+
+$Steps = Invoke-JsonRequest -Method Get -Uri "$ApiBaseUrl/v1/executions/$($Accepted.execution.id)/steps" -Headers $AuthHeaders
+$FailedStep = @($Steps.items | Where-Object { $_.stepKey -eq 'always_timeout' -and $_.status -eq 'failed' })
+
+if ($FailedStep.Count -ne 1) {
+  throw 'Manual retry did not expose the final failed execution step.'
+}
+
+Write-Host "Dead-letter retry validation completed for $Email"

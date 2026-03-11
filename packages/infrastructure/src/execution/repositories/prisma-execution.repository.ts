@@ -4,7 +4,10 @@ import type {
   CreateQueuedExecutionInput,
   FindExecutionByTriggerSourceInput,
   FindExecutionByWorkspaceAndIdInput,
+  ListExecutionsByWorkspaceInput,
+  MarkExecutionDeadLetterInput,
   MarkExecutionFailedInput,
+  MarkExecutionQueuedForManualRetryInput,
   MarkExecutionRetryingInput,
   MarkExecutionRunningInput,
   MarkExecutionSucceededInput,
@@ -75,6 +78,22 @@ export class PrismaExecutionRepository implements ExecutionRepositoryPort {
     });
 
     return execution ? mapExecutionRecord(execution) : null;
+  }
+
+  async listByWorkspace(
+    input: ListExecutionsByWorkspaceInput,
+  ): Promise<readonly StoredExecutionRecord[]> {
+    const executions = await this.persistence.client.execution.findMany({
+      where: {
+        workspaceId: input.workspaceId,
+        ...(input.cursor ? { createdAt: { lt: new Date(input.cursor) } } : {}),
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: input.limit,
+      select: executionSelect,
+    });
+
+    return executions.map(mapExecutionRecord);
   }
 
   async markRunning(input: MarkExecutionRunningInput): Promise<StoredExecutionRecord | null> {
@@ -163,6 +182,58 @@ export class PrismaExecutionRepository implements ExecutionRepositoryPort {
         errorMessage: input.errorMessage,
         durationMs: input.durationMs,
         finishedAt: input.finishedAt,
+      },
+    });
+
+    if (updated.count !== 1) {
+      return null;
+    }
+
+    return this.findByWorkspaceAndId(input);
+  }
+
+  async markDeadLetter(input: MarkExecutionDeadLetterInput): Promise<StoredExecutionRecord | null> {
+    const updated = await this.persistence.client.execution.updateMany({
+      where: {
+        id: input.executionId,
+        workspaceId: input.workspaceId,
+        status: { in: ['RUNNING', 'FAILED', 'RETRYING'] },
+      },
+      data: {
+        status: 'DEAD_LETTER',
+        errorCode: input.errorCode,
+        errorMessage: input.errorMessage,
+        durationMs: input.durationMs,
+        finishedAt: input.finishedAt,
+      },
+    });
+
+    if (updated.count !== 1) {
+      return null;
+    }
+
+    return this.findByWorkspaceAndId(input);
+  }
+
+  async markQueuedForManualRetry(
+    input: MarkExecutionQueuedForManualRetryInput,
+  ): Promise<StoredExecutionRecord | null> {
+    const updated = await this.persistence.client.execution.updateMany({
+      where: {
+        id: input.executionId,
+        workspaceId: input.workspaceId,
+        status: 'DEAD_LETTER',
+      },
+      data: {
+        status: 'QUEUED',
+        queuedAt: input.queuedAt,
+        startedAt: null,
+        finishedAt: null,
+        durationMs: null,
+        outputJson: Prisma.DbNull,
+        errorCode: null,
+        errorMessage: null,
+        attempts: 0,
       },
     });
 

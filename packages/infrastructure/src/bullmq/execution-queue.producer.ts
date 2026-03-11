@@ -76,6 +76,10 @@ export class BullMqExecutionQueueProducer
       enqueuedAt: input.enqueuedAt,
     });
 
+    if (input.replaceExisting) {
+      await this.queue.remove(job.jobId).catch(() => undefined);
+    }
+
     const queuedJob = await this.queue.add(job.jobName, job, {
       jobId: job.jobId,
       attempts: this.retryMaxAttempts,
@@ -99,6 +103,7 @@ export class BullMqExecutionQueueProducer
         workflowId: input.workflowId,
         retryDelayMs: input.retryDelayMs ?? 0,
         retryMaxAttempts: this.retryMaxAttempts,
+        replaceExisting: input.replaceExisting ?? false,
       },
       BullMqExecutionQueueProducer.name,
     );

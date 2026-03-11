@@ -1,4 +1,17 @@
-export { buildExecutionResponse } from './execution-response';
+export {
+  buildExecutionResponse,
+  buildExecutionStepResponse,
+  buildListExecutionsResponse,
+} from './execution-response';
+export { invalidExecutionQuery } from './execution-errors';
+export { GetExecutionUseCase } from './get-execution.use-case';
+export type { GetExecutionUseCaseInput } from './get-execution.use-case';
+export { ListExecutionsUseCase } from './list-executions.use-case';
+export type { ListExecutionsUseCaseInput } from './list-executions.use-case';
+export { ListExecutionStepsUseCase } from './list-execution-steps.use-case';
+export type { ListExecutionStepsUseCaseInput } from './list-execution-steps.use-case';
+export { RetryExecutionUseCase } from './retry-execution.use-case';
+export type { RetryExecutionUseCaseInput } from './retry-execution.use-case';
 export {
   ExecutionRetryScheduledError,
   ProcessExecutionUseCase,
