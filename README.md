@@ -108,6 +108,21 @@ The Docker API listens on `http://127.0.0.1:14600`. PostgreSQL and Redis are bou
 
 Docker host ports can be changed with `RUNLANE_API_PORT`, `RUNLANE_POSTGRES_PORT`, and `RUNLANE_REDIS_PORT` without changing container ports. Public runtime URLs can be changed with `RUNLANE_PUBLIC_API_URL` and `RUNLANE_PUBLIC_APP_URL`. The Compose project namespace can be changed with `RUNLANE_COMPOSE_PROJECT_NAME`.
 
+## Workflow secrets and connector credentials
+
+Workflow secrets and connector credentials are encrypted before persistence and are only returned through masked API responses. Secret and credential operations are scoped by the authenticated workspace and workflow, and object access never trusts a workspace identifier from the request body.
+
+Available endpoints:
+
+- `GET /v1/workflows/:workflowId/secrets`
+- `POST /v1/workflows/:workflowId/secrets`
+- `DELETE /v1/workflows/:workflowId/secrets/:key`
+- `GET /v1/workflows/:workflowId/connector-credentials`
+- `POST /v1/workflows/:workflowId/connector-credentials`
+- `DELETE /v1/workflows/:workflowId/connector-credentials/:name`
+
+Secret references inside workflow step templates use `{{ secrets.key_name }}`. The execution engine validates that every referenced secret exists for the same workspace and workflow before a step runs, while persisted step input stores only safe reference markers and masked metadata.
+
 ## Runtime observability
 
 API and Worker logs are emitted as structured JSON. Every HTTP response includes `x-request-id` and `x-correlation-id`. Valid incoming values are preserved and missing or invalid values are replaced with generated identifiers. Sensitive values are redacted before logs are written.

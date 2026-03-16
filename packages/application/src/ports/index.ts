@@ -111,3 +111,24 @@ export type {
   UpdateWorkflowInput,
   WorkflowRepositoryPort,
 } from './workflow';
+export {
+  CONNECTOR_CREDENTIAL_REPOSITORY,
+  SECRET_CIPHER,
+  WORKFLOW_SECRET_REPOSITORY,
+} from './secrets';
+export type {
+  ConnectorCredentialRepositoryPort,
+  DecryptSecretInput,
+  DeleteConnectorCredentialInput,
+  DeleteWorkflowSecretInput,
+  EncryptSecretInput,
+  FindConnectorCredentialInput,
+  FindWorkflowSecretInput,
+  FindWorkflowSecretsByKeysInput,
+  SecretCipherPort,
+  StoredConnectorCredentialRecord,
+  StoredWorkflowSecretRecord,
+  UpsertConnectorCredentialInput,
+  UpsertWorkflowSecretInput,
+  WorkflowSecretRepositoryPort,
+} from './secrets';

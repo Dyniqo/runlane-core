@@ -9,6 +9,7 @@ export {
 export { RunlaneAuditModule } from './audit';
 export { ApiKeyGuard, readApiKeyScope, RunlaneAccessModule } from './access';
 export type { ApiKeyScopedHttpRequest } from './access';
+export { AesGcmSecretCipher, RunlaneCryptoModule } from './crypto';
 export { getDomainErrorHttpStatus } from './errors';
 export {
   HEALTH_INDICATOR_STATES,
@@ -59,3 +60,4 @@ export { configureHttpSecurity, RedisRateLimitMiddleware, RunlaneSecurityModule 
 export { RunlaneExecutionModule } from './execution';
 export { RunlaneIngestionModule } from './ingestion';
 export { RunlaneWorkflowModule } from './workflow';
+export { RunlaneSecretsModule } from './secrets';

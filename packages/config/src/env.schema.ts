@@ -30,6 +30,7 @@ export interface RuntimeEnvironment {
   readonly RATE_LIMIT_TTL: number;
   readonly RATE_LIMIT_MAX: number;
   readonly MAX_PAYLOAD_SIZE: number;
+  readonly ENCRYPTION_KEY: string;
   readonly WEBHOOK_SIGNING_SECRET: string;
   readonly WEBHOOK_SIGNATURE_TOLERANCE_SECONDS: number;
   readonly WEBHOOK_REPLAY_TTL_SECONDS: number;
@@ -59,6 +60,7 @@ const LOCAL_DEFAULTS = {
   REDIS_URL: 'redis://127.0.0.1:16379/0',
   JWT_ACCESS_SECRET: 'runlane_local_access_secret_change_me_64_bytes_minimum_value',
   JWT_REFRESH_SECRET: 'runlane_local_refresh_secret_change_me_64_bytes_minimum_value',
+  ENCRYPTION_KEY: 'runlane_local_encryption_key_change_me_64_bytes_minimum_value',
   ACCESS_TOKEN_TTL: 900,
   REFRESH_TOKEN_TTL: 2592000,
   CORS_ORIGIN: 'http://localhost:4600,http://127.0.0.1:4600',
@@ -225,6 +227,12 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
       LOCAL_DEFAULTS.MAX_PAYLOAD_SIZE,
       1024,
       10485760,
+      errors,
+    ),
+    ENCRYPTION_KEY: readSecret(
+      source.ENCRYPTION_KEY,
+      'ENCRYPTION_KEY',
+      deployRequired ? undefined : LOCAL_DEFAULTS.ENCRYPTION_KEY,
       errors,
     ),
     WEBHOOK_SIGNING_SECRET: readSecret(

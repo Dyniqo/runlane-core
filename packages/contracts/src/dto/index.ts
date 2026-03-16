@@ -67,3 +67,4 @@ export type {
   WebhookRequestDto,
   WebhookRequestStatusDto,
 } from './webhook.dto';
+export * from './secret.dto';

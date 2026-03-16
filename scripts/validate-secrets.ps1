@@ -2,9 +2,10 @@ $ErrorActionPreference = 'Stop'
 
 $ApiBaseUrl = if ($env:RUNLANE_API_BASE_URL) { $env:RUNLANE_API_BASE_URL } else { 'http://localhost:4600' }
 $Timestamp = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
-$Email = "runlane.templates.$Timestamp@example.com"
+$Email = "runlane.secrets.$Timestamp@example.com"
 $Password = 'RunlanePassword123!'
-$LeadId = "lead-$Timestamp"
+$SecretValue = "workflow-secret-$Timestamp"
+$CredentialValue = "connector-credential-$Timestamp"
 
 function Invoke-JsonRequest {
   param(
@@ -41,7 +42,7 @@ function Invoke-NodeScript {
 Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/auth/register" -Body @{
   email = $Email
   password = $Password
-  name = 'Runlane Template Operator'
+  name = 'Runlane Secret Operator'
 } | Out-Null
 
 $Login = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/auth/login" -Body @{
@@ -51,7 +52,7 @@ $Login = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/auth/login" -Body 
 
 $AuthHeaders = @{ Authorization = "Bearer $($Login.tokens.accessToken)" }
 $ApiKey = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/api-keys" -Headers $AuthHeaders -Body @{
-  name = "Template validation key $Timestamp"
+  name = "Secret validation key $Timestamp"
 }
 
 $Definition = @{
@@ -69,60 +70,74 @@ $Definition = @{
       timeoutMs = 1000
       config = @{
         branch = '{{ payload.routing.branch }}'
-        pass = '{{ payload.accepted }}'
-        leadMessage = 'Lead {{ payload.lead.id }} assigned to {{ payload.routing.branch }}'
-        secretToken = '{{ secrets.routing_token }}'
-      }
-      transitions = @{ branches = @{ premium = 'notify' } }
-    },
-    @{
-      key = 'notify'
-      name = 'Prepare notification'
-      type = 'condition'
-      timeoutMs = 1000
-      config = @{
-        branch = '{{ steps.classify.output.branch }}'
         pass = $true
-        summary = 'Route {{ steps.classify.output.branch }} for {{ payload.lead.email }}'
+        secretToken = '{{ secrets.routing_token }}'
       }
     }
   )
 }
 
 $Workflow = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/workflows" -Headers $AuthHeaders -Body @{
-  name = "Template resolver workflow $Timestamp"
+  name = "Secret validation workflow $Timestamp"
   triggerType = 'automation'
   definition = $Definition
 }
 
-Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/workflows/$($Workflow.workflow.id)/secrets" -Headers $AuthHeaders -Body @{
+$Secret = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/workflows/$($Workflow.workflow.id)/secrets" -Headers $AuthHeaders -Body @{
   key = 'routing_token'
-  value = "template-secret-$Timestamp"
-} | Out-Null
+  value = $SecretValue
+}
+
+if ($Secret.secret.maskedValue -ne '********') {
+  throw 'Workflow secret response did not mask the secret value.'
+}
+
+$Secrets = Invoke-JsonRequest -Method Get -Uri "$ApiBaseUrl/v1/workflows/$($Workflow.workflow.id)/secrets" -Headers $AuthHeaders
+$StoredSecret = @($Secrets.items | Where-Object { $_.key -eq 'routing_token' })
+
+if ($StoredSecret.Count -ne 1 -or $StoredSecret[0].maskedValue -ne '********') {
+  throw 'Workflow secret listing did not return the expected masked secret.'
+}
+
+$Credential = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/workflows/$($Workflow.workflow.id)/connector-credentials" -Headers $AuthHeaders -Body @{
+  name = 'primary_crm'
+  type = 'bearer_token'
+  value = $CredentialValue
+  metadata = @{
+    provider = 'crm'
+    headerName = 'Authorization'
+  }
+}
+
+if ($Credential.credential.maskedValue -ne '********') {
+  throw 'Connector credential response did not mask the credential value.'
+}
+
+$Credentials = Invoke-JsonRequest -Method Get -Uri "$ApiBaseUrl/v1/workflows/$($Workflow.workflow.id)/connector-credentials" -Headers $AuthHeaders
+$StoredCredential = @($Credentials.items | Where-Object { $_.name -eq 'primary_crm' })
+
+if ($StoredCredential.Count -ne 1 -or $StoredCredential[0].maskedValue -ne '********') {
+  throw 'Connector credential listing did not return the expected masked credential.'
+}
 
 $Published = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/workflows/$($Workflow.workflow.id)/publish" -Headers $AuthHeaders
 $Accepted = Invoke-JsonRequest -Method Post -Uri "$ApiBaseUrl/v1/automation/execute/$($Published.workflow.publicId)" -Headers @{
   'X-Runlane-Api-Key' = $ApiKey.token
-  'X-Runlane-Source' = 'template_validation'
-  'X-Runlane-Idempotency-Key' = "templates-$Timestamp"
+  'X-Runlane-Source' = 'secret_validation'
+  'X-Runlane-Idempotency-Key' = "secrets-$Timestamp"
 } -Body @{
   payload = @{
-    accepted = $true
-    lead = @{
-      id = $LeadId
-      email = 'linus@example.com'
-    }
     routing = @{
-      branch = 'premium'
+      branch = 'secure'
     }
   }
 }
 
 if ($Accepted.execution.status -ne 'queued') {
-  throw 'Template validation execution was not queued before worker processing.'
+  throw 'Secret validation execution was not queued before worker processing.'
 }
 
 Invoke-NodeScript -Arguments @('scripts/wait-for-execution-job.mjs', $Accepted.execution.workspaceId, $Accepted.execution.id, $Accepted.execution.workflowId)
-Invoke-NodeScript -Arguments @('scripts/validate-template-resolver-database.mjs', $Email, $Accepted.execution.id, $LeadId)
+Invoke-NodeScript -Arguments @('scripts/validate-secrets-database.mjs', $Email, $Workflow.workflow.id, $Accepted.execution.id, $SecretValue, $CredentialValue)
 
-Write-Host "Template resolver validation completed for $Email"
+Write-Host "Secret validation completed for $Email"

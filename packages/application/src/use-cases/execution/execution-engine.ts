@@ -16,10 +16,13 @@ import type {
 } from '@runlane/domain';
 import type {
   ExecutionStepRepositoryPort,
+  SecretCipherPort,
   StoredExecutionRecord,
   StoredWorkflowRecord,
+  WorkflowSecretRepositoryPort,
 } from '../../ports';
 import type { SafeTemplateResolutionResult, SafeTemplateResolver } from './safe-template-resolver';
+import { resolveWorkflowSecretReferences } from '../secrets';
 
 export interface WorkflowExecutionEngineInput {
   readonly execution: StoredExecutionRecord;
@@ -56,6 +59,8 @@ export class WorkflowExecutionEngine {
   constructor(
     private readonly steps: ExecutionStepRepositoryPort,
     private readonly templates: SafeTemplateResolver,
+    private readonly secrets: WorkflowSecretRepositoryPort,
+    private readonly cipher: SecretCipherPort,
   ) {}
 
   async execute(input: WorkflowExecutionEngineInput): Promise<WorkflowExecutionEngineResult> {
@@ -121,6 +126,13 @@ export class WorkflowExecutionEngine {
     const resolvedConfig = this.templates.resolveObject(step.config as JsonObject, {
       payload: context.input.payload,
       steps: buildPreviousStepOutputIndex(context.previousSteps),
+    });
+    await resolveWorkflowSecretReferences({
+      workspaceId: context.execution.workspaceId,
+      workflowId: context.workflow.id,
+      references: resolvedConfig.secretReferences,
+      secrets: this.secrets,
+      cipher: this.cipher,
     });
     const stepInput = buildStepInput(step, context, resolvedConfig);
     const executableStep: WorkflowStepDefinitionValue = {

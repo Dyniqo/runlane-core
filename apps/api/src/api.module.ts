@@ -12,6 +12,7 @@ import { AuditLogsModule } from './modules/audit/audit-logs.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ExecutionsModule } from './modules/executions/executions.module';
 import { HooksModule } from './modules/hooks/hooks.module';
+import { SecretsModule } from './modules/secrets/secrets.module';
 import { WorkflowsModule } from './modules/workflows/workflows.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 
@@ -29,6 +30,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
     WorkflowsModule,
     ExecutionsModule,
     HooksModule,
+    SecretsModule,
   ],
   controllers: [ApiController],
 })

@@ -25,6 +25,19 @@ export type {
   ReadAutomationBridgeRequestInput,
 } from './automation';
 export {
+  CONNECTOR_CREDENTIAL_TYPES,
+  connectorCredentialNotFound,
+  connectorCredentialSecretMissing,
+  maskSecretValue,
+  normalizeConnectorCredentialName,
+  normalizeConnectorCredentialType,
+  normalizeWorkflowSecretKey,
+  readConnectorCredentialMetadata,
+  readSecretValue,
+  workflowSecretNotFound,
+} from './connector';
+export type { ConnectorCredentialType } from './connector';
+export {
   buildExecutionInputEnvelope,
   calculateExecutionRetryDelayMs,
   classifyExecutionRetryError,

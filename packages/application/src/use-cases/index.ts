@@ -100,3 +100,22 @@ export type {
   ReceivePublicWebhookUseCaseInput,
   ReceivePublicWebhookUseCaseOptions,
 } from './ingestion';
+export {
+  DeleteConnectorCredentialUseCase,
+  DeleteWorkflowSecretUseCase,
+  ListConnectorCredentialsUseCase,
+  ListWorkflowSecretsUseCase,
+  UpsertConnectorCredentialUseCase,
+  UpsertWorkflowSecretUseCase,
+  buildConnectorCredentialAssociatedData,
+  buildWorkflowSecretAssociatedData,
+  resolveWorkflowSecretReferences,
+} from './secrets';
+export type {
+  DeleteConnectorCredentialUseCaseInput,
+  DeleteWorkflowSecretUseCaseInput,
+  ListConnectorCredentialsUseCaseInput,
+  ListWorkflowSecretsUseCaseInput,
+  UpsertConnectorCredentialUseCaseInput,
+  UpsertWorkflowSecretUseCaseInput,
+} from './secrets';

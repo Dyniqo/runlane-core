@@ -13,7 +13,7 @@ export interface SafeTemplateResolverContext {
 export interface SafeTemplateSecretReference {
   readonly key: string;
   readonly path: string;
-  readonly placeholder: string;
+  readonly token: string;
 }
 
 export interface SafeTemplateResolutionResult {
@@ -38,7 +38,7 @@ const TEMPLATE_OBJECT_MAX_DEPTH = 16;
 const TEMPLATE_ARRAY_MAX_ITEMS = 200;
 const TEMPLATE_OBJECT_MAX_KEYS = 200;
 const SECRET_REFERENCE_OBJECT_KEY = '__runlaneSecretRef';
-const SAFE_SECRET_KEY_PATTERN = /^[A-Z][A-Z0-9_]{1,127}$/i;
+const SAFE_SECRET_KEY_PATTERN = /^[a-z][a-z0-9_]{1,127}$/;
 const SAFE_PATH_SEGMENT_PATTERN = /^[A-Za-z0-9_:-]{1,80}$/;
 const UNSAFE_PATH_SEGMENTS = new Set(['__proto__', 'prototype', 'constructor']);
 
@@ -150,16 +150,16 @@ export class SafeTemplateResolver {
 
     for (const match of matches) {
       const expression = match[1];
-      const placeholder = match[0];
+      const token = match[0];
 
-      if (!expression || !placeholder) {
+      if (!expression || !token) {
         throw templateResolutionError(
           'TEMPLATE_EXPRESSION_INVALID',
           'Template expression is invalid',
         );
       }
 
-      const resolved = resolveExpression(expression, context, path, placeholder);
+      const resolved = resolveExpression(expression, context, path, token);
 
       if (resolved.secretReference) {
         throw templateResolutionError(
@@ -175,7 +175,7 @@ export class SafeTemplateResolver {
         );
       }
 
-      output = output.split(placeholder).join(String(resolved.value));
+      output = output.split(token).join(String(resolved.value));
     }
 
     return output;
@@ -194,7 +194,7 @@ function resolveExpression(
   expression: string,
   context: SafeTemplateResolverContext,
   path: string,
-  placeholder: string,
+  token: string,
 ): ResolvedExpression {
   const normalizedExpression = expression.trim();
 
@@ -229,7 +229,7 @@ function resolveExpression(
       secretReference: {
         key: secretKey,
         path,
-        placeholder,
+        token,
       },
     };
   }
@@ -306,14 +306,20 @@ function readPathValue(
 function readSecretReferenceKey(segments: readonly string[]): string {
   const secretKey = segments[0];
 
-  if (segments.length !== 1 || !secretKey || !SAFE_SECRET_KEY_PATTERN.test(secretKey)) {
+  const normalizedSecretKey = secretKey?.trim().toLowerCase();
+
+  if (
+    segments.length !== 1 ||
+    !normalizedSecretKey ||
+    !SAFE_SECRET_KEY_PATTERN.test(normalizedSecretKey)
+  ) {
     throw templateResolutionError(
       'TEMPLATE_SECRET_REFERENCE_INVALID',
       'Secret references must use secrets.<key>',
     );
   }
 
-  return secretKey;
+  return normalizedSecretKey;
 }
 
 function buildSecretReference(secretKey: string): JsonObject {

@@ -98,6 +98,10 @@ export class RuntimeConfigService {
     return this.environment.MAX_PAYLOAD_SIZE;
   }
 
+  get encryptionKey(): string {
+    return this.environment.ENCRYPTION_KEY;
+  }
+
   get webhookSigningSecret(): string {
     return this.environment.WEBHOOK_SIGNING_SECRET;
   }
