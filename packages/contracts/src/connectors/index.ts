@@ -17,3 +17,22 @@ export type {
   ConnectorUsage,
   ConnectorUsageType,
 } from './connector-contract';
+export {
+  HTTP_CONNECTOR_API_KEY_LOCATIONS,
+  HTTP_CONNECTOR_BODY_TYPES,
+  HTTP_CONNECTOR_METHODS,
+} from './http-connector-contract';
+export type {
+  HttpConnectorApiKeyLocation,
+  HttpConnectorAuthApiKeyConfig,
+  HttpConnectorAuthBasicConfig,
+  HttpConnectorAuthBearerConfig,
+  HttpConnectorAuthConfig,
+  HttpConnectorAuthCustomHeaderConfig,
+  HttpConnectorAuthNoneConfig,
+  HttpConnectorBodyType,
+  HttpConnectorMethod,
+  HttpConnectorRequestConfig,
+  HttpConnectorResponseConfig,
+  HttpConnectorStepConfig,
+} from './http-connector-contract';

@@ -24,7 +24,7 @@ async function main() {
   const queueName = 'execution';
   const jobName = 'execution.process';
   const jobId = `execution.${workspaceId}.${executionId}`;
-  const timeoutMs = 20000;
+  const timeoutMs = readTimeoutMs();
   const pollIntervalMs = 250;
   const startedAt = Date.now();
 
@@ -64,6 +64,22 @@ async function main() {
   } finally {
     await queue.close();
   }
+}
+
+function readTimeoutMs() {
+  const rawValue = process.env.RUNLANE_EXECUTION_JOB_WAIT_TIMEOUT_MS;
+
+  if (!rawValue) {
+    return 60000;
+  }
+
+  const value = Number(rawValue);
+
+  if (!Number.isInteger(value) || value < 1000 || value > 300000) {
+    throw new Error('RUNLANE_EXECUTION_JOB_WAIT_TIMEOUT_MS must be between 1000 and 300000.');
+  }
+
+  return value;
 }
 
 function assertExecutionJob(

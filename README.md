@@ -123,6 +123,27 @@ Available endpoints:
 
 Secret references inside workflow step templates use `{{ secrets.key_name }}`. The execution engine validates that every referenced secret exists for the same workspace and workflow before a step runs, while persisted step input stores only safe reference markers and masked metadata.
 
+## HTTP connector
+
+Workflow HTTP steps execute inside the Worker through the connector boundary. The connector supports `none`, `api_key`, `bearer`, `basic`, and `custom_header` authentication modes, request URL, query, headers, JSON or text bodies, success status mapping, retryable status mapping, response body path extraction, response size limits, redirect limits, and hard timeouts.
+
+HTTP connector requests use the workflow template resolver before execution. Workflow secret references and connector credentials are resolved only at the connector boundary and raw values are not written to execution step input, execution output, logs, or API responses.
+
+Outbound URL safety is enforced before every request and every redirect. The connector blocks localhost, private IP ranges, link-local addresses, cloud metadata endpoints, unsafe DNS results, URL credentials, unsupported protocols, oversized responses, and redirects beyond the configured limit. `HTTP_CONNECTOR_DEMO_URL_ALLOWLIST` can restrict outbound requests to approved demo destinations.
+
+Relevant configuration:
+
+- `HTTP_CONNECTOR_TIMEOUT_MS`
+- `HTTP_CONNECTOR_MAX_RESPONSE_BYTES`
+- `HTTP_CONNECTOR_REDIRECT_LIMIT`
+- `HTTP_CONNECTOR_DEMO_URL_ALLOWLIST`
+
+Validate the connector with the API and Worker running locally:
+
+```bash
+pnpm validate:http-connector
+```
+
 ## Runtime observability
 
 API and Worker logs are emitted as structured JSON. Every HTTP response includes `x-request-id` and `x-correlation-id`. Valid incoming values are preserved and missing or invalid values are replaced with generated identifiers. Sensitive values are redacted before logs are written.
@@ -145,6 +166,7 @@ pnpm docker:reset
 
 ```bash
 pnpm verify
+pnpm validate:http-connector
 powershell -ExecutionPolicy Bypass -File scripts/validate-operational-endpoints.ps1
 powershell -ExecutionPolicy Bypass -File scripts/validate-registration.ps1
 ```

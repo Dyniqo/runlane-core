@@ -18,6 +18,10 @@ export interface RuntimeEnvironment {
   readonly EXECUTION_RETRY_MAX_ATTEMPTS: number;
   readonly EXECUTION_RETRY_BASE_DELAY_MS: number;
   readonly EXECUTION_RETRY_MAX_DELAY_MS: number;
+  readonly HTTP_CONNECTOR_TIMEOUT_MS: number;
+  readonly HTTP_CONNECTOR_MAX_RESPONSE_BYTES: number;
+  readonly HTTP_CONNECTOR_REDIRECT_LIMIT: number;
+  readonly HTTP_CONNECTOR_DEMO_URL_ALLOWLIST: readonly string[];
   readonly API_URL: string;
   readonly APP_URL: string;
   readonly DATABASE_URL: string;
@@ -54,6 +58,11 @@ const LOCAL_DEFAULTS = {
   EXECUTION_RETRY_MAX_ATTEMPTS: 3,
   EXECUTION_RETRY_BASE_DELAY_MS: 500,
   EXECUTION_RETRY_MAX_DELAY_MS: 30000,
+  HTTP_CONNECTOR_TIMEOUT_MS: 10000,
+  HTTP_CONNECTOR_MAX_RESPONSE_BYTES: 1048576,
+  HTTP_CONNECTOR_REDIRECT_LIMIT: 3,
+  HTTP_CONNECTOR_DEMO_URL_ALLOWLIST:
+    'https://postman-echo.com,https://httpbin.org,https://httpbingo.org,https://echo.free.beeceptor.com,https://example.com',
   API_URL: 'http://localhost:4600',
   APP_URL: 'http://localhost:4600',
   DATABASE_URL: 'postgresql://runlane:runlane_local_database@127.0.0.1:15432/runlane?schema=public',
@@ -141,6 +150,36 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
       LOCAL_DEFAULTS.EXECUTION_RETRY_MAX_DELAY_MS,
       0,
       300000,
+      errors,
+    ),
+    HTTP_CONNECTOR_TIMEOUT_MS: readInteger(
+      source.HTTP_CONNECTOR_TIMEOUT_MS,
+      'HTTP_CONNECTOR_TIMEOUT_MS',
+      LOCAL_DEFAULTS.HTTP_CONNECTOR_TIMEOUT_MS,
+      250,
+      30000,
+      errors,
+    ),
+    HTTP_CONNECTOR_MAX_RESPONSE_BYTES: readInteger(
+      source.HTTP_CONNECTOR_MAX_RESPONSE_BYTES,
+      'HTTP_CONNECTOR_MAX_RESPONSE_BYTES',
+      LOCAL_DEFAULTS.HTTP_CONNECTOR_MAX_RESPONSE_BYTES,
+      1024,
+      5242880,
+      errors,
+    ),
+    HTTP_CONNECTOR_REDIRECT_LIMIT: readInteger(
+      source.HTTP_CONNECTOR_REDIRECT_LIMIT,
+      'HTTP_CONNECTOR_REDIRECT_LIMIT',
+      LOCAL_DEFAULTS.HTTP_CONNECTOR_REDIRECT_LIMIT,
+      0,
+      10,
+      errors,
+    ),
+    HTTP_CONNECTOR_DEMO_URL_ALLOWLIST: readOptionalUrlAllowlist(
+      source.HTTP_CONNECTOR_DEMO_URL_ALLOWLIST,
+      'HTTP_CONNECTOR_DEMO_URL_ALLOWLIST',
+      deployRequired ? '' : LOCAL_DEFAULTS.HTTP_CONNECTOR_DEMO_URL_ALLOWLIST,
       errors,
     ),
     API_URL: readUrl(
@@ -321,6 +360,10 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
     errors.push(
       'WORKER_HEARTBEAT_TTL_SECONDS converted to milliseconds must be at least twice WORKER_HEARTBEAT_INTERVAL_MS',
     );
+  }
+
+  if (environment.HTTP_CONNECTOR_MAX_RESPONSE_BYTES > environment.MAX_PAYLOAD_SIZE * 5) {
+    errors.push('HTTP_CONNECTOR_MAX_RESPONSE_BYTES must not exceed five times MAX_PAYLOAD_SIZE');
   }
 
   if (environment.EXECUTION_RETRY_MAX_DELAY_MS < environment.EXECUTION_RETRY_BASE_DELAY_MS) {
@@ -506,6 +549,45 @@ function readInteger(
   }
 
   return parsedValue;
+}
+
+function readOptionalUrlAllowlist(
+  value: string | undefined,
+  name: string,
+  defaultValue: string,
+  errors: string[],
+): readonly string[] {
+  const normalizedValue = value?.trim() ?? defaultValue;
+
+  if (!normalizedValue) {
+    return Object.freeze([]);
+  }
+
+  const entries = normalizedValue
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  const uniqueEntries = Array.from(new Set(entries));
+
+  for (const entry of uniqueEntries) {
+    try {
+      const parsedEntry = new URL(entry);
+
+      if (!['http:', 'https:'].includes(parsedEntry.protocol)) {
+        errors.push(`${name} entries must use http or https`);
+      }
+
+      if (!parsedEntry.hostname) {
+        errors.push(`${name} entries must include a hostname`);
+      }
+    } catch {
+      if (!isHostname(entry)) {
+        errors.push(`${name} entries must be valid URLs or hostnames`);
+      }
+    }
+  }
+
+  return Object.freeze(uniqueEntries);
 }
 
 function readUrl(

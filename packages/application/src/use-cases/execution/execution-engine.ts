@@ -1,4 +1,4 @@
-import type { JsonObject } from '@runlane/contracts';
+import type { ConnectorExecutionError, JsonObject } from '@runlane/contracts';
 import {
   DomainError,
   executionStepCycleDetected,
@@ -16,6 +16,7 @@ import type {
 } from '@runlane/domain';
 import type {
   ExecutionStepRepositoryPort,
+  HttpConnectorPort,
   SecretCipherPort,
   StoredExecutionRecord,
   StoredWorkflowRecord,
@@ -51,6 +52,8 @@ interface StepExecutionContext {
   readonly definition: WorkflowDefinition;
   readonly input: ExecutionInputEnvelope;
   readonly previousSteps: readonly ExecutedStepSnapshot[];
+  readonly secrets: ReadonlyMap<string, string>;
+  readonly httpConnector: HttpConnectorPort;
 }
 
 const DEFAULT_STEP_TIMEOUT_MS = 30_000;
@@ -61,6 +64,7 @@ export class WorkflowExecutionEngine {
     private readonly templates: SafeTemplateResolver,
     private readonly secrets: WorkflowSecretRepositoryPort,
     private readonly cipher: SecretCipherPort,
+    private readonly httpConnector: HttpConnectorPort,
   ) {}
 
   async execute(input: WorkflowExecutionEngineInput): Promise<WorkflowExecutionEngineResult> {
@@ -92,6 +96,8 @@ export class WorkflowExecutionEngine {
         definition,
         input: executionInput,
         previousSteps: snapshots,
+        secrets: new Map(),
+        httpConnector: this.httpConnector,
       });
 
       snapshots.push(snapshot);
@@ -127,7 +133,7 @@ export class WorkflowExecutionEngine {
       payload: context.input.payload,
       steps: buildPreviousStepOutputIndex(context.previousSteps),
     });
-    await resolveWorkflowSecretReferences({
+    const resolvedSecrets = await resolveWorkflowSecretReferences({
       workspaceId: context.execution.workspaceId,
       workflowId: context.workflow.id,
       references: resolvedConfig.secretReferences,
@@ -138,6 +144,10 @@ export class WorkflowExecutionEngine {
     const executableStep: WorkflowStepDefinitionValue = {
       ...step,
       config: resolvedConfig.value as unknown as WorkflowStepDefinitionValue['config'],
+    };
+    const stepContext: StepExecutionContext = {
+      ...context,
+      secrets: resolvedSecrets,
     };
 
     await this.steps.createRunning({
@@ -150,7 +160,7 @@ export class WorkflowExecutionEngine {
     });
 
     try {
-      const output = await runWithTimeout(executableStep, context);
+      const output = await runWithTimeout(executableStep, stepContext);
       const finishedAt = new Date();
       const durationMs = Math.max(0, finishedAt.getTime() - startedAt.getTime());
       await this.steps.markSucceeded({
@@ -218,7 +228,35 @@ async function runStep(
     return runConditionStep(step, context);
   }
 
+  if (step.type === 'http') {
+    return runHttpStep(step, context);
+  }
+
   throw executionStepRunnerMissing(step.key, step.type);
+}
+
+async function runHttpStep(
+  step: WorkflowStepDefinitionValue,
+  context: StepExecutionContext,
+): Promise<JsonObject> {
+  const result = await context.httpConnector.execute({
+    context: {
+      workspaceId: context.execution.workspaceId,
+      workflowId: context.workflow.id,
+      executionId: context.execution.id,
+      stepKey: step.key,
+      attempt: context.execution.attempts,
+      correlationId: context.execution.id,
+    },
+    config: step.config as JsonObject,
+    secrets: context.secrets,
+  });
+
+  if (result.status === 'succeeded') {
+    return result.output as JsonObject;
+  }
+
+  throw connectorExecutionFailed(result.error);
 }
 
 async function runConditionStep(
@@ -371,6 +409,27 @@ function resolveStepErrorMessage(error: unknown): string {
   }
 
   return 'Execution step failed';
+}
+
+function connectorExecutionFailed(error: ConnectorExecutionError): DomainError {
+  return new DomainError({
+    code: error.code,
+    category: mapConnectorErrorCategory(error),
+    message: error.message,
+    ...(error.details ? { details: error.details } : {}),
+  });
+}
+
+function mapConnectorErrorCategory(error: ConnectorExecutionError): DomainError['category'] {
+  if (
+    error.category === 'authentication' ||
+    error.category === 'authorization' ||
+    error.category === 'rate_limit'
+  ) {
+    return error.category;
+  }
+
+  return error.retryable ? 'business_rule' : 'validation';
 }
 
 function invalidConditionConfig(message: string): DomainError {

@@ -1,10 +1,12 @@
 export { AUDIT_LOG_REPOSITORY } from './audit';
+export { HTTP_CONNECTOR } from './connectors';
 export type {
   AuditLogRepositoryPort,
   CreateAuditLogInput,
   ListAuditLogsInput,
   StoredAuditLogRecord,
 } from './audit';
+export type { HttpConnectorExecutionInput, HttpConnectorPort } from './connectors';
 export { API_KEY_REPOSITORY, API_KEY_TOKEN_SERVICE } from './access';
 export type {
   ApiKeyRepositoryPort,

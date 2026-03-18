@@ -50,6 +50,22 @@ export class RuntimeConfigService {
     return this.environment.EXECUTION_RETRY_MAX_DELAY_MS;
   }
 
+  get httpConnectorTimeoutMs(): number {
+    return this.environment.HTTP_CONNECTOR_TIMEOUT_MS;
+  }
+
+  get httpConnectorMaxResponseBytes(): number {
+    return this.environment.HTTP_CONNECTOR_MAX_RESPONSE_BYTES;
+  }
+
+  get httpConnectorRedirectLimit(): number {
+    return this.environment.HTTP_CONNECTOR_REDIRECT_LIMIT;
+  }
+
+  get httpConnectorDemoUrlAllowlist(): readonly string[] {
+    return this.environment.HTTP_CONNECTOR_DEMO_URL_ALLOWLIST;
+  }
+
   get apiUrl(): string {
     return this.environment.API_URL;
   }

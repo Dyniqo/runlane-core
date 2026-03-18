@@ -26,17 +26,42 @@ export type {
 } from './automation';
 export {
   CONNECTOR_CREDENTIAL_TYPES,
+  HTTP_CONNECTOR_API_KEY_LOCATIONS,
+  HTTP_CONNECTOR_AUTH_MODES,
+  HTTP_CONNECTOR_BODY_TYPES,
+  HTTP_CONNECTOR_METHODS,
   connectorCredentialNotFound,
   connectorCredentialSecretMissing,
   maskSecretValue,
   normalizeConnectorCredentialName,
   normalizeConnectorCredentialType,
   normalizeWorkflowSecretKey,
+  httpConnectorAuthenticationInvalid,
+  httpConnectorConfigInvalid,
+  httpConnectorUrlBlocked,
   readConnectorCredentialMetadata,
+  readHttpConnectorStepConfig,
   readSecretValue,
   workflowSecretNotFound,
 } from './connector';
-export type { ConnectorCredentialType } from './connector';
+export type {
+  ConnectorCredentialType,
+  HttpConnectorApiKeyLocation,
+  HttpConnectorAuthApiKeyConfig,
+  HttpConnectorAuthBasicConfig,
+  HttpConnectorAuthBearerConfig,
+  HttpConnectorAuthConfig,
+  HttpConnectorAuthCustomHeaderConfig,
+  HttpConnectorAuthMode,
+  HttpConnectorAuthNoneConfig,
+  HttpConnectorBodyType,
+  HttpConnectorJsonObject,
+  HttpConnectorJsonValue,
+  HttpConnectorMethod,
+  HttpConnectorRequestConfig,
+  HttpConnectorResponseConfig,
+  HttpConnectorStepConfig,
+} from './connector';
 export {
   buildExecutionInputEnvelope,
   calculateExecutionRetryDelayMs,

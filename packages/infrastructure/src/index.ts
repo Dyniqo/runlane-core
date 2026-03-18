@@ -9,6 +9,7 @@ export {
 export { RunlaneAuditModule } from './audit';
 export { ApiKeyGuard, readApiKeyScope, RunlaneAccessModule } from './access';
 export type { ApiKeyScopedHttpRequest } from './access';
+export { RunlaneHttpConnectorModule, SecureHttpConnector } from './connectors';
 export { AesGcmSecretCipher, RunlaneCryptoModule } from './crypto';
 export { getDomainErrorHttpStatus } from './errors';
 export {

@@ -4,6 +4,7 @@ import {
   EXECUTION_QUEUE,
   EXECUTION_REPOSITORY,
   EXECUTION_STEP_REPOSITORY,
+  HTTP_CONNECTOR,
   SECRET_CIPHER,
   GetExecutionUseCase,
   ListExecutionsUseCase,
@@ -22,6 +23,7 @@ import type {
   ExecutionQueuePort,
   ExecutionRepositoryPort,
   ExecutionStepRepositoryPort,
+  HttpConnectorPort,
   TransactionBoundary,
   WorkflowRepositoryPort,
   WorkflowSecretRepositoryPort,
@@ -30,6 +32,7 @@ import type {
 import { RuntimeConfigService, RunlaneConfigModule } from '@runlane/config';
 import { RunlaneAuditModule } from '../audit';
 import { RunlaneBullMqModule } from '../bullmq/bullmq.module';
+import { RunlaneHttpConnectorModule } from '../connectors';
 import { RunlaneCryptoModule } from '../crypto';
 import { RunlaneDatabaseModule } from '../prisma';
 import { RunlaneWorkflowModule } from '../workflow';
@@ -45,6 +48,7 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
     RunlaneBullMqModule,
     RunlaneCryptoModule,
     RunlaneSecretsModule,
+    RunlaneHttpConnectorModule,
   ],
   providers: [
     PrismaExecutionRepository,
@@ -65,13 +69,15 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
         SafeTemplateResolver,
         WORKFLOW_SECRET_REPOSITORY,
         SECRET_CIPHER,
+        HTTP_CONNECTOR,
       ],
       useFactory: (
         steps: ExecutionStepRepositoryPort,
         templates: SafeTemplateResolver,
         secrets: WorkflowSecretRepositoryPort,
         cipher: SecretCipherPort,
-      ) => new WorkflowExecutionEngine(steps, templates, secrets, cipher),
+        httpConnector: HttpConnectorPort,
+      ) => new WorkflowExecutionEngine(steps, templates, secrets, cipher, httpConnector),
     },
     {
       provide: ValidateExecutionJobForProcessingUseCase,
