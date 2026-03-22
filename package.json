@@ -76,7 +76,8 @@
     "validate:dead-letter": "powershell -ExecutionPolicy Bypass -File scripts/validate-dead-letter-retry.ps1",
     "validate:secrets": "powershell -ExecutionPolicy Bypass -File scripts/validate-secrets.ps1",
     "validate:http-connector": "powershell -ExecutionPolicy Bypass -File scripts/validate-http-connector.ps1",
-    "diagnose:http-connector": "node scripts/diagnose-http-connector-transport.mjs"
+    "diagnose:http-connector": "node scripts/diagnose-http-connector-transport.mjs",
+    "validate:ai-provider": "node scripts/validate-ai-provider.mjs"
   },
   "dependencies": {
     "@nestjs/common": "11.1.24",

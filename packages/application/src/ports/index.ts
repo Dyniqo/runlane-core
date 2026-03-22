@@ -1,3 +1,5 @@
+export { AI_PROVIDER } from './ai';
+export type { AiProviderPort } from './ai';
 export { AUDIT_LOG_REPOSITORY } from './audit';
 export { HTTP_CONNECTOR } from './connectors';
 export type {

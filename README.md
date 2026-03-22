@@ -144,6 +144,28 @@ Validate the connector with the API and Worker running locally:
 pnpm validate:http-connector
 ```
 
+## AI provider
+
+The AI provider boundary exposes an OpenAI-compatible structured response adapter for Worker-side workflow steps. The adapter sends chat completion requests to `AI_BASE_URL`, uses `AI_MODEL` by default, enforces a hard timeout through `AI_TIMEOUT_MS`, validates provider responses as JSON, and rejects structured outputs that do not match the requested schema.
+
+The provider API key is supplied through `AI_API_KEY`. Runtime startup does not require the key, but the adapter fails fast with a configuration error when a workflow tries to call the provider without credentials.
+
+Relevant configuration:
+
+- `AI_PROVIDER`
+- `AI_API_KEY`
+- `AI_BASE_URL`
+- `AI_MODEL`
+- `AI_TIMEOUT_MS`
+
+Validate the local structured response contract without credentials:
+
+```bash
+pnpm validate:ai-provider
+```
+
+When `AI_API_KEY` is configured, the same command performs a live OpenAI-compatible structured response request.
+
 ## Runtime observability
 
 API and Worker logs are emitted as structured JSON. Every HTTP response includes `x-request-id` and `x-correlation-id`. Valid incoming values are preserved and missing or invalid values are replaced with generated identifiers. Sensitive values are redacted before logs are written.

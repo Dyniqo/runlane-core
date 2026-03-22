@@ -2,9 +2,11 @@ import { isIP } from 'node:net';
 
 export const RUNTIME_PROFILES = ['local', 'deploy'] as const;
 export const LOG_LEVELS = ['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent'] as const;
+export const AI_PROVIDERS = ['openai_compatible'] as const;
 
 export type RuntimeProfile = (typeof RUNTIME_PROFILES)[number];
 export type LogLevel = (typeof LOG_LEVELS)[number];
+export type AiProviderName = (typeof AI_PROVIDERS)[number];
 
 export interface RuntimeEnvironment {
   readonly RUNTIME_PROFILE: RuntimeProfile;
@@ -22,6 +24,11 @@ export interface RuntimeEnvironment {
   readonly HTTP_CONNECTOR_MAX_RESPONSE_BYTES: number;
   readonly HTTP_CONNECTOR_REDIRECT_LIMIT: number;
   readonly HTTP_CONNECTOR_DEMO_URL_ALLOWLIST: readonly string[];
+  readonly AI_PROVIDER: AiProviderName;
+  readonly AI_API_KEY: string | null;
+  readonly AI_BASE_URL: string;
+  readonly AI_MODEL: string;
+  readonly AI_TIMEOUT_MS: number;
   readonly API_URL: string;
   readonly APP_URL: string;
   readonly DATABASE_URL: string;
@@ -63,6 +70,11 @@ const LOCAL_DEFAULTS = {
   HTTP_CONNECTOR_REDIRECT_LIMIT: 3,
   HTTP_CONNECTOR_DEMO_URL_ALLOWLIST:
     'https://postman-echo.com,https://httpbin.org,https://httpbingo.org,https://echo.free.beeceptor.com,https://example.com',
+  AI_PROVIDER: 'openai_compatible',
+  AI_API_KEY: '',
+  AI_BASE_URL: 'https://api.openai.com/v1',
+  AI_MODEL: 'gpt-4o-mini',
+  AI_TIMEOUT_MS: 30000,
   API_URL: 'http://localhost:4600',
   APP_URL: 'http://localhost:4600',
   DATABASE_URL: 'postgresql://runlane:runlane_local_database@127.0.0.1:15432/runlane?schema=public',
@@ -180,6 +192,35 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
       source.HTTP_CONNECTOR_DEMO_URL_ALLOWLIST,
       'HTTP_CONNECTOR_DEMO_URL_ALLOWLIST',
       deployRequired ? '' : LOCAL_DEFAULTS.HTTP_CONNECTOR_DEMO_URL_ALLOWLIST,
+      errors,
+    ),
+    AI_PROVIDER: readEnum(
+      source.AI_PROVIDER,
+      'AI_PROVIDER',
+      AI_PROVIDERS,
+      LOCAL_DEFAULTS.AI_PROVIDER,
+      errors,
+    ),
+    AI_API_KEY: readOptionalSecret(
+      source.AI_API_KEY,
+      'AI_API_KEY',
+      LOCAL_DEFAULTS.AI_API_KEY,
+      errors,
+    ),
+    AI_BASE_URL: readUrl(
+      source.AI_BASE_URL,
+      'AI_BASE_URL',
+      LOCAL_DEFAULTS.AI_BASE_URL,
+      ['http:', 'https:'],
+      errors,
+    ),
+    AI_MODEL: readNonEmptyString(source.AI_MODEL, 'AI_MODEL', LOCAL_DEFAULTS.AI_MODEL, 160, errors),
+    AI_TIMEOUT_MS: readInteger(
+      source.AI_TIMEOUT_MS,
+      'AI_TIMEOUT_MS',
+      LOCAL_DEFAULTS.AI_TIMEOUT_MS,
+      1000,
+      120000,
       errors,
     ),
     API_URL: readUrl(
@@ -376,6 +417,10 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
     errors.push(
       'WEBHOOK_REPLAY_TTL_SECONDS must be greater than or equal to WEBHOOK_SIGNATURE_TOLERANCE_SECONDS',
     );
+  }
+
+  if (!environment.AI_BASE_URL.endsWith('/v1') && !environment.AI_BASE_URL.endsWith('/v1/')) {
+    errors.push('AI_BASE_URL must point to an OpenAI-compatible v1 API base URL');
   }
 
   if (errors.length > 0) {
@@ -616,6 +661,42 @@ function readUrl(
     }
   } catch {
     errors.push(`${name} must be a valid URL`);
+  }
+
+  return normalizedValue;
+}
+
+function readNonEmptyString(
+  value: string | undefined,
+  name: string,
+  defaultValue: string,
+  maximumLength: number,
+  errors: string[],
+): string {
+  const normalizedValue = value?.trim() || defaultValue;
+
+  if (normalizedValue.length === 0 || normalizedValue.length > maximumLength) {
+    errors.push(`${name} must be a non-empty string up to ${maximumLength} characters`);
+    return defaultValue;
+  }
+
+  return normalizedValue;
+}
+
+function readOptionalSecret(
+  value: string | undefined,
+  name: string,
+  defaultValue: string,
+  errors: string[],
+): string | null {
+  const normalizedValue = value?.trim() ?? defaultValue;
+
+  if (!normalizedValue) {
+    return null;
+  }
+
+  if (normalizedValue.length < 16) {
+    errors.push(`${name} must contain at least 16 characters when configured`);
   }
 
   return normalizedValue;

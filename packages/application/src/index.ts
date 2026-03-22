@@ -1,6 +1,7 @@
 export {
   API_KEY_REPOSITORY,
   API_KEY_TOKEN_SERVICE,
+  AI_PROVIDER,
   AUDIT_LOG_REPOSITORY,
   AUTH_TOKEN_SERVICE,
   EXECUTION_QUEUE,
@@ -22,6 +23,7 @@ export {
   WORKSPACE_SCOPE_RESOLVER,
 } from './ports';
 export type {
+  AiProviderPort,
   AuditLogRepositoryPort,
   CreateQueuedExecutionInput,
   EnqueuedExecutionJobRecord,

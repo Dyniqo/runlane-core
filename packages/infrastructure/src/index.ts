@@ -1,3 +1,4 @@
+export { OpenAiCompatibleProvider, RunlaneAiModule } from './ai';
 export { RunlaneAutomationModule } from './automation';
 export {
   BullMqExecutionQueueProducer,

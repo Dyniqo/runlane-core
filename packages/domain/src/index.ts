@@ -40,7 +40,13 @@ export {
   httpConnectorConfigInvalid,
   httpConnectorUrlBlocked,
   readConnectorCredentialMetadata,
+  aiProviderConfigInvalid,
+  aiProviderResponseInvalid,
+  readAiProviderMessages,
+  readAiStructuredJsonSchema,
+  readAiStructuredObjectSchema,
   readHttpConnectorStepConfig,
+  validateAiStructuredResponse,
   readSecretValue,
   workflowSecretNotFound,
 } from './connector';

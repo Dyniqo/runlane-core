@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { LogLevel, RuntimeEnvironment, RuntimeProfile } from './env.schema';
+import type { AiProviderName, LogLevel, RuntimeEnvironment, RuntimeProfile } from './env.schema';
 import { RUNTIME_ENVIRONMENT } from './runtime-environment.provider';
 
 @Injectable()
@@ -64,6 +64,26 @@ export class RuntimeConfigService {
 
   get httpConnectorDemoUrlAllowlist(): readonly string[] {
     return this.environment.HTTP_CONNECTOR_DEMO_URL_ALLOWLIST;
+  }
+
+  get aiProvider(): AiProviderName {
+    return this.environment.AI_PROVIDER;
+  }
+
+  get aiApiKey(): string | null {
+    return this.environment.AI_API_KEY;
+  }
+
+  get aiBaseUrl(): string {
+    return this.environment.AI_BASE_URL;
+  }
+
+  get aiModel(): string {
+    return this.environment.AI_MODEL;
+  }
+
+  get aiTimeoutMs(): number {
+    return this.environment.AI_TIMEOUT_MS;
   }
 
   get apiUrl(): string {

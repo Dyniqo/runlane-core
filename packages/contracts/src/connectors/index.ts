@@ -36,3 +36,28 @@ export type {
   HttpConnectorResponseConfig,
   HttpConnectorStepConfig,
 } from './http-connector-contract';
+export {
+  AI_PROVIDER_FAILURE_CATEGORIES,
+  AI_PROVIDER_ROLES,
+  AI_STRUCTURED_SCHEMA_TYPES,
+} from './ai-provider-contract';
+export type {
+  AiProviderFailureCategory,
+  AiProviderMessage,
+  AiProviderRawJsonObject,
+  AiProviderRole,
+  AiProviderStructuredResponseError,
+  AiProviderStructuredResponseFailure,
+  AiProviderStructuredResponseRequest,
+  AiProviderStructuredResponseResult,
+  AiProviderStructuredResponseSuccess,
+  AiProviderUsage,
+  AiStructuredArraySchema,
+  AiStructuredBooleanSchema,
+  AiStructuredJsonSchema,
+  AiStructuredNullSchema,
+  AiStructuredNumberSchema,
+  AiStructuredObjectSchema,
+  AiStructuredSchemaType,
+  AiStructuredStringSchema,
+} from './ai-provider-contract';
