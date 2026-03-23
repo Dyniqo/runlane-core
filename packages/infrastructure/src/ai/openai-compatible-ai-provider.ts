@@ -403,11 +403,20 @@ function mapHttpStatusToError(
     };
   }
 
+  if (RETRYABLE_STATUS_CODES.has(statusCode)) {
+    return {
+      code: 'AI_PROVIDER_TEMPORARY_FAILURE',
+      category: statusCode >= 500 ? 'remote' : 'timeout',
+      message: providerMessage ?? `AI provider returned HTTP ${statusCode}`,
+      retryable: true,
+    };
+  }
+
   return {
     code: `AI_PROVIDER_HTTP_${statusCode}`,
-    category: statusCode >= 500 ? 'remote' : 'validation',
+    category: 'validation',
     message: providerMessage ?? `AI provider returned HTTP ${statusCode}`,
-    retryable: RETRYABLE_STATUS_CODES.has(statusCode),
+    retryable: false,
   };
 }
 

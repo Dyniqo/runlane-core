@@ -77,7 +77,8 @@
     "validate:secrets": "powershell -ExecutionPolicy Bypass -File scripts/validate-secrets.ps1",
     "validate:http-connector": "powershell -ExecutionPolicy Bypass -File scripts/validate-http-connector.ps1",
     "diagnose:http-connector": "node scripts/diagnose-http-connector-transport.mjs",
-    "validate:ai-provider": "node scripts/validate-ai-provider.mjs"
+    "validate:ai-provider": "node scripts/validate-ai-provider.mjs",
+    "validate:ai-decision": "powershell -ExecutionPolicy Bypass -File scripts/validate-ai-decision.ps1"
   },
   "dependencies": {
     "@nestjs/common": "11.1.24",

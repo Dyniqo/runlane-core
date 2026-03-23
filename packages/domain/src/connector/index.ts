@@ -38,6 +38,8 @@ export type {
   HttpConnectorResponseConfig,
   HttpConnectorStepConfig,
 } from './http-connector-rules';
+export { aiDecisionStepConfigInvalid, readAiDecisionStepConfig } from './ai-decision-rules';
+export type { AiDecisionStepConfig } from './ai-decision-rules';
 export {
   aiProviderConfigInvalid,
   aiProviderResponseInvalid,

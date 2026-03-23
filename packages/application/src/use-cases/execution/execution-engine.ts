@@ -1,4 +1,9 @@
-import type { ConnectorExecutionError, JsonObject } from '@runlane/contracts';
+import type {
+  AiProviderStructuredResponseError,
+  ConnectorExecutionError,
+  JsonObject,
+  JsonValue,
+} from '@runlane/contracts';
 import {
   DomainError,
   executionStepCycleDetected,
@@ -6,6 +11,7 @@ import {
   executionStepTargetMissing,
   executionStepTimedOut,
   isDomainError,
+  readAiDecisionStepConfig,
   readExecutionInput,
   readWorkflowDefinition,
 } from '@runlane/domain';
@@ -15,6 +21,7 @@ import type {
   WorkflowStepDefinitionValue,
 } from '@runlane/domain';
 import type {
+  AiProviderPort,
   ExecutionStepRepositoryPort,
   HttpConnectorPort,
   SecretCipherPort,
@@ -54,6 +61,12 @@ interface StepExecutionContext {
   readonly previousSteps: readonly ExecutedStepSnapshot[];
   readonly secrets: ReadonlyMap<string, string>;
   readonly httpConnector: HttpConnectorPort;
+  readonly aiProvider: AiProviderPort;
+}
+
+interface NextStepResolution {
+  readonly stepKey?: string;
+  readonly selectedByTransition: boolean;
 }
 
 const DEFAULT_STEP_TIMEOUT_MS = 30_000;
@@ -65,6 +78,7 @@ export class WorkflowExecutionEngine {
     private readonly secrets: WorkflowSecretRepositoryPort,
     private readonly cipher: SecretCipherPort,
     private readonly httpConnector: HttpConnectorPort,
+    private readonly aiProvider: AiProviderPort,
   ) {}
 
   async execute(input: WorkflowExecutionEngineInput): Promise<WorkflowExecutionEngineResult> {
@@ -76,6 +90,7 @@ export class WorkflowExecutionEngine {
     const snapshots: ExecutedStepSnapshot[] = [];
     const visitedSteps = new Set<string>();
     let currentStepKey: string | undefined = definition.entryStepKey;
+    let currentStepSelectedByTransition = false;
 
     while (currentStepKey) {
       if (visitedSteps.has(currentStepKey)) {
@@ -98,10 +113,18 @@ export class WorkflowExecutionEngine {
         previousSteps: snapshots,
         secrets: new Map(),
         httpConnector: this.httpConnector,
+        aiProvider: this.aiProvider,
       });
 
       snapshots.push(snapshot);
-      currentStepKey = resolveNextStepKey(definition, step, snapshot.output);
+      const nextStep = resolveNextStep(
+        definition,
+        step,
+        snapshot.output,
+        currentStepSelectedByTransition,
+      );
+      currentStepKey = nextStep.stepKey;
+      currentStepSelectedByTransition = nextStep.selectedByTransition;
     }
 
     const finishedAt = new Date();
@@ -232,6 +255,10 @@ async function runStep(
     return runHttpStep(step, context);
   }
 
+  if (step.type === 'ai_decision') {
+    return runAiDecisionStep(step, context);
+  }
+
   throw executionStepRunnerMissing(step.key, step.type);
 }
 
@@ -257,6 +284,45 @@ async function runHttpStep(
   }
 
   throw connectorExecutionFailed(result.error);
+}
+
+async function runAiDecisionStep(
+  step: WorkflowStepDefinitionValue,
+  context: StepExecutionContext,
+): Promise<JsonObject> {
+  const config = readAiDecisionStepConfig(step.config);
+  const result = await context.aiProvider.generateStructuredResponse({
+    workspaceId: context.execution.workspaceId,
+    workflowId: context.workflow.id,
+    executionId: context.execution.id,
+    stepKey: step.key,
+    correlationId: context.execution.id,
+    messages: config.messages,
+    schema: config.schema,
+    ...(config.model ? { model: config.model } : {}),
+    ...(config.temperature !== undefined ? { temperature: config.temperature } : {}),
+    ...(config.maxOutputTokens !== undefined ? { maxOutputTokens: config.maxOutputTokens } : {}),
+    timeoutMs: step.timeoutMs ?? DEFAULT_STEP_TIMEOUT_MS,
+  });
+
+  if (result.status === 'failed') {
+    throw aiProviderExecutionFailed(result.error);
+  }
+
+  const branch = readOptionalBranch(result.output, config.branchPath);
+
+  return {
+    decision: result.output,
+    ...(branch ? { branch } : {}),
+    provider: {
+      model: result.model,
+      usage: {
+        inputTokens: result.usage.inputTokens,
+        outputTokens: result.usage.outputTokens,
+        totalTokens: result.usage.totalTokens,
+      },
+    },
+  };
 }
 
 async function runConditionStep(
@@ -339,26 +405,48 @@ function buildPreviousStepOutputIndex(
   );
 }
 
-function resolveNextStepKey(
+function resolveNextStep(
   definition: WorkflowDefinition,
   step: WorkflowStepDefinitionValue,
   output: JsonObject,
-): string | undefined {
+  currentStepSelectedByTransition: boolean,
+): NextStepResolution {
   const branch = typeof output.branch === 'string' ? output.branch : null;
   const branchTarget = branch ? step.transitions?.branches?.[branch] : undefined;
 
   if (branchTarget) {
-    return branchTarget;
+    return {
+      stepKey: branchTarget,
+      selectedByTransition: true,
+    };
   }
 
   if (step.transitions?.onSuccess) {
-    return step.transitions.onSuccess;
+    return {
+      stepKey: step.transitions.onSuccess,
+      selectedByTransition: true,
+    };
+  }
+
+  if (currentStepSelectedByTransition) {
+    return {
+      selectedByTransition: false,
+    };
   }
 
   const currentIndex = definition.steps.findIndex((candidate) => candidate.key === step.key);
   const nextStep = currentIndex >= 0 ? definition.steps[currentIndex + 1] : undefined;
 
-  return nextStep?.key;
+  if (!nextStep) {
+    return {
+      selectedByTransition: false,
+    };
+  }
+
+  return {
+    stepKey: nextStep.key,
+    selectedByTransition: false,
+  };
 }
 
 function readOptionalString(value: unknown): string | null {
@@ -391,6 +479,48 @@ function readOptionalBoolean(value: unknown): boolean | null {
   return value;
 }
 
+function readOptionalBranch(source: JsonObject, path: string): string | null {
+  const value = readJsonPathValue(source, path);
+
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  if (typeof value !== 'string') {
+    throw new DomainError({
+      code: 'AI_DECISION_BRANCH_INVALID',
+      category: 'validation',
+      message: 'AI decision branch output must be a string',
+    });
+  }
+
+  const normalizedValue = value.trim();
+
+  if (normalizedValue.length === 0 || normalizedValue.length > 80) {
+    throw new DomainError({
+      code: 'AI_DECISION_BRANCH_INVALID',
+      category: 'validation',
+      message: 'AI decision branch output is invalid',
+    });
+  }
+
+  return normalizedValue;
+}
+
+function readJsonPathValue(source: JsonObject, path: string): JsonValue | undefined {
+  let current: JsonValue | undefined = source;
+
+  for (const segment of path.split('.')) {
+    if (!isJsonObject(current) || Array.isArray(current)) {
+      return undefined;
+    }
+
+    current = current[segment];
+  }
+
+  return current;
+}
+
 function resolveStepErrorCode(error: unknown): string {
   if (isDomainError(error)) {
     return error.code;
@@ -420,7 +550,33 @@ function connectorExecutionFailed(error: ConnectorExecutionError): DomainError {
   });
 }
 
+function aiProviderExecutionFailed(error: AiProviderStructuredResponseError): DomainError {
+  return new DomainError({
+    code: error.code,
+    category: mapAiProviderErrorCategory(error),
+    message: error.message,
+    details: {
+      ...(error.details ?? {}),
+      retryable: error.retryable,
+    },
+  });
+}
+
 function mapConnectorErrorCategory(error: ConnectorExecutionError): DomainError['category'] {
+  if (
+    error.category === 'authentication' ||
+    error.category === 'authorization' ||
+    error.category === 'rate_limit'
+  ) {
+    return error.category;
+  }
+
+  return error.retryable ? 'business_rule' : 'validation';
+}
+
+function mapAiProviderErrorCategory(
+  error: AiProviderStructuredResponseError,
+): DomainError['category'] {
   if (
     error.category === 'authentication' ||
     error.category === 'authorization' ||
@@ -438,4 +594,8 @@ function invalidConditionConfig(message: string): DomainError {
     category: 'validation',
     message,
   });
+}
+
+function isJsonObject(value: unknown): value is JsonObject {
+  return typeof value === 'object' && value !== null;
 }

@@ -40,6 +40,8 @@ export {
   httpConnectorConfigInvalid,
   httpConnectorUrlBlocked,
   readConnectorCredentialMetadata,
+  aiDecisionStepConfigInvalid,
+  readAiDecisionStepConfig,
   aiProviderConfigInvalid,
   aiProviderResponseInvalid,
   readAiProviderMessages,
@@ -51,6 +53,7 @@ export {
   workflowSecretNotFound,
 } from './connector';
 export type {
+  AiDecisionStepConfig,
   ConnectorCredentialType,
   HttpConnectorApiKeyLocation,
   HttpConnectorAuthApiKeyConfig,

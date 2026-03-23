@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import {
+  AI_PROVIDER,
   AUDIT_LOG_REPOSITORY,
   EXECUTION_QUEUE,
   EXECUTION_REPOSITORY,
@@ -19,6 +20,7 @@ import {
   WORKFLOW_SECRET_REPOSITORY,
 } from '@runlane/application';
 import type {
+  AiProviderPort,
   AuditLogRepositoryPort,
   ExecutionQueuePort,
   ExecutionRepositoryPort,
@@ -30,6 +32,7 @@ import type {
   SecretCipherPort,
 } from '@runlane/application';
 import { RuntimeConfigService, RunlaneConfigModule } from '@runlane/config';
+import { RunlaneAiModule } from '../ai';
 import { RunlaneAuditModule } from '../audit';
 import { RunlaneBullMqModule } from '../bullmq/bullmq.module';
 import { RunlaneHttpConnectorModule } from '../connectors';
@@ -42,6 +45,7 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
 @Module({
   imports: [
     RunlaneConfigModule,
+    RunlaneAiModule,
     RunlaneDatabaseModule,
     RunlaneAuditModule,
     RunlaneWorkflowModule,
@@ -70,6 +74,7 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
         WORKFLOW_SECRET_REPOSITORY,
         SECRET_CIPHER,
         HTTP_CONNECTOR,
+        AI_PROVIDER,
       ],
       useFactory: (
         steps: ExecutionStepRepositoryPort,
@@ -77,7 +82,9 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
         secrets: WorkflowSecretRepositoryPort,
         cipher: SecretCipherPort,
         httpConnector: HttpConnectorPort,
-      ) => new WorkflowExecutionEngine(steps, templates, secrets, cipher, httpConnector),
+        aiProvider: AiProviderPort,
+      ) =>
+        new WorkflowExecutionEngine(steps, templates, secrets, cipher, httpConnector, aiProvider),
     },
     {
       provide: ValidateExecutionJobForProcessingUseCase,

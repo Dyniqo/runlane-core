@@ -166,6 +166,20 @@ pnpm validate:ai-provider
 
 When `AI_API_KEY` is configured, the same command performs a live OpenAI-compatible structured response request.
 
+## AI decision workflow step
+
+Workflow steps with type `ai_decision` run inside the Worker through the AI provider port. The step builds templated provider messages from the execution payload and previous step output, requests a structured JSON object from the configured OpenAI-compatible provider, validates that object against the step schema, persists safe decision output, and exposes a `branch` value for workflow transitions.
+
+AI decision steps support `messages`, `schema`, optional `model`, optional `temperature`, optional `maxOutputTokens`, and optional `branchPath`. The default branch path is `branch`. When a step transition defines `branches`, the execution engine routes to the matching target step after the AI decision succeeds.
+
+Validate AI decision execution with the API and Worker running locally:
+
+```bash
+pnpm validate:ai-decision
+```
+
+When `AI_API_KEY` is not configured, the validation confirms the Worker fail-fast path without retrying. When `AI_API_KEY` is configured, the same command validates a real AI decision execution and branch transition.
+
 ## Runtime observability
 
 API and Worker logs are emitted as structured JSON. Every HTTP response includes `x-request-id` and `x-correlation-id`. Valid incoming values are preserved and missing or invalid values are replaced with generated identifiers. Sensitive values are redacted before logs are written.
@@ -189,6 +203,7 @@ pnpm docker:reset
 ```bash
 pnpm verify
 pnpm validate:http-connector
+pnpm validate:ai-decision
 powershell -ExecutionPolicy Bypass -File scripts/validate-operational-endpoints.ps1
 powershell -ExecutionPolicy Bypass -File scripts/validate-registration.ps1
 ```
