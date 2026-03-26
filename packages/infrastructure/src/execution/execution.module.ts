@@ -6,6 +6,7 @@ import {
   EXECUTION_REPOSITORY,
   EXECUTION_STEP_REPOSITORY,
   HTTP_CONNECTOR,
+  NOTIFICATION_CONNECTOR,
   SECRET_CIPHER,
   GetExecutionUseCase,
   ListExecutionsUseCase,
@@ -26,6 +27,7 @@ import type {
   ExecutionRepositoryPort,
   ExecutionStepRepositoryPort,
   HttpConnectorPort,
+  NotificationConnectorPort,
   TransactionBoundary,
   WorkflowRepositoryPort,
   WorkflowSecretRepositoryPort,
@@ -36,6 +38,7 @@ import { RunlaneAiModule } from '../ai';
 import { RunlaneAuditModule } from '../audit';
 import { RunlaneBullMqModule } from '../bullmq/bullmq.module';
 import { RunlaneHttpConnectorModule } from '../connectors';
+import { RunlaneNotificationModule } from '../notification';
 import { RunlaneCryptoModule } from '../crypto';
 import { RunlaneDatabaseModule } from '../prisma';
 import { RunlaneWorkflowModule } from '../workflow';
@@ -53,6 +56,7 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
     RunlaneCryptoModule,
     RunlaneSecretsModule,
     RunlaneHttpConnectorModule,
+    RunlaneNotificationModule,
   ],
   providers: [
     PrismaExecutionRepository,
@@ -75,6 +79,7 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
         SECRET_CIPHER,
         HTTP_CONNECTOR,
         AI_PROVIDER,
+        NOTIFICATION_CONNECTOR,
       ],
       useFactory: (
         steps: ExecutionStepRepositoryPort,
@@ -83,8 +88,17 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
         cipher: SecretCipherPort,
         httpConnector: HttpConnectorPort,
         aiProvider: AiProviderPort,
+        notificationConnector: NotificationConnectorPort,
       ) =>
-        new WorkflowExecutionEngine(steps, templates, secrets, cipher, httpConnector, aiProvider),
+        new WorkflowExecutionEngine(
+          steps,
+          templates,
+          secrets,
+          cipher,
+          httpConnector,
+          aiProvider,
+          notificationConnector,
+        ),
     },
     {
       provide: ValidateExecutionJobForProcessingUseCase,
@@ -143,6 +157,7 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
         TRANSACTION_BOUNDARY,
         WorkflowExecutionEngine,
         RuntimeConfigService,
+        NOTIFICATION_CONNECTOR,
       ],
       useFactory: (
         executions: ExecutionRepositoryPort,
@@ -151,12 +166,21 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
         transactionBoundary: TransactionBoundary,
         engine: WorkflowExecutionEngine,
         config: RuntimeConfigService,
+        notificationConnector: NotificationConnectorPort,
       ) =>
-        new ProcessExecutionUseCase(executions, workflows, auditLogs, transactionBoundary, engine, {
-          maxAttempts: config.executionRetryMaxAttempts,
-          baseDelayMs: config.executionRetryBaseDelayMs,
-          maxDelayMs: config.executionRetryMaxDelayMs,
-        }),
+        new ProcessExecutionUseCase(
+          executions,
+          workflows,
+          auditLogs,
+          transactionBoundary,
+          engine,
+          {
+            maxAttempts: config.executionRetryMaxAttempts,
+            baseDelayMs: config.executionRetryBaseDelayMs,
+            maxDelayMs: config.executionRetryMaxDelayMs,
+          },
+          notificationConnector,
+        ),
     },
   ],
   exports: [

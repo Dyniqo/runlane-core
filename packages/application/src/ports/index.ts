@@ -136,3 +136,5 @@ export type {
   UpsertWorkflowSecretInput,
   WorkflowSecretRepositoryPort,
 } from './secrets';
+export { NOTIFICATION_CONNECTOR } from './notifications';
+export type { NotificationConnectorPort } from './notifications';

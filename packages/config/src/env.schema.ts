@@ -29,6 +29,11 @@ export interface RuntimeEnvironment {
   readonly AI_BASE_URL: string;
   readonly AI_MODEL: string;
   readonly AI_TIMEOUT_MS: number;
+  readonly SLACK_WEBHOOK_URL: string | null;
+  readonly DISCORD_WEBHOOK_URL: string | null;
+  readonly NOTIFICATION_CONNECTOR_TIMEOUT_MS: number;
+  readonly NOTIFICATION_CONNECTOR_MAX_PAYLOAD_BYTES: number;
+  readonly NOTIFICATION_FAILURE_ALERTS_ENABLED: boolean;
   readonly API_URL: string;
   readonly APP_URL: string;
   readonly DATABASE_URL: string;
@@ -75,6 +80,11 @@ const LOCAL_DEFAULTS = {
   AI_BASE_URL: 'https://api.openai.com/v1',
   AI_MODEL: 'gpt-4o-mini',
   AI_TIMEOUT_MS: 30000,
+  SLACK_WEBHOOK_URL: '',
+  DISCORD_WEBHOOK_URL: '',
+  NOTIFICATION_CONNECTOR_TIMEOUT_MS: 10000,
+  NOTIFICATION_CONNECTOR_MAX_PAYLOAD_BYTES: 32768,
+  NOTIFICATION_FAILURE_ALERTS_ENABLED: true,
   API_URL: 'http://localhost:4600',
   APP_URL: 'http://localhost:4600',
   DATABASE_URL: 'postgresql://runlane:runlane_local_database@127.0.0.1:15432/runlane?schema=public',
@@ -221,6 +231,42 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
       LOCAL_DEFAULTS.AI_TIMEOUT_MS,
       1000,
       120000,
+      errors,
+    ),
+    SLACK_WEBHOOK_URL: readOptionalProviderWebhookUrl(
+      source.SLACK_WEBHOOK_URL,
+      'SLACK_WEBHOOK_URL',
+      'slack',
+      LOCAL_DEFAULTS.SLACK_WEBHOOK_URL,
+      errors,
+    ),
+    DISCORD_WEBHOOK_URL: readOptionalProviderWebhookUrl(
+      source.DISCORD_WEBHOOK_URL,
+      'DISCORD_WEBHOOK_URL',
+      'discord',
+      LOCAL_DEFAULTS.DISCORD_WEBHOOK_URL,
+      errors,
+    ),
+    NOTIFICATION_CONNECTOR_TIMEOUT_MS: readInteger(
+      source.NOTIFICATION_CONNECTOR_TIMEOUT_MS,
+      'NOTIFICATION_CONNECTOR_TIMEOUT_MS',
+      LOCAL_DEFAULTS.NOTIFICATION_CONNECTOR_TIMEOUT_MS,
+      250,
+      30000,
+      errors,
+    ),
+    NOTIFICATION_CONNECTOR_MAX_PAYLOAD_BYTES: readInteger(
+      source.NOTIFICATION_CONNECTOR_MAX_PAYLOAD_BYTES,
+      'NOTIFICATION_CONNECTOR_MAX_PAYLOAD_BYTES',
+      LOCAL_DEFAULTS.NOTIFICATION_CONNECTOR_MAX_PAYLOAD_BYTES,
+      1024,
+      262144,
+      errors,
+    ),
+    NOTIFICATION_FAILURE_ALERTS_ENABLED: readBoolean(
+      source.NOTIFICATION_FAILURE_ALERTS_ENABLED,
+      'NOTIFICATION_FAILURE_ALERTS_ENABLED',
+      LOCAL_DEFAULTS.NOTIFICATION_FAILURE_ALERTS_ENABLED,
       errors,
     ),
     API_URL: readUrl(
@@ -405,6 +451,10 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
 
   if (environment.HTTP_CONNECTOR_MAX_RESPONSE_BYTES > environment.MAX_PAYLOAD_SIZE * 5) {
     errors.push('HTTP_CONNECTOR_MAX_RESPONSE_BYTES must not exceed five times MAX_PAYLOAD_SIZE');
+  }
+
+  if (environment.NOTIFICATION_CONNECTOR_MAX_PAYLOAD_BYTES > environment.MAX_PAYLOAD_SIZE) {
+    errors.push('NOTIFICATION_CONNECTOR_MAX_PAYLOAD_BYTES must not exceed MAX_PAYLOAD_SIZE');
   }
 
   if (environment.EXECUTION_RETRY_MAX_DELAY_MS < environment.EXECUTION_RETRY_BASE_DELAY_MS) {
@@ -658,6 +708,54 @@ function readUrl(
 
     if (!parsedValue.hostname) {
       errors.push(`${name} must include a hostname`);
+    }
+  } catch {
+    errors.push(`${name} must be a valid URL`);
+  }
+
+  return normalizedValue;
+}
+
+function readOptionalProviderWebhookUrl(
+  value: string | undefined,
+  name: string,
+  provider: 'slack' | 'discord',
+  defaultValue: string,
+  errors: string[],
+): string | null {
+  const normalizedValue = value?.trim() ?? defaultValue;
+
+  if (!normalizedValue) {
+    return null;
+  }
+
+  try {
+    const parsedValue = new URL(normalizedValue);
+    const hostname = parsedValue.hostname.toLowerCase();
+
+    if (parsedValue.protocol !== 'https:' || parsedValue.username || parsedValue.password) {
+      errors.push(`${name} must be an HTTPS webhook URL without credentials`);
+      return normalizedValue;
+    }
+
+    if (
+      provider === 'slack' &&
+      !(
+        (hostname === 'hooks.slack.com' || hostname === 'hooks.slack-gov.com') &&
+        parsedValue.pathname.startsWith('/services/')
+      )
+    ) {
+      errors.push(`${name} must be a Slack incoming webhook URL`);
+    }
+
+    if (
+      provider === 'discord' &&
+      !(
+        (hostname === 'discord.com' || hostname === 'discordapp.com') &&
+        parsedValue.pathname.startsWith('/api/webhooks/')
+      )
+    ) {
+      errors.push(`${name} must be a Discord incoming webhook URL`);
     }
   } catch {
     errors.push(`${name} must be a valid URL`);

@@ -13,6 +13,7 @@ import {
   isDomainError,
   readAiDecisionStepConfig,
   readExecutionInput,
+  readNotificationStepConfig,
   readWorkflowDefinition,
 } from '@runlane/domain';
 import type {
@@ -24,6 +25,7 @@ import type {
   AiProviderPort,
   ExecutionStepRepositoryPort,
   HttpConnectorPort,
+  NotificationConnectorPort,
   SecretCipherPort,
   StoredExecutionRecord,
   StoredWorkflowRecord,
@@ -62,11 +64,7 @@ interface StepExecutionContext {
   readonly secrets: ReadonlyMap<string, string>;
   readonly httpConnector: HttpConnectorPort;
   readonly aiProvider: AiProviderPort;
-}
-
-interface NextStepResolution {
-  readonly stepKey?: string;
-  readonly selectedByTransition: boolean;
+  readonly notificationConnector: NotificationConnectorPort;
 }
 
 const DEFAULT_STEP_TIMEOUT_MS = 30_000;
@@ -79,6 +77,7 @@ export class WorkflowExecutionEngine {
     private readonly cipher: SecretCipherPort,
     private readonly httpConnector: HttpConnectorPort,
     private readonly aiProvider: AiProviderPort,
+    private readonly notificationConnector: NotificationConnectorPort,
   ) {}
 
   async execute(input: WorkflowExecutionEngineInput): Promise<WorkflowExecutionEngineResult> {
@@ -90,7 +89,6 @@ export class WorkflowExecutionEngine {
     const snapshots: ExecutedStepSnapshot[] = [];
     const visitedSteps = new Set<string>();
     let currentStepKey: string | undefined = definition.entryStepKey;
-    let currentStepSelectedByTransition = false;
 
     while (currentStepKey) {
       if (visitedSteps.has(currentStepKey)) {
@@ -114,17 +112,11 @@ export class WorkflowExecutionEngine {
         secrets: new Map(),
         httpConnector: this.httpConnector,
         aiProvider: this.aiProvider,
+        notificationConnector: this.notificationConnector,
       });
 
       snapshots.push(snapshot);
-      const nextStep = resolveNextStep(
-        definition,
-        step,
-        snapshot.output,
-        currentStepSelectedByTransition,
-      );
-      currentStepKey = nextStep.stepKey;
-      currentStepSelectedByTransition = nextStep.selectedByTransition;
+      currentStepKey = resolveNextStepKey(definition, step, snapshot.output);
     }
 
     const finishedAt = new Date();
@@ -259,6 +251,10 @@ async function runStep(
     return runAiDecisionStep(step, context);
   }
 
+  if (step.type === 'notification') {
+    return runNotificationStep(step, context);
+  }
+
   throw executionStepRunnerMissing(step.key, step.type);
 }
 
@@ -322,6 +318,35 @@ async function runAiDecisionStep(
         totalTokens: result.usage.totalTokens,
       },
     },
+  };
+}
+
+async function runNotificationStep(
+  step: WorkflowStepDefinitionValue,
+  context: StepExecutionContext,
+): Promise<JsonObject> {
+  const config = readNotificationStepConfig(step.config);
+  const result = await context.notificationConnector.execute({
+    context: {
+      workspaceId: context.execution.workspaceId,
+      workflowId: context.workflow.id,
+      workflowName: context.workflow.name,
+      executionId: context.execution.id,
+      executionStatus: context.execution.status,
+      stepKey: step.key,
+      attempt: context.execution.attempts,
+      correlationId: context.execution.id,
+    },
+    config: step.config as JsonObject,
+  });
+
+  if (result.status === 'failed') {
+    throw connectorExecutionFailed(result.error);
+  }
+
+  return {
+    provider: config.provider,
+    notification: result.output,
   };
 }
 
@@ -405,48 +430,26 @@ function buildPreviousStepOutputIndex(
   );
 }
 
-function resolveNextStep(
+function resolveNextStepKey(
   definition: WorkflowDefinition,
   step: WorkflowStepDefinitionValue,
   output: JsonObject,
-  currentStepSelectedByTransition: boolean,
-): NextStepResolution {
+): string | undefined {
   const branch = typeof output.branch === 'string' ? output.branch : null;
   const branchTarget = branch ? step.transitions?.branches?.[branch] : undefined;
 
   if (branchTarget) {
-    return {
-      stepKey: branchTarget,
-      selectedByTransition: true,
-    };
+    return branchTarget;
   }
 
   if (step.transitions?.onSuccess) {
-    return {
-      stepKey: step.transitions.onSuccess,
-      selectedByTransition: true,
-    };
-  }
-
-  if (currentStepSelectedByTransition) {
-    return {
-      selectedByTransition: false,
-    };
+    return step.transitions.onSuccess;
   }
 
   const currentIndex = definition.steps.findIndex((candidate) => candidate.key === step.key);
   const nextStep = currentIndex >= 0 ? definition.steps[currentIndex + 1] : undefined;
 
-  if (!nextStep) {
-    return {
-      selectedByTransition: false,
-    };
-  }
-
-  return {
-    stepKey: nextStep.key,
-    selectedByTransition: false,
-  };
+  return nextStep?.key;
 }
 
 function readOptionalString(value: unknown): string | null {

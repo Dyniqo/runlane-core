@@ -48,3 +48,18 @@ export {
   readAiStructuredObjectSchema,
   validateAiStructuredResponse,
 } from './ai-provider-rules';
+export {
+  NOTIFICATION_PROVIDERS,
+  NOTIFICATION_SEVERITIES,
+  notificationConfigInvalid,
+  notificationWebhookInvalid,
+  notificationWebhookMissing,
+  readNotificationStepConfig,
+} from './notification-connector-rules';
+export type {
+  NotificationJsonObject,
+  NotificationJsonValue,
+  NotificationProvider,
+  NotificationSeverity,
+  NotificationStepConfig,
+} from './notification-connector-rules';

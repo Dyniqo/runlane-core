@@ -26,6 +26,8 @@ export type {
 } from './automation';
 export {
   CONNECTOR_CREDENTIAL_TYPES,
+  NOTIFICATION_PROVIDERS,
+  NOTIFICATION_SEVERITIES,
   HTTP_CONNECTOR_API_KEY_LOCATIONS,
   HTTP_CONNECTOR_AUTH_MODES,
   HTTP_CONNECTOR_BODY_TYPES,
@@ -48,6 +50,10 @@ export {
   readAiStructuredJsonSchema,
   readAiStructuredObjectSchema,
   readHttpConnectorStepConfig,
+  notificationConfigInvalid,
+  notificationWebhookInvalid,
+  notificationWebhookMissing,
+  readNotificationStepConfig,
   validateAiStructuredResponse,
   readSecretValue,
   workflowSecretNotFound,
@@ -70,6 +76,11 @@ export type {
   HttpConnectorRequestConfig,
   HttpConnectorResponseConfig,
   HttpConnectorStepConfig,
+  NotificationJsonObject,
+  NotificationJsonValue,
+  NotificationProvider,
+  NotificationSeverity,
+  NotificationStepConfig,
 } from './connector';
 export {
   buildExecutionInputEnvelope,

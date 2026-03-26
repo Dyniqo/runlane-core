@@ -180,6 +180,28 @@ pnpm validate:ai-decision
 
 When `AI_API_KEY` is not configured, the validation confirms the Worker fail-fast path without retrying. When `AI_API_KEY` is configured, the same command validates a real AI decision execution and branch transition.
 
+## Notification connectors
+
+Workflow steps with type `notification` deliver Slack or Discord messages from the Worker through the notification connector boundary. The connector supports templated messages, optional titles, severity, metadata, execution context fields, workflow-scoped `webhook_url` connector credentials, and environment-supplied default webhooks.
+
+Failure alerts can be delivered to configured Slack and Discord webhooks when an execution reaches `failed` or `dead_letter`. Failure alert delivery is best-effort and never changes the terminal execution status.
+
+Relevant configuration:
+
+- `SLACK_WEBHOOK_URL`
+- `DISCORD_WEBHOOK_URL`
+- `NOTIFICATION_CONNECTOR_TIMEOUT_MS`
+- `NOTIFICATION_CONNECTOR_MAX_PAYLOAD_BYTES`
+- `NOTIFICATION_FAILURE_ALERTS_ENABLED`
+
+Validate notification execution with the API and Worker running locally:
+
+```bash
+pnpm validate:notifications
+```
+
+When `SLACK_WEBHOOK_URL` is not configured, the validation confirms the Worker fail-fast path without retrying. When `SLACK_WEBHOOK_URL` is configured, the same command validates real Slack notification delivery.
+
 ## Runtime observability
 
 API and Worker logs are emitted as structured JSON. Every HTTP response includes `x-request-id` and `x-correlation-id`. Valid incoming values are preserved and missing or invalid values are replaced with generated identifiers. Sensitive values are redacted before logs are written.
@@ -204,6 +226,7 @@ pnpm docker:reset
 pnpm verify
 pnpm validate:http-connector
 pnpm validate:ai-decision
+pnpm validate:notifications
 powershell -ExecutionPolicy Bypass -File scripts/validate-operational-endpoints.ps1
 powershell -ExecutionPolicy Bypass -File scripts/validate-registration.ps1
 ```

@@ -13,6 +13,7 @@ import type {
   AuditLogRepositoryPort,
   ExecutionRepositoryPort,
   ExecutionRetryPolicy,
+  NotificationConnectorPort,
   StoredExecutionRecord,
   TransactionBoundary,
   WorkflowRepositoryPort,
@@ -56,6 +57,7 @@ export class ProcessExecutionUseCase implements UseCase<
     private readonly transactionBoundary: TransactionBoundary,
     private readonly engine: WorkflowExecutionEngine,
     private readonly retryPolicy: ExecutionRetryPolicy,
+    private readonly notifications: NotificationConnectorPort,
   ) {}
 
   async execute(input: ProcessExecutionUseCaseInput): Promise<ProcessExecutionUseCaseResult> {
@@ -289,9 +291,9 @@ export class ProcessExecutionUseCase implements UseCase<
   }): Promise<StoredExecutionRecord> {
     const finishedAt = new Date();
     const durationMs = Math.max(0, finishedAt.getTime() - input.startedAt.getTime());
-    return this.transactionBoundary.execute(async () => {
+    const deadLettered = await this.transactionBoundary.execute(async () => {
       ensureExecutionStatusTransition('running', 'dead_letter');
-      const deadLettered = await this.executions.markDeadLetter({
+      const markedDeadLetter = await this.executions.markDeadLetter({
         workspaceId: input.input.workspaceId,
         executionId: input.input.executionId,
         errorCode: input.errorCode,
@@ -300,7 +302,7 @@ export class ProcessExecutionUseCase implements UseCase<
         durationMs,
       });
 
-      if (!deadLettered) {
+      if (!markedDeadLetter) {
         throw executionDeadLetterNotReady('running');
       }
 
@@ -317,15 +319,26 @@ export class ProcessExecutionUseCase implements UseCase<
           errorCode: input.errorCode,
           errorMessage: input.errorMessage,
           durationMs,
-          attempts: deadLettered.attempts,
+          attempts: markedDeadLetter.attempts,
           maxAttempts: this.retryPolicy.maxAttempts,
         },
         ip: null,
         userAgent: null,
       });
 
-      return deadLettered;
+      return markedDeadLetter;
     });
+
+    await this.sendFailureAlert({
+      input: input.input,
+      status: 'dead_letter',
+      errorCode: input.errorCode,
+      errorMessage: input.errorMessage,
+      attempt: deadLettered.attempts,
+      durationMs,
+    });
+
+    return deadLettered;
   }
 
   private async failExecution(input: {
@@ -337,9 +350,9 @@ export class ProcessExecutionUseCase implements UseCase<
   }): Promise<StoredExecutionRecord> {
     const finishedAt = new Date();
     const durationMs = Math.max(0, finishedAt.getTime() - input.startedAt.getTime());
-    return this.transactionBoundary.execute(async () => {
+    const failed = await this.transactionBoundary.execute(async () => {
       ensureExecutionStatusTransition('running', 'failed');
-      const failed = await this.executions.markFailed({
+      const markedFailed = await this.executions.markFailed({
         workspaceId: input.input.workspaceId,
         executionId: input.input.executionId,
         errorCode: input.errorCode,
@@ -348,7 +361,7 @@ export class ProcessExecutionUseCase implements UseCase<
         durationMs,
       });
 
-      if (!failed) {
+      if (!markedFailed) {
         throw executionNotReadyForProcessing('running');
       }
 
@@ -365,15 +378,53 @@ export class ProcessExecutionUseCase implements UseCase<
           errorCode: input.errorCode,
           errorMessage: input.errorMessage,
           durationMs,
-          attempts: failed.attempts,
+          attempts: markedFailed.attempts,
           maxAttempts: this.retryPolicy.maxAttempts,
         },
         ip: null,
         userAgent: null,
       });
 
-      return failed;
+      return markedFailed;
     });
+
+    await this.sendFailureAlert({
+      input: input.input,
+      status: 'failed',
+      errorCode: input.errorCode,
+      errorMessage: input.errorMessage,
+      attempt: failed.attempts,
+      durationMs,
+    });
+
+    return failed;
+  }
+
+  private async sendFailureAlert(input: {
+    readonly input: ProcessExecutionUseCaseInput;
+    readonly status: 'failed' | 'dead_letter';
+    readonly errorCode: string;
+    readonly errorMessage: string;
+    readonly attempt: number;
+    readonly durationMs: number;
+  }): Promise<void> {
+    try {
+      await this.notifications.sendExecutionFailureAlert({
+        workspaceId: input.input.workspaceId,
+        workflowId: input.input.workflowId,
+        executionId: input.input.executionId,
+        jobId: input.input.jobId,
+        correlationId: input.input.correlationId,
+        status: input.status,
+        errorCode: input.errorCode,
+        errorMessage: input.errorMessage,
+        attempt: input.attempt,
+        maxAttempts: this.retryPolicy.maxAttempts,
+        durationMs: input.durationMs,
+      });
+    } catch {
+      return;
+    }
   }
 }
 

@@ -63,3 +63,4 @@ export { RunlaneExecutionModule } from './execution';
 export { RunlaneIngestionModule } from './ingestion';
 export { RunlaneWorkflowModule } from './workflow';
 export { RunlaneSecretsModule } from './secrets';
+export { RunlaneNotificationModule, SlackDiscordNotificationConnector } from './notification';

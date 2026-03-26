@@ -86,6 +86,26 @@ export class RuntimeConfigService {
     return this.environment.AI_TIMEOUT_MS;
   }
 
+  get slackWebhookUrl(): string | null {
+    return this.environment.SLACK_WEBHOOK_URL;
+  }
+
+  get discordWebhookUrl(): string | null {
+    return this.environment.DISCORD_WEBHOOK_URL;
+  }
+
+  get notificationConnectorTimeoutMs(): number {
+    return this.environment.NOTIFICATION_CONNECTOR_TIMEOUT_MS;
+  }
+
+  get notificationConnectorMaxPayloadBytes(): number {
+    return this.environment.NOTIFICATION_CONNECTOR_MAX_PAYLOAD_BYTES;
+  }
+
+  get notificationFailureAlertsEnabled(): boolean {
+    return this.environment.NOTIFICATION_FAILURE_ALERTS_ENABLED;
+  }
+
   get apiUrl(): string {
     return this.environment.API_URL;
   }

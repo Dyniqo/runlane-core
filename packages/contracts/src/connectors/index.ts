@@ -61,3 +61,14 @@ export type {
   AiStructuredSchemaType,
   AiStructuredStringSchema,
 } from './ai-provider-contract';
+
+export { NOTIFICATION_PROVIDERS, NOTIFICATION_SEVERITIES } from './notification-connector-contract';
+export type {
+  ExecutionFailureNotificationInput,
+  NotificationConnectorResult,
+  NotificationExecutionContext,
+  NotificationExecutionInput,
+  NotificationProvider,
+  NotificationSeverity,
+  NotificationStepConfig,
+} from './notification-connector-contract';
