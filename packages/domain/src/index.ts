@@ -188,5 +188,15 @@ export type {
   WorkflowTriggerDefinitionValue,
   WorkflowTriggerType,
 } from './workflow';
+export {
+  buildCurrentUsagePeriod,
+  normalizeUsageMetricType,
+  normalizeUsageQuantity,
+  normalizeUsageSourceId,
+  normalizeUsageSourceType,
+  usageMetricInvalid,
+  USAGE_METRIC_TYPES,
+} from './usage';
+export type { UsageMetricType } from './usage';
 export { DOMAIN_ERROR_CATEGORIES, DomainError, isDomainError } from './shared';
 export type { DomainErrorCategory, DomainErrorDetails, DomainErrorOptions } from './shared';

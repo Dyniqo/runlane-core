@@ -46,6 +46,14 @@ enum ExecutionStepStatus {
   FAILED
 }
 
+enum UsageMetricType {
+  EXECUTION
+  AI_CALL
+  HTTP_CALL
+  WEBHOOK_REQUEST
+  RETRY
+}
+
 model User {
   id                   String            @id @default(uuid()) @db.Uuid
   email                String            @unique(map: "users_email_key") @db.VarChar(320)
@@ -96,6 +104,7 @@ model Workspace {
   executionSteps  ExecutionStep[]
   workflowSecrets WorkflowSecret[]
   connectorCredentials ConnectorCredential[]
+  usageRecords UsageRecord[]
 
   @@index([ownerId], map: "workspaces_owner_id_idx")
   @@index([id, ownerId], map: "workspaces_id_owner_id_idx")
@@ -258,6 +267,23 @@ model Execution {
   @@index([workspaceId, status, createdAt], map: "executions_workspace_id_status_created_at_idx")
   @@index([workflowId, createdAt], map: "executions_workflow_id_created_at_idx")
   @@map("executions")
+}
+
+model UsageRecord {
+  id           String          @id @default(uuid()) @db.Uuid
+  workspaceId  String          @map("workspace_id") @db.Uuid
+  type         UsageMetricType
+  quantity     Int             @default(1)
+  sourceType   String          @map("source_type") @db.VarChar(64)
+  sourceId     String          @map("source_id") @db.VarChar(160)
+  metadataJson Json            @default("{}") @map("metadata_json")
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  workspace    Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([workspaceId, type, sourceType, sourceId], map: "usage_records_workspace_id_type_source_type_source_id_key")
+  @@index([workspaceId, type, createdAt], map: "usage_records_workspace_id_type_created_at_idx")
+  @@index([workspaceId, createdAt, id], map: "usage_records_workspace_id_created_at_id_idx")
+  @@map("usage_records")
 }
 
 model WorkflowSecret {

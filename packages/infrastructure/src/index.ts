@@ -64,3 +64,4 @@ export { RunlaneIngestionModule } from './ingestion';
 export { RunlaneWorkflowModule } from './workflow';
 export { RunlaneSecretsModule } from './secrets';
 export { RunlaneNotificationModule, SlackDiscordNotificationConnector } from './notification';
+export { PrismaUsageRecordRepository, RunlaneUsageModule } from './usage';

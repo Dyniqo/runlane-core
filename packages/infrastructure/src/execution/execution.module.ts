@@ -17,6 +17,7 @@ import {
   TRANSACTION_BOUNDARY,
   ValidateExecutionJobForProcessingUseCase,
   WorkflowExecutionEngine,
+  UsageRecorder,
   WORKFLOW_REPOSITORY,
   WORKFLOW_SECRET_REPOSITORY,
 } from '@runlane/application';
@@ -43,6 +44,7 @@ import { RunlaneCryptoModule } from '../crypto';
 import { RunlaneDatabaseModule } from '../prisma';
 import { RunlaneWorkflowModule } from '../workflow';
 import { RunlaneSecretsModule } from '../secrets';
+import { RunlaneUsageModule } from '../usage';
 import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repositories';
 
 @Module({
@@ -57,6 +59,7 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
     RunlaneSecretsModule,
     RunlaneHttpConnectorModule,
     RunlaneNotificationModule,
+    RunlaneUsageModule,
   ],
   providers: [
     PrismaExecutionRepository,
@@ -80,6 +83,7 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
         HTTP_CONNECTOR,
         AI_PROVIDER,
         NOTIFICATION_CONNECTOR,
+        UsageRecorder,
       ],
       useFactory: (
         steps: ExecutionStepRepositoryPort,
@@ -89,6 +93,7 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
         httpConnector: HttpConnectorPort,
         aiProvider: AiProviderPort,
         notificationConnector: NotificationConnectorPort,
+        usage: UsageRecorder,
       ) =>
         new WorkflowExecutionEngine(
           steps,
@@ -98,6 +103,7 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
           httpConnector,
           aiProvider,
           notificationConnector,
+          usage,
         ),
     },
     {
@@ -158,6 +164,7 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
         WorkflowExecutionEngine,
         RuntimeConfigService,
         NOTIFICATION_CONNECTOR,
+        UsageRecorder,
       ],
       useFactory: (
         executions: ExecutionRepositoryPort,
@@ -167,6 +174,7 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
         engine: WorkflowExecutionEngine,
         config: RuntimeConfigService,
         notificationConnector: NotificationConnectorPort,
+        usage: UsageRecorder,
       ) =>
         new ProcessExecutionUseCase(
           executions,
@@ -180,6 +188,7 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
             maxDelayMs: config.executionRetryMaxDelayMs,
           },
           notificationConnector,
+          usage,
         ),
     },
   ],

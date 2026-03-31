@@ -63,6 +63,12 @@ export type {
   ExecutionStepStatusDto,
 } from './execution.dto';
 export type {
+  CurrentUsageResponseDto,
+  UsageMetricDto,
+  UsageMetricTypeDto,
+  UsageTotalsDto,
+} from './usage.dto';
+export type {
   PublicWebhookResponseDto,
   WebhookRequestDto,
   WebhookRequestStatusDto,

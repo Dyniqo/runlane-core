@@ -6,6 +6,7 @@ import {
   ExecuteAutomationWorkflowUseCase,
   GetAutomationWorkflowContractUseCase,
   TRANSACTION_BOUNDARY,
+  UsageRecorder,
   WORKFLOW_REPOSITORY,
 } from '@runlane/application';
 import type {
@@ -21,6 +22,7 @@ import { RunlaneBullMqModule } from '../bullmq';
 import { RunlaneExecutionModule } from '../execution';
 import { RunlaneDatabaseModule } from '../prisma';
 import { RunlaneWorkflowModule } from '../workflow';
+import { RunlaneUsageModule } from '../usage';
 
 @Module({
   imports: [
@@ -29,6 +31,7 @@ import { RunlaneWorkflowModule } from '../workflow';
     RunlaneBullMqModule,
     RunlaneDatabaseModule,
     RunlaneExecutionModule,
+    RunlaneUsageModule,
     RunlaneWorkflowModule,
   ],
   providers: [
@@ -46,6 +49,7 @@ import { RunlaneWorkflowModule } from '../workflow';
         AUDIT_LOG_REPOSITORY,
         EXECUTION_QUEUE,
         TRANSACTION_BOUNDARY,
+        UsageRecorder,
       ],
       useFactory: (
         workflows: WorkflowRepositoryPort,
@@ -53,6 +57,7 @@ import { RunlaneWorkflowModule } from '../workflow';
         auditLogs: AuditLogRepositoryPort,
         executionQueue: ExecutionQueuePort,
         transactionBoundary: TransactionBoundary,
+        usage: UsageRecorder,
       ) =>
         new ExecuteAutomationWorkflowUseCase(
           workflows,
@@ -60,6 +65,7 @@ import { RunlaneWorkflowModule } from '../workflow';
           auditLogs,
           executionQueue,
           transactionBoundary,
+          usage,
         ),
     },
   ],

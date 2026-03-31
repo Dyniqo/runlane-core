@@ -29,6 +29,7 @@ import type {
   WorkflowRepositoryPort,
 } from '../../ports';
 import type { UseCase } from '../use-case';
+import type { UsageRecorder } from '../usage';
 import { buildPublicWebhookResponse } from './webhook-response';
 
 export interface ReceivePublicWebhookUseCaseInput {
@@ -83,6 +84,7 @@ export class ReceivePublicWebhookUseCase implements UseCase<
     private readonly runtimeState: WebhookRuntimeStatePort,
     private readonly executionQueue: ExecutionQueuePort,
     private readonly transactionBoundary: TransactionBoundary,
+    private readonly usage: UsageRecorder,
     private readonly options: ReceivePublicWebhookUseCaseOptions,
   ) {}
 
@@ -218,6 +220,22 @@ export class ReceivePublicWebhookUseCase implements UseCase<
           ip: input.ip,
           userAgent: input.userAgent,
           status: 'accepted',
+        });
+
+        await this.usage.record({
+          workspaceId: workflow.workspaceId,
+          type: 'webhook_request',
+          sourceType: 'webhook_request',
+          sourceId: webhookRequest.id,
+          createdAt: webhookRequest.createdAt,
+          metadata: {
+            workflowId: workflow.id,
+            workflowPublicId: workflow.publicId,
+            workflowVersion: workflow.version,
+            source,
+            idempotencyKey,
+            payloadHash,
+          },
         });
 
         const execution = await this.createWebhookExecution({
@@ -365,12 +383,12 @@ export class ReceivePublicWebhookUseCase implements UseCase<
     };
   }
 
-  private createWebhookExecution(input: {
+  private async createWebhookExecution(input: {
     readonly webhookRequest: StoredWebhookRequestRecord;
     readonly workflow: StoredWorkflowRecord;
     readonly payload: ReturnType<typeof readWebhookPayload>;
   }): Promise<StoredExecutionRecord> {
-    return this.executions.createQueued({
+    const execution = await this.executions.createQueued({
       workspaceId: input.workflow.workspaceId,
       workflowId: input.workflow.id,
       input: buildExecutionInputEnvelope({
@@ -388,5 +406,24 @@ export class ReceivePublicWebhookUseCase implements UseCase<
       }),
       queuedAt: input.webhookRequest.createdAt,
     });
+
+    await this.usage.record({
+      workspaceId: input.workflow.workspaceId,
+      type: 'execution',
+      sourceType: 'execution',
+      sourceId: execution.id,
+      createdAt: execution.createdAt,
+      metadata: {
+        workflowId: input.workflow.id,
+        workflowPublicId: input.workflow.publicId,
+        workflowVersion: input.workflow.version,
+        triggerType: 'webhook',
+        sourceId: input.webhookRequest.id,
+        source: input.webhookRequest.source,
+        idempotencyKey: input.webhookRequest.idempotencyKey,
+      },
+    });
+
+    return execution;
   }
 }

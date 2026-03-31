@@ -43,6 +43,14 @@ export type {
   StoredExecutionRecord,
   StoredExecutionStepRecord,
 } from './execution';
+export { USAGE_RECORD_REPOSITORY } from './usage';
+export type {
+  CreateUsageRecordInput,
+  CreateUsageRecordsInput,
+  GetUsageSummaryInput,
+  UsageMetricQuantityRecord,
+  UsageRecordRepositoryPort,
+} from './usage';
 export { WEBHOOK_REQUEST_REPOSITORY, WEBHOOK_RUNTIME_STATE } from './ingestion';
 export type {
   CreateWebhookRequestInput,

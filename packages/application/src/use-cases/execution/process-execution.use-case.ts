@@ -19,6 +19,7 @@ import type {
   WorkflowRepositoryPort,
 } from '../../ports';
 import type { UseCase } from '../use-case';
+import type { UsageRecorder } from '../usage';
 import type { WorkflowExecutionEngine } from './execution-engine';
 
 export interface ProcessExecutionUseCaseInput {
@@ -58,6 +59,7 @@ export class ProcessExecutionUseCase implements UseCase<
     private readonly engine: WorkflowExecutionEngine,
     private readonly retryPolicy: ExecutionRetryPolicy,
     private readonly notifications: NotificationConnectorPort,
+    private readonly usage: UsageRecorder,
   ) {}
 
   async execute(input: ProcessExecutionUseCaseInput): Promise<ProcessExecutionUseCaseResult> {
@@ -265,6 +267,7 @@ export class ProcessExecutionUseCase implements UseCase<
         entityId: input.input.executionId,
         metadata: {
           workflowId: input.input.workflowId,
+          executionId: input.input.executionId,
           jobId: input.input.jobId,
           correlationId: input.input.correlationId,
           errorCode: input.errorCode,
@@ -276,6 +279,25 @@ export class ProcessExecutionUseCase implements UseCase<
         },
         ip: null,
         userAgent: null,
+      });
+
+      await this.usage.record({
+        workspaceId: input.input.workspaceId,
+        type: 'retry',
+        sourceType: 'execution_retry',
+        sourceId: `${input.input.executionId}:${input.startedAt.toISOString()}:${input.running.attempts}`,
+        createdAt: finishedAt,
+        metadata: {
+          workflowId: input.input.workflowId,
+          executionId: input.input.executionId,
+          jobId: input.input.jobId,
+          correlationId: input.input.correlationId,
+          errorCode: input.errorCode,
+          durationMs,
+          attempt: input.running.attempts,
+          maxAttempts: this.retryPolicy.maxAttempts,
+          retryDelayMs: input.retryDelayMs,
+        },
       });
 
       return retrying;
@@ -314,6 +336,7 @@ export class ProcessExecutionUseCase implements UseCase<
         entityId: input.input.executionId,
         metadata: {
           workflowId: input.input.workflowId,
+          executionId: input.input.executionId,
           jobId: input.input.jobId,
           correlationId: input.input.correlationId,
           errorCode: input.errorCode,
@@ -373,6 +396,7 @@ export class ProcessExecutionUseCase implements UseCase<
         entityId: input.input.executionId,
         metadata: {
           workflowId: input.input.workflowId,
+          executionId: input.input.executionId,
           jobId: input.input.jobId,
           correlationId: input.input.correlationId,
           errorCode: input.errorCode,

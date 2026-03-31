@@ -5,6 +5,7 @@ import {
   EXECUTION_REPOSITORY,
   ReceivePublicWebhookUseCase,
   TRANSACTION_BOUNDARY,
+  UsageRecorder,
   WEBHOOK_REQUEST_REPOSITORY,
   WEBHOOK_RUNTIME_STATE,
   WORKFLOW_REPOSITORY,
@@ -24,6 +25,7 @@ import { RunlaneBullMqModule } from '../bullmq';
 import { RunlaneExecutionModule } from '../execution';
 import { RunlaneDatabaseModule } from '../prisma';
 import { RunlaneRedisModule } from '../redis';
+import { RunlaneUsageModule } from '../usage';
 import { RunlaneWorkflowModule } from '../workflow';
 import { PrismaWebhookRequestRepository } from './repositories';
 import { RedisWebhookRuntimeState } from './runtime';
@@ -36,6 +38,7 @@ import { RedisWebhookRuntimeState } from './runtime';
     RunlaneAuditModule,
     RunlaneBullMqModule,
     RunlaneExecutionModule,
+    RunlaneUsageModule,
     RunlaneWorkflowModule,
   ],
   providers: [
@@ -59,6 +62,7 @@ import { RedisWebhookRuntimeState } from './runtime';
         WEBHOOK_RUNTIME_STATE,
         EXECUTION_QUEUE,
         TRANSACTION_BOUNDARY,
+        UsageRecorder,
         RuntimeConfigService,
       ],
       useFactory: (
@@ -69,6 +73,7 @@ import { RedisWebhookRuntimeState } from './runtime';
         runtimeState: WebhookRuntimeStatePort,
         executionQueue: ExecutionQueuePort,
         transactionBoundary: TransactionBoundary,
+        usage: UsageRecorder,
         config: RuntimeConfigService,
       ) =>
         new ReceivePublicWebhookUseCase(
@@ -79,6 +84,7 @@ import { RedisWebhookRuntimeState } from './runtime';
           runtimeState,
           executionQueue,
           transactionBoundary,
+          usage,
           {
             webhookSigningSecret: config.webhookSigningSecret,
             signatureToleranceSeconds: config.webhookSignatureToleranceSeconds,

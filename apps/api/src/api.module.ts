@@ -13,6 +13,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { ExecutionsModule } from './modules/executions/executions.module';
 import { HooksModule } from './modules/hooks/hooks.module';
 import { SecretsModule } from './modules/secrets/secrets.module';
+import { UsageModule } from './modules/usage/usage.module';
 import { WorkflowsModule } from './modules/workflows/workflows.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 
@@ -31,6 +32,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
     ExecutionsModule,
     HooksModule,
     SecretsModule,
+    UsageModule,
   ],
   controllers: [ApiController],
 })

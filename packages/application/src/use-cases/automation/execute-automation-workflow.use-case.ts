@@ -19,6 +19,7 @@ import type {
 } from '../../ports';
 import type { ApiKeyScopeRecord } from '../access';
 import type { UseCase } from '../use-case';
+import type { UsageRecorder } from '../usage';
 import {
   buildAutomationBridgeAcceptedResponse,
   readAutomationJsonValue,
@@ -62,6 +63,7 @@ export class ExecuteAutomationWorkflowUseCase implements UseCase<
     private readonly auditLogs: AuditLogRepositoryPort,
     private readonly executionQueue: ExecutionQueuePort,
     private readonly transactionBoundary: TransactionBoundary,
+    private readonly usage: UsageRecorder,
   ) {}
 
   async execute(
@@ -127,6 +129,25 @@ export class ExecuteAutomationWorkflowUseCase implements UseCase<
             },
           }),
           queuedAt: auditLog.createdAt,
+        });
+
+        await this.usage.record({
+          workspaceId: workflow.workspaceId,
+          type: 'execution',
+          sourceType: 'execution',
+          sourceId: execution.id,
+          createdAt: execution.createdAt,
+          metadata: {
+            workflowId: workflow.id,
+            workflowPublicId: workflow.publicId,
+            workflowVersion: workflow.version,
+            triggerType: 'automation_bridge',
+            sourceId: auditLog.id,
+            source: bridgeRequest.source,
+            idempotencyKey: bridgeRequest.idempotencyKey,
+            apiKeyId: input.scope.apiKeyId,
+            apiKeyPrefix: input.scope.prefix,
+          },
         });
 
         await this.auditLogs.create({

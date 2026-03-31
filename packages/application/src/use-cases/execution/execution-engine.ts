@@ -31,6 +31,7 @@ import type {
   StoredWorkflowRecord,
   WorkflowSecretRepositoryPort,
 } from '../../ports';
+import type { UsageRecorder } from '../usage';
 import type { SafeTemplateResolutionResult, SafeTemplateResolver } from './safe-template-resolver';
 import { resolveWorkflowSecretReferences } from '../secrets';
 
@@ -65,6 +66,8 @@ interface StepExecutionContext {
   readonly httpConnector: HttpConnectorPort;
   readonly aiProvider: AiProviderPort;
   readonly notificationConnector: NotificationConnectorPort;
+  readonly usage: UsageRecorder;
+  readonly runStartedAt: Date;
 }
 
 const DEFAULT_STEP_TIMEOUT_MS = 30_000;
@@ -78,6 +81,7 @@ export class WorkflowExecutionEngine {
     private readonly httpConnector: HttpConnectorPort,
     private readonly aiProvider: AiProviderPort,
     private readonly notificationConnector: NotificationConnectorPort,
+    private readonly usage: UsageRecorder,
   ) {}
 
   async execute(input: WorkflowExecutionEngineInput): Promise<WorkflowExecutionEngineResult> {
@@ -113,6 +117,8 @@ export class WorkflowExecutionEngine {
         httpConnector: this.httpConnector,
         aiProvider: this.aiProvider,
         notificationConnector: this.notificationConnector,
+        usage: this.usage,
+        runStartedAt: input.startedAt,
       });
 
       snapshots.push(snapshot);
@@ -275,6 +281,26 @@ async function runHttpStep(
     secrets: context.secrets,
   });
 
+  await context.usage.record({
+    workspaceId: context.execution.workspaceId,
+    type: 'http_call',
+    sourceType: 'execution_step',
+    sourceId: buildUsageStepSourceId(context, step, 'http'),
+    metadata: {
+      workflowId: context.workflow.id,
+      workflowPublicId: context.workflow.publicId,
+      workflowVersion: context.workflow.version,
+      executionId: context.execution.id,
+      stepKey: step.key,
+      stepType: step.type,
+      attempt: context.execution.attempts,
+      status: result.status,
+      ...(result.status === 'failed'
+        ? { errorCode: result.error.code, retryable: result.error.retryable }
+        : {}),
+    },
+  });
+
   if (result.status === 'succeeded') {
     return result.output as JsonObject;
   }
@@ -299,6 +325,31 @@ async function runAiDecisionStep(
     ...(config.temperature !== undefined ? { temperature: config.temperature } : {}),
     ...(config.maxOutputTokens !== undefined ? { maxOutputTokens: config.maxOutputTokens } : {}),
     timeoutMs: step.timeoutMs ?? DEFAULT_STEP_TIMEOUT_MS,
+  });
+
+  await context.usage.record({
+    workspaceId: context.execution.workspaceId,
+    type: 'ai_call',
+    sourceType: 'execution_step',
+    sourceId: buildUsageStepSourceId(context, step, 'ai'),
+    metadata: {
+      workflowId: context.workflow.id,
+      workflowPublicId: context.workflow.publicId,
+      workflowVersion: context.workflow.version,
+      executionId: context.execution.id,
+      stepKey: step.key,
+      stepType: step.type,
+      attempt: context.execution.attempts,
+      status: result.status,
+      ...(result.status === 'failed'
+        ? { errorCode: result.error.code, retryable: result.error.retryable }
+        : {
+            model: result.model,
+            inputTokens: result.usage.inputTokens,
+            outputTokens: result.usage.outputTokens,
+            totalTokens: result.usage.totalTokens,
+          }),
+    },
   });
 
   if (result.status === 'failed') {
@@ -370,6 +421,14 @@ async function runConditionStep(
     triggerType: context.input.trigger.type,
     previousStepCount: context.previousSteps.length,
   };
+}
+
+function buildUsageStepSourceId(
+  context: StepExecutionContext,
+  step: WorkflowStepDefinitionValue,
+  metric: 'ai' | 'http',
+): string {
+  return `${context.execution.id}:${context.runStartedAt.toISOString()}:${context.execution.attempts}:${step.key}:${metric}`;
 }
 
 function readOptionalDelayMs(value: unknown): number {
