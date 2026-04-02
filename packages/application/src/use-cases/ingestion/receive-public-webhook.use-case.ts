@@ -29,7 +29,7 @@ import type {
   WorkflowRepositoryPort,
 } from '../../ports';
 import type { UseCase } from '../use-case';
-import type { UsageRecorder } from '../usage';
+import type { PlanLimitEnforcer, UsageRecorder } from '../usage';
 import { buildPublicWebhookResponse } from './webhook-response';
 
 export interface ReceivePublicWebhookUseCaseInput {
@@ -85,6 +85,7 @@ export class ReceivePublicWebhookUseCase implements UseCase<
     private readonly executionQueue: ExecutionQueuePort,
     private readonly transactionBoundary: TransactionBoundary,
     private readonly usage: UsageRecorder,
+    private readonly planLimits: PlanLimitEnforcer,
     private readonly options: ReceivePublicWebhookUseCaseOptions,
   ) {}
 
@@ -115,6 +116,9 @@ export class ReceivePublicWebhookUseCase implements UseCase<
           now: new Date(),
           toleranceSeconds: this.options.signatureToleranceSeconds,
         });
+
+        await this.planLimits.enforceWebhookRequest({ workspaceId: workflow.workspaceId });
+        await this.planLimits.enforceExecutionCreation({ workspaceId: workflow.workspaceId });
 
         const replayReserved = await this.runtimeState.reserveReplay({
           workspaceId: workflow.workspaceId,

@@ -19,7 +19,7 @@ import type {
 } from '../../ports';
 import type { ApiKeyScopeRecord } from '../access';
 import type { UseCase } from '../use-case';
-import type { UsageRecorder } from '../usage';
+import type { PlanLimitEnforcer, UsageRecorder } from '../usage';
 import {
   buildAutomationBridgeAcceptedResponse,
   readAutomationJsonValue,
@@ -64,6 +64,7 @@ export class ExecuteAutomationWorkflowUseCase implements UseCase<
     private readonly executionQueue: ExecutionQueuePort,
     private readonly transactionBoundary: TransactionBoundary,
     private readonly usage: UsageRecorder,
+    private readonly planLimits: PlanLimitEnforcer,
   ) {}
 
   async execute(
@@ -87,6 +88,8 @@ export class ExecuteAutomationWorkflowUseCase implements UseCase<
         if (workflow.triggerType !== 'automation') {
           throw automationWorkflowNotAcceptingRequests();
         }
+
+        await this.planLimits.enforceExecutionCreation({ workspaceId: workflow.workspaceId });
 
         const auditLog = await this.auditLogs.create({
           workspaceId: workflow.workspaceId,

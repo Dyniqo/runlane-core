@@ -35,24 +35,74 @@ const usageMetricSchema = {
   },
 } satisfies OpenApiSchemaObject;
 
+const usageTotalsSchema = {
+  type: 'object',
+  required: ['executions', 'aiCalls', 'httpCalls', 'webhookRequests', 'retries'],
+  properties: {
+    executions: { type: 'integer', minimum: 0 },
+    aiCalls: { type: 'integer', minimum: 0 },
+    httpCalls: { type: 'integer', minimum: 0 },
+    webhookRequests: { type: 'integer', minimum: 0 },
+    retries: { type: 'integer', minimum: 0 },
+  },
+} satisfies OpenApiSchemaObject;
+
+const usagePlanLimitsSchema = {
+  type: 'object',
+  required: [
+    'workflows',
+    'executions',
+    'aiCalls',
+    'httpCalls',
+    'webhookRequests',
+    'requestsPerMinute',
+  ],
+  properties: {
+    workflows: { type: 'integer', minimum: 0 },
+    executions: { type: 'integer', minimum: 0 },
+    aiCalls: { type: 'integer', minimum: 0 },
+    httpCalls: { type: 'integer', minimum: 0 },
+    webhookRequests: { type: 'integer', minimum: 0 },
+    requestsPerMinute: { type: 'integer', minimum: 0 },
+  },
+} satisfies OpenApiSchemaObject;
+
 const currentUsageResponseSchema = {
   type: 'object',
-  required: ['workspaceId', 'periodStart', 'periodEnd', 'totals', 'metrics'],
+  required: ['workspaceId', 'periodStart', 'periodEnd', 'plan', 'totals', 'metrics'],
   properties: {
     workspaceId: { type: 'string', format: 'uuid' },
     periodStart: { type: 'string', format: 'date-time' },
     periodEnd: { type: 'string', format: 'date-time' },
-    totals: {
+    plan: {
       type: 'object',
-      required: ['executions', 'aiCalls', 'httpCalls', 'webhookRequests', 'retries'],
+      required: ['name', 'limits', 'used', 'remaining'],
       properties: {
-        executions: { type: 'integer', minimum: 0 },
-        aiCalls: { type: 'integer', minimum: 0 },
-        httpCalls: { type: 'integer', minimum: 0 },
-        webhookRequests: { type: 'integer', minimum: 0 },
-        retries: { type: 'integer', minimum: 0 },
+        name: { type: 'string', enum: ['free', 'starter', 'pro', 'agency'] },
+        limits: usagePlanLimitsSchema,
+        used: {
+          type: 'object',
+          required: [
+            'workflows',
+            'executions',
+            'aiCalls',
+            'httpCalls',
+            'webhookRequests',
+            'retries',
+          ],
+          properties: {
+            workflows: { type: 'integer', minimum: 0 },
+            executions: { type: 'integer', minimum: 0 },
+            aiCalls: { type: 'integer', minimum: 0 },
+            httpCalls: { type: 'integer', minimum: 0 },
+            webhookRequests: { type: 'integer', minimum: 0 },
+            retries: { type: 'integer', minimum: 0 },
+          },
+        },
+        remaining: usagePlanLimitsSchema,
       },
     },
+    totals: usageTotalsSchema,
     metrics: { type: 'array', items: usageMetricSchema },
   },
 } satisfies OpenApiSchemaObject;

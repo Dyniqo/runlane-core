@@ -32,6 +32,10 @@ export class PrismaWorkflowRepository implements WorkflowRepositoryPort {
     return mapWorkflowRecord(workflow);
   }
 
+  countForWorkspace(workspaceId: string): Promise<number> {
+    return this.persistence.client.workflow.count({ where: { workspaceId } });
+  }
+
   async listForWorkspace(workspaceId: string): Promise<readonly StoredWorkflowRecord[]> {
     const workflows = await this.persistence.client.workflow.findMany({
       where: { workspaceId },

@@ -155,11 +155,13 @@ export {
   assertWorkspaceRole,
   assertWorkspaceScopeMatches,
   normalizeWorkspaceName,
+  normalizeWorkspacePlan,
   workspaceAccessDenied,
   workspaceMembershipRequired,
+  WORKSPACE_PLANS,
   WORKSPACE_ROLES,
 } from './workspace';
-export type { WorkspaceAuthorizationScope, WorkspaceRole } from './workspace';
+export type { WorkspaceAuthorizationScope, WorkspacePlan, WorkspaceRole } from './workspace';
 export {
   DEFAULT_WORKFLOW_TRIGGER_TYPE,
   createWorkflowPublicId,
@@ -189,14 +191,28 @@ export type {
   WorkflowTriggerType,
 } from './workflow';
 export {
+  assertPlanLimitAvailable,
   buildCurrentUsagePeriod,
+  getPlanResourceLimit,
+  getUsageMetricPlanResource,
+  getWorkspacePlanLimits,
   normalizeUsageMetricType,
   normalizeUsageQuantity,
   normalizeUsageSourceId,
   normalizeUsageSourceType,
+  planLimitExceeded,
+  planLimitInvalid,
+  planWorkspaceNotFound,
+  PLAN_LIMIT_RESOURCES,
   usageMetricInvalid,
   USAGE_METRIC_TYPES,
+  WORKSPACE_PLAN_LIMITS,
 } from './usage';
-export type { UsageMetricType } from './usage';
+export type {
+  AssertPlanLimitAvailableInput,
+  PlanLimitResource,
+  UsageMetricType,
+  WorkspacePlanLimits,
+} from './usage';
 export { DOMAIN_ERROR_CATEGORIES, DomainError, isDomainError } from './shared';
 export type { DomainErrorCategory, DomainErrorDetails, DomainErrorOptions } from './shared';

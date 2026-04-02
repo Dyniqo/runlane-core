@@ -5,6 +5,7 @@ import {
   EXECUTION_REPOSITORY,
   ExecuteAutomationWorkflowUseCase,
   GetAutomationWorkflowContractUseCase,
+  PlanLimitEnforcer,
   TRANSACTION_BOUNDARY,
   UsageRecorder,
   WORKFLOW_REPOSITORY,
@@ -50,6 +51,7 @@ import { RunlaneUsageModule } from '../usage';
         EXECUTION_QUEUE,
         TRANSACTION_BOUNDARY,
         UsageRecorder,
+        PlanLimitEnforcer,
       ],
       useFactory: (
         workflows: WorkflowRepositoryPort,
@@ -58,6 +60,7 @@ import { RunlaneUsageModule } from '../usage';
         executionQueue: ExecutionQueuePort,
         transactionBoundary: TransactionBoundary,
         usage: UsageRecorder,
+        planLimits: PlanLimitEnforcer,
       ) =>
         new ExecuteAutomationWorkflowUseCase(
           workflows,
@@ -66,6 +69,7 @@ import { RunlaneUsageModule } from '../usage';
           executionQueue,
           transactionBoundary,
           usage,
+          planLimits,
         ),
     },
   ],

@@ -11,6 +11,7 @@ import {
   GetExecutionUseCase,
   ListExecutionsUseCase,
   ListExecutionStepsUseCase,
+  PlanLimitEnforcer,
   ProcessExecutionUseCase,
   RetryExecutionUseCase,
   SafeTemplateResolver,
@@ -84,6 +85,7 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
         AI_PROVIDER,
         NOTIFICATION_CONNECTOR,
         UsageRecorder,
+        PlanLimitEnforcer,
       ],
       useFactory: (
         steps: ExecutionStepRepositoryPort,
@@ -94,6 +96,7 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
         aiProvider: AiProviderPort,
         notificationConnector: NotificationConnectorPort,
         usage: UsageRecorder,
+        planLimits: PlanLimitEnforcer,
       ) =>
         new WorkflowExecutionEngine(
           steps,
@@ -104,6 +107,7 @@ import { PrismaExecutionRepository, PrismaExecutionStepRepository } from './repo
           aiProvider,
           notificationConnector,
           usage,
+          planLimits,
         ),
     },
     {

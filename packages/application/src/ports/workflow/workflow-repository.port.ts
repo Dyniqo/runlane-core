@@ -42,6 +42,7 @@ export interface PublishWorkflowInput {
 
 export interface WorkflowRepositoryPort {
   createForWorkspace(input: CreateWorkflowInput): Promise<StoredWorkflowRecord>;
+  countForWorkspace(workspaceId: string): Promise<number>;
   listForWorkspace(workspaceId: string): Promise<readonly StoredWorkflowRecord[]>;
   findByWorkspaceId(
     input: Readonly<{ workspaceId: string; id: string }>,

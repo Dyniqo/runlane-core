@@ -4,8 +4,10 @@ const WORKSPACE_NAME_MIN_LENGTH = 2;
 const WORKSPACE_NAME_MAX_LENGTH = 120;
 
 export const WORKSPACE_ROLES = ['owner', 'member'] as const;
+export const WORKSPACE_PLANS = ['free', 'starter', 'pro', 'agency'] as const;
 
 export type WorkspaceRole = (typeof WORKSPACE_ROLES)[number];
+export type WorkspacePlan = (typeof WORKSPACE_PLANS)[number];
 
 export interface WorkspaceAuthorizationScope {
   readonly workspaceId: string;
@@ -27,6 +29,20 @@ export function normalizeWorkspaceName(name: string): string {
   }
 
   return normalizedName;
+}
+
+export function normalizeWorkspacePlan(value: string): WorkspacePlan {
+  const normalizedValue = value.trim().toLowerCase();
+
+  if (!WORKSPACE_PLANS.some((plan) => plan === normalizedValue)) {
+    throw new DomainError({
+      code: 'WORKSPACE_PLAN_INVALID',
+      category: 'validation',
+      message: 'Workspace plan is invalid',
+    });
+  }
+
+  return normalizedValue as WorkspacePlan;
 }
 
 export function assertWorkspaceScopeMatches(

@@ -1,7 +1,17 @@
 export { ListAuditLogsUseCase } from './audit';
-export { GetCurrentUsageUseCase, UsageRecorder, buildCurrentUsageResponse } from './usage';
+export {
+  GetCurrentUsageUseCase,
+  PlanLimitEnforcer,
+  UsageRecorder,
+  buildCurrentUsageResponse,
+} from './usage';
 export type { ListAuditLogsUseCaseInput } from './audit';
-export type { GetCurrentUsageUseCaseInput, RecordUsageMetricInput } from './usage';
+export type {
+  CurrentPlanUsageSnapshot,
+  EnforcePlanLimitInput,
+  GetCurrentUsageUseCaseInput,
+  RecordUsageMetricInput,
+} from './usage';
 export {
   CreateApiKeyUseCase,
   ListApiKeysUseCase,

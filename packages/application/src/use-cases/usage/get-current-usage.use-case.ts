@@ -1,8 +1,8 @@
 import type { CurrentUsageResponseDto } from '@runlane/contracts';
-import { buildCurrentUsagePeriod } from '@runlane/domain';
-import type { UsageRecordRepositoryPort, WorkspaceScopeRecord } from '../../ports';
+import type { WorkspaceScopeRecord } from '../../ports';
 import type { UseCase } from '../use-case';
 import { buildCurrentUsageResponse } from './current-usage-response';
+import type { PlanLimitEnforcer } from './plan-limit-enforcer';
 
 export interface GetCurrentUsageUseCaseInput {
   readonly scope: WorkspaceScopeRecord;
@@ -13,21 +13,20 @@ export class GetCurrentUsageUseCase implements UseCase<
   GetCurrentUsageUseCaseInput,
   CurrentUsageResponseDto
 > {
-  constructor(private readonly usageRecords: UsageRecordRepositoryPort) {}
+  constructor(private readonly plans: PlanLimitEnforcer) {}
 
   async execute(input: GetCurrentUsageUseCaseInput): Promise<CurrentUsageResponseDto> {
-    const period = buildCurrentUsagePeriod(input.now ?? new Date());
-    const metrics = await this.usageRecords.summarizeCurrentPeriod({
-      workspaceId: input.scope.workspaceId,
-      periodStart: period.start,
-      periodEnd: period.end,
-    });
+    const planInput = input.now
+      ? { workspaceId: input.scope.workspaceId, now: input.now }
+      : { workspaceId: input.scope.workspaceId };
+    const plan = await this.plans.getCurrentPlanUsage(planInput);
 
     return buildCurrentUsageResponse({
       workspaceId: input.scope.workspaceId,
-      periodStart: period.start,
-      periodEnd: period.end,
-      metrics,
+      periodStart: plan.periodStart,
+      periodEnd: plan.periodEnd,
+      metrics: plan.metrics,
+      plan,
     });
   }
 }

@@ -5,6 +5,7 @@ import {
   CreateWorkflowTestContractUseCase,
   GetWorkflowUseCase,
   ListWorkflowsUseCase,
+  PlanLimitEnforcer,
   PublishWorkflowUseCase,
   TRANSACTION_BOUNDARY,
   UpdateWorkflowUseCase,
@@ -17,10 +18,11 @@ import type {
 } from '@runlane/application';
 import { RunlaneAuditModule } from '../audit';
 import { RunlaneDatabaseModule } from '../prisma';
+import { RunlaneUsageModule } from '../usage';
 import { PrismaWorkflowRepository } from './repositories';
 
 @Module({
-  imports: [RunlaneDatabaseModule, RunlaneAuditModule],
+  imports: [RunlaneDatabaseModule, RunlaneAuditModule, RunlaneUsageModule],
   providers: [
     PrismaWorkflowRepository,
     {
@@ -29,12 +31,13 @@ import { PrismaWorkflowRepository } from './repositories';
     },
     {
       provide: CreateWorkflowUseCase,
-      inject: [WORKFLOW_REPOSITORY, AUDIT_LOG_REPOSITORY, TRANSACTION_BOUNDARY],
+      inject: [WORKFLOW_REPOSITORY, AUDIT_LOG_REPOSITORY, TRANSACTION_BOUNDARY, PlanLimitEnforcer],
       useFactory: (
         workflows: WorkflowRepositoryPort,
         auditLogs: AuditLogRepositoryPort,
         transactionBoundary: TransactionBoundary,
-      ) => new CreateWorkflowUseCase(workflows, auditLogs, transactionBoundary),
+        planLimits: PlanLimitEnforcer,
+      ) => new CreateWorkflowUseCase(workflows, auditLogs, transactionBoundary, planLimits),
     },
     {
       provide: ListWorkflowsUseCase,

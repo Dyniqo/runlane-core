@@ -43,11 +43,14 @@ export type {
   StoredExecutionRecord,
   StoredExecutionStepRecord,
 } from './execution';
-export { USAGE_RECORD_REPOSITORY } from './usage';
+export { PLAN_LIMIT_REPOSITORY, USAGE_RECORD_REPOSITORY } from './usage';
 export type {
   CreateUsageRecordInput,
   CreateUsageRecordsInput,
   GetUsageSummaryInput,
+  PlanLimitRepositoryPort,
+  PlanLimitUsageRecord,
+  ReadPlanLimitUsageInput,
   UsageMetricQuantityRecord,
   UsageRecordRepositoryPort,
 } from './usage';

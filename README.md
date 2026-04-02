@@ -202,7 +202,7 @@ pnpm validate:notifications
 
 When `SLACK_WEBHOOK_URL` is not configured, the validation confirms the Worker fail-fast path without retrying. When `SLACK_WEBHOOK_URL` is configured, the same command validates real Slack notification delivery.
 
-## Usage tracking
+## Usage tracking and plan enforcement
 
 Runlane records workspace-scoped usage as durable database events. Execution creation, public webhook ingestion, HTTP connector attempts, AI decision attempts, and execution retries are metered with idempotent source keys so retries and repeated validation calls do not double-count the same runtime event.
 
@@ -210,12 +210,15 @@ Current usage is exposed through:
 
 - `GET /v1/usage/current`
 
-The response includes the current UTC monthly window, normalized metric rows, and totals for executions, AI calls, HTTP calls, webhook requests, and retries. Plan enforcement is layered on top of these counters in the next phase.
+The response includes the current UTC monthly window, normalized metric rows, totals, active plan limits, current usage, and remaining capacity for workflow count, executions, AI calls, HTTP calls, webhook requests, and request rate limits.
 
-Validate usage metering with the API and Worker running locally:
+Plan enforcement is applied before accepting new workflows, public webhook requests, automation executions, HTTP connector calls, and AI decision calls. Limits fail fast with `PLAN_LIMIT_EXCEEDED` and do not create queued jobs or external connector calls when capacity is exhausted.
+
+Validate usage metering and plan enforcement with the API and Worker running locally:
 
 ```bash
 pnpm validate:usage
+pnpm validate:plans
 ```
 
 ## Runtime observability
@@ -244,6 +247,7 @@ pnpm validate:http-connector
 pnpm validate:ai-decision
 pnpm validate:notifications
 pnpm validate:usage
+pnpm validate:plans
 powershell -ExecutionPolicy Bypass -File scripts/validate-operational-endpoints.ps1
 powershell -ExecutionPolicy Bypass -File scripts/validate-registration.ps1
 ```

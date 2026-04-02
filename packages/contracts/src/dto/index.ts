@@ -66,7 +66,10 @@ export type {
   CurrentUsageResponseDto,
   UsageMetricDto,
   UsageMetricTypeDto,
+  UsagePlanDto,
+  UsagePlanLimitsDto,
   UsageTotalsDto,
+  WorkspacePlanDto,
 } from './usage.dto';
 export type {
   PublicWebhookResponseDto,

@@ -80,7 +80,8 @@
     "validate:ai-provider": "node scripts/validate-ai-provider.mjs",
     "validate:ai-decision": "powershell -ExecutionPolicy Bypass -File scripts/validate-ai-decision.ps1",
     "validate:notifications": "powershell -ExecutionPolicy Bypass -File scripts/validate-notifications.ps1",
-    "validate:usage": "powershell -ExecutionPolicy Bypass -File scripts/validate-usage.ps1"
+    "validate:usage": "powershell -ExecutionPolicy Bypass -File scripts/validate-usage.ps1",
+    "validate:plans": "powershell -ExecutionPolicy Bypass -File scripts/validate-plan-enforcement.ps1"
   },
   "dependencies": {
     "@nestjs/common": "11.1.24",

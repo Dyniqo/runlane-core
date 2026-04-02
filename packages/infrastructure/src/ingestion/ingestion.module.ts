@@ -3,6 +3,7 @@ import {
   AUDIT_LOG_REPOSITORY,
   EXECUTION_QUEUE,
   EXECUTION_REPOSITORY,
+  PlanLimitEnforcer,
   ReceivePublicWebhookUseCase,
   TRANSACTION_BOUNDARY,
   UsageRecorder,
@@ -63,6 +64,7 @@ import { RedisWebhookRuntimeState } from './runtime';
         EXECUTION_QUEUE,
         TRANSACTION_BOUNDARY,
         UsageRecorder,
+        PlanLimitEnforcer,
         RuntimeConfigService,
       ],
       useFactory: (
@@ -74,6 +76,7 @@ import { RedisWebhookRuntimeState } from './runtime';
         executionQueue: ExecutionQueuePort,
         transactionBoundary: TransactionBoundary,
         usage: UsageRecorder,
+        planLimits: PlanLimitEnforcer,
         config: RuntimeConfigService,
       ) =>
         new ReceivePublicWebhookUseCase(
@@ -85,6 +88,7 @@ import { RedisWebhookRuntimeState } from './runtime';
           executionQueue,
           transactionBoundary,
           usage,
+          planLimits,
           {
             webhookSigningSecret: config.webhookSigningSecret,
             signatureToleranceSeconds: config.webhookSignatureToleranceSeconds,

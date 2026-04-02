@@ -13,6 +13,7 @@ import type {
   WorkspaceScopeRecord,
 } from '../../ports';
 import type { UseCase } from '../use-case';
+import type { PlanLimitEnforcer } from '../usage';
 import { buildWorkflowResponse } from './workflow-response';
 
 export interface CreateWorkflowUseCaseInput {
@@ -32,9 +33,10 @@ export class CreateWorkflowUseCase implements UseCase<
     private readonly workflows: WorkflowRepositoryPort,
     private readonly auditLogs: AuditLogRepositoryPort,
     private readonly transactionBoundary: TransactionBoundary,
+    private readonly planLimits: PlanLimitEnforcer,
   ) {}
 
-  execute(input: CreateWorkflowUseCaseInput): Promise<WorkflowResponseDto> {
+  async execute(input: CreateWorkflowUseCaseInput): Promise<WorkflowResponseDto> {
     assertWorkspaceRole(input.scope, ['owner']);
     const name = normalizeWorkflowName(input.name);
     const definition = readWorkflowDefinition(
@@ -42,6 +44,12 @@ export class CreateWorkflowUseCase implements UseCase<
       input.triggerType === undefined ? {} : { triggerType: input.triggerType },
     );
     const triggerType = getWorkflowDefinitionTriggerType(definition);
+    const currentWorkflowCount = await this.workflows.countForWorkspace(input.scope.workspaceId);
+
+    await this.planLimits.enforceWorkflowCreation({
+      workspaceId: input.scope.workspaceId,
+      currentWorkflowCount,
+    });
 
     return this.transactionBoundary.execute(async () => {
       const workflow = await this.workflows.createForWorkspace({

@@ -31,7 +31,7 @@ import type {
   StoredWorkflowRecord,
   WorkflowSecretRepositoryPort,
 } from '../../ports';
-import type { UsageRecorder } from '../usage';
+import type { PlanLimitEnforcer, UsageRecorder } from '../usage';
 import type { SafeTemplateResolutionResult, SafeTemplateResolver } from './safe-template-resolver';
 import { resolveWorkflowSecretReferences } from '../secrets';
 
@@ -67,6 +67,7 @@ interface StepExecutionContext {
   readonly aiProvider: AiProviderPort;
   readonly notificationConnector: NotificationConnectorPort;
   readonly usage: UsageRecorder;
+  readonly planLimits: PlanLimitEnforcer;
   readonly runStartedAt: Date;
 }
 
@@ -82,6 +83,7 @@ export class WorkflowExecutionEngine {
     private readonly aiProvider: AiProviderPort,
     private readonly notificationConnector: NotificationConnectorPort,
     private readonly usage: UsageRecorder,
+    private readonly planLimits: PlanLimitEnforcer,
   ) {}
 
   async execute(input: WorkflowExecutionEngineInput): Promise<WorkflowExecutionEngineResult> {
@@ -118,6 +120,7 @@ export class WorkflowExecutionEngine {
         aiProvider: this.aiProvider,
         notificationConnector: this.notificationConnector,
         usage: this.usage,
+        planLimits: this.planLimits,
         runStartedAt: input.startedAt,
       });
 
@@ -268,6 +271,11 @@ async function runHttpStep(
   step: WorkflowStepDefinitionValue,
   context: StepExecutionContext,
 ): Promise<JsonObject> {
+  await context.planLimits.enforceUsageMetric({
+    workspaceId: context.execution.workspaceId,
+    metric: 'http_call',
+  });
+
   const result = await context.httpConnector.execute({
     context: {
       workspaceId: context.execution.workspaceId,
@@ -313,6 +321,11 @@ async function runAiDecisionStep(
   context: StepExecutionContext,
 ): Promise<JsonObject> {
   const config = readAiDecisionStepConfig(step.config);
+
+  await context.planLimits.enforceUsageMetric({
+    workspaceId: context.execution.workspaceId,
+    metric: 'ai_call',
+  });
   const result = await context.aiProvider.generateStructuredResponse({
     workspaceId: context.execution.workspaceId,
     workflowId: context.workflow.id,
@@ -494,21 +507,56 @@ function resolveNextStepKey(
   step: WorkflowStepDefinitionValue,
   output: JsonObject,
 ): string | undefined {
+  const resolution = resolveNextStep(definition, step, output);
+
+  if (resolution.selectedByTransition) {
+    return resolution.stepKey;
+  }
+
+  return resolution.stepKey;
+}
+
+interface NextStepResolution {
+  readonly selectedByTransition: boolean;
+  readonly stepKey?: string;
+}
+
+function resolveNextStep(
+  definition: WorkflowDefinition,
+  step: WorkflowStepDefinitionValue,
+  output: JsonObject,
+): NextStepResolution {
   const branch = typeof output.branch === 'string' ? output.branch : null;
   const branchTarget = branch ? step.transitions?.branches?.[branch] : undefined;
 
   if (branchTarget) {
-    return branchTarget;
+    return { stepKey: branchTarget, selectedByTransition: true };
   }
 
   if (step.transitions?.onSuccess) {
-    return step.transitions.onSuccess;
+    return { stepKey: step.transitions.onSuccess, selectedByTransition: true };
+  }
+
+  if (isTransitionTarget(definition, step.key)) {
+    return { selectedByTransition: false };
   }
 
   const currentIndex = definition.steps.findIndex((candidate) => candidate.key === step.key);
   const nextStep = currentIndex >= 0 ? definition.steps[currentIndex + 1] : undefined;
 
-  return nextStep?.key;
+  return nextStep
+    ? { stepKey: nextStep.key, selectedByTransition: false }
+    : { selectedByTransition: false };
+}
+
+function isTransitionTarget(definition: WorkflowDefinition, stepKey: string): boolean {
+  return definition.steps.some((step) => {
+    if (step.transitions?.onSuccess === stepKey) {
+      return true;
+    }
+
+    return Object.values(step.transitions?.branches ?? {}).some((target) => target === stepKey);
+  });
 }
 
 function readOptionalString(value: unknown): string | null {
