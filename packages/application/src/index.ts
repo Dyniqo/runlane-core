@@ -2,6 +2,9 @@ export {
   API_KEY_REPOSITORY,
   API_KEY_TOKEN_SERVICE,
   AI_PROVIDER,
+  STRIPE_WEBHOOK_VERIFIER,
+  BILLING_WORKSPACE_REPOSITORY,
+  BILLING_EVENT_REPOSITORY,
   AUDIT_LOG_REPOSITORY,
   AUTH_TOKEN_SERVICE,
   EXECUTION_QUEUE,
@@ -27,6 +30,17 @@ export {
 } from './ports';
 export type {
   AiProviderPort,
+  VerifiedStripeWebhookEvent,
+  VerifyStripeWebhookInput,
+  StripeBillingSubscriptionSnapshot,
+  BillingWorkspaceRecord,
+  UpdateBillingSubscriptionStateInput,
+  StoredBillingEventRecord,
+  CreateBillingEventInput,
+  UpdateBillingEventStatusInput,
+  StripeWebhookVerifierPort,
+  BillingWorkspaceRepositoryPort,
+  BillingEventRepositoryPort,
   AuditLogRepositoryPort,
   CreateQueuedExecutionInput,
   EnqueuedExecutionJobRecord,
@@ -138,6 +152,7 @@ export type {
 } from './ports';
 export {
   CreateApiKeyUseCase,
+  ProcessStripeWebhookUseCase,
   ExecuteAutomationWorkflowUseCase,
   invalidExecutionQuery,
   ListAuditLogsUseCase,
@@ -183,6 +198,7 @@ export {
 } from './use-cases';
 export type {
   ApiKeyScopeRecord,
+  ProcessStripeWebhookUseCaseInput,
   ListAuditLogsUseCaseInput,
   ListExecutionsUseCaseInput,
   ListExecutionStepsUseCaseInput,

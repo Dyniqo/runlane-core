@@ -3,6 +3,10 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import type { RuntimeConfigService } from '@runlane/config';
 import helmet from 'helmet';
 
+interface RawBodyRequestLike {
+  rawBody?: Buffer;
+}
+
 export function configureHttpSecurity(
   application: INestApplication,
   config: RuntimeConfigService,
@@ -25,6 +29,7 @@ export function configureHttpSecurity(
       'Accept',
       'Authorization',
       'Content-Type',
+      'Stripe-Signature',
       'X-Correlation-Id',
       'X-Request-Id',
       'X-Runlane-Api-Key',
@@ -50,7 +55,12 @@ export function configureHttpSecurity(
 
   const expressApplication = application as NestExpressApplication;
 
-  expressApplication.useBodyParser('json', { limit: config.maxPayloadSizeBytes });
+  expressApplication.useBodyParser('json', {
+    limit: config.maxPayloadSizeBytes,
+    verify: (request: RawBodyRequestLike, _response: unknown, body: Buffer) => {
+      request.rawBody = Buffer.from(body);
+    },
+  });
   expressApplication.useBodyParser('urlencoded', {
     extended: false,
     limit: config.maxPayloadSizeBytes,

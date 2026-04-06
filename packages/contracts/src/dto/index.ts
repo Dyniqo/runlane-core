@@ -39,6 +39,7 @@ export type {
   RegisterUserRequestDto,
   RegisterUserResponseDto,
 } from './auth.dto';
+export type { StripeWebhookResponseDto } from './billing.dto';
 export type { CursorPageDto, CursorPageQueryDto } from './cursor-page.dto';
 export type { OperationAcceptedDto } from './operation-accepted.dto';
 export type {

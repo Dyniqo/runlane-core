@@ -9,6 +9,7 @@ import { ApiController } from './api.controller';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 import { AutomationModule } from './modules/automation/automation.module';
 import { AuditLogsModule } from './modules/audit/audit-logs.module';
+import { BillingModule } from './modules/billing/billing.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { ExecutionsModule } from './modules/executions/executions.module';
 import { HooksModule } from './modules/hooks/hooks.module';
@@ -28,6 +29,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
     ApiKeysModule,
     AutomationModule,
     AuditLogsModule,
+    BillingModule,
     WorkflowsModule,
     ExecutionsModule,
     HooksModule,

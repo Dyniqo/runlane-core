@@ -106,6 +106,14 @@ export class RuntimeConfigService {
     return this.environment.NOTIFICATION_FAILURE_ALERTS_ENABLED;
   }
 
+  get stripeWebhookSecret(): string | null {
+    return this.environment.STRIPE_WEBHOOK_SECRET;
+  }
+
+  get stripeWebhookToleranceSeconds(): number {
+    return this.environment.STRIPE_WEBHOOK_TOLERANCE_SECONDS;
+  }
+
   get apiUrl(): string {
     return this.environment.API_URL;
   }

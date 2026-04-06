@@ -1,5 +1,6 @@
 export { OpenAiCompatibleProvider, RunlaneAiModule } from './ai';
 export { RunlaneAutomationModule } from './automation';
+export { RunlaneBillingModule, StripeWebhookVerifier } from './billing';
 export {
   BullMqExecutionQueueProducer,
   BullMqExecutionWorkerProcessor,

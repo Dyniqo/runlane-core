@@ -34,6 +34,8 @@ export interface RuntimeEnvironment {
   readonly NOTIFICATION_CONNECTOR_TIMEOUT_MS: number;
   readonly NOTIFICATION_CONNECTOR_MAX_PAYLOAD_BYTES: number;
   readonly NOTIFICATION_FAILURE_ALERTS_ENABLED: boolean;
+  readonly STRIPE_WEBHOOK_SECRET: string | null;
+  readonly STRIPE_WEBHOOK_TOLERANCE_SECONDS: number;
   readonly API_URL: string;
   readonly APP_URL: string;
   readonly DATABASE_URL: string;
@@ -85,6 +87,8 @@ const LOCAL_DEFAULTS = {
   NOTIFICATION_CONNECTOR_TIMEOUT_MS: 10000,
   NOTIFICATION_CONNECTOR_MAX_PAYLOAD_BYTES: 32768,
   NOTIFICATION_FAILURE_ALERTS_ENABLED: true,
+  STRIPE_WEBHOOK_SECRET: '',
+  STRIPE_WEBHOOK_TOLERANCE_SECONDS: 300,
   API_URL: 'http://localhost:4600',
   APP_URL: 'http://localhost:4600',
   DATABASE_URL: 'postgresql://runlane:runlane_local_database@127.0.0.1:15432/runlane?schema=public',
@@ -267,6 +271,20 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
       source.NOTIFICATION_FAILURE_ALERTS_ENABLED,
       'NOTIFICATION_FAILURE_ALERTS_ENABLED',
       LOCAL_DEFAULTS.NOTIFICATION_FAILURE_ALERTS_ENABLED,
+      errors,
+    ),
+    STRIPE_WEBHOOK_SECRET: readOptionalSecret(
+      source.STRIPE_WEBHOOK_SECRET,
+      'STRIPE_WEBHOOK_SECRET',
+      LOCAL_DEFAULTS.STRIPE_WEBHOOK_SECRET,
+      errors,
+    ),
+    STRIPE_WEBHOOK_TOLERANCE_SECONDS: readInteger(
+      source.STRIPE_WEBHOOK_TOLERANCE_SECONDS,
+      'STRIPE_WEBHOOK_TOLERANCE_SECONDS',
+      LOCAL_DEFAULTS.STRIPE_WEBHOOK_TOLERANCE_SECONDS,
+      30,
+      3600,
       errors,
     ),
     API_URL: readUrl(

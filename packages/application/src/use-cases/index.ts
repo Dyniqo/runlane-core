@@ -1,3 +1,4 @@
+export * from './billing';
 export { ListAuditLogsUseCase } from './audit';
 export {
   GetCurrentUsageUseCase,

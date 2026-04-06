@@ -24,6 +24,8 @@ export const AUDIT_ACTIONS = [
   'execution.manual_retry_requested',
   'execution.succeeded',
   'execution.failed',
+  'billing.webhook_received',
+  'billing.event_processed',
 ] as const;
 
 export const AUDIT_ENTITY_TYPES = [
@@ -36,6 +38,7 @@ export const AUDIT_ENTITY_TYPES = [
   'connector_credential',
   'webhook_request',
   'execution',
+  'billing_event',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];

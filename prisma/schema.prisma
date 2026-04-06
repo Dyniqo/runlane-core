@@ -54,6 +54,29 @@ enum UsageMetricType {
   RETRY
 }
 
+enum BillingProvider {
+  STRIPE
+}
+
+enum BillingEventStatus {
+  RECEIVED
+  PROCESSED
+  IGNORED
+  FAILED
+}
+
+enum BillingStatus {
+  NONE
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  PAUSED
+}
+
 model User {
   id                   String            @id @default(uuid()) @db.Uuid
   email                String            @unique(map: "users_email_key") @db.VarChar(320)
@@ -91,6 +114,11 @@ model Workspace {
   name      String            @db.VarChar(120)
   ownerId   String            @map("owner_id") @db.Uuid
   plan      WorkspacePlan     @default(FREE)
+  stripeCustomerId           String?       @map("stripe_customer_id") @db.VarChar(255)
+  stripeSubscriptionId       String?       @map("stripe_subscription_id") @db.VarChar(255)
+  billingStatus             BillingStatus @default(NONE) @map("billing_status")
+  billingCurrentPeriodStart DateTime?     @map("billing_current_period_start") @db.Timestamptz(3)
+  billingCurrentPeriodEnd   DateTime?     @map("billing_current_period_end") @db.Timestamptz(3)
   isDemo    Boolean           @default(false) @map("is_demo")
   createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -105,8 +133,11 @@ model Workspace {
   workflowSecrets WorkflowSecret[]
   connectorCredentials ConnectorCredential[]
   usageRecords UsageRecord[]
+  billingEvents BillingEvent[]
 
   @@index([ownerId], map: "workspaces_owner_id_idx")
+  @@index([stripeCustomerId], map: "workspaces_stripe_customer_id_idx")
+  @@index([stripeSubscriptionId], map: "workspaces_stripe_subscription_id_idx")
   @@index([id, ownerId], map: "workspaces_id_owner_id_idx")
   @@map("workspaces")
 }
@@ -284,6 +315,27 @@ model UsageRecord {
   @@index([workspaceId, type, createdAt], map: "usage_records_workspace_id_type_created_at_idx")
   @@index([workspaceId, createdAt, id], map: "usage_records_workspace_id_created_at_id_idx")
   @@map("usage_records")
+}
+
+model BillingEvent {
+  id              String             @id @default(uuid()) @db.Uuid
+  workspaceId     String?            @map("workspace_id") @db.Uuid
+  provider        BillingProvider
+  providerEventId String             @map("provider_event_id") @db.VarChar(255)
+  eventType       String             @map("event_type") @db.VarChar(120)
+  status          BillingEventStatus @default(RECEIVED)
+  payloadJson     Json               @map("payload_json")
+  errorMessage    String?            @map("error_message") @db.Text
+  receivedAt      DateTime           @map("received_at") @db.Timestamptz(3)
+  processedAt     DateTime?          @map("processed_at") @db.Timestamptz(3)
+  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  workspace       Workspace?         @relation(fields: [workspaceId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@unique([provider, providerEventId], map: "billing_events_provider_provider_event_id_key")
+  @@index([workspaceId, receivedAt], map: "billing_events_workspace_id_received_at_idx")
+  @@index([provider, status, receivedAt], map: "billing_events_provider_status_received_at_idx")
+  @@map("billing_events")
 }
 
 model WorkflowSecret {

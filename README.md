@@ -221,6 +221,33 @@ pnpm validate:usage
 pnpm validate:plans
 ```
 
+## Stripe billing webhook sync
+
+Runlane receives Stripe billing webhooks through:
+
+- `POST /v1/billing/webhook`
+
+The endpoint verifies the `Stripe-Signature` header against `STRIPE_WEBHOOK_SECRET`, persists each Stripe event with an idempotent provider event id, and synchronizes workspace billing state from subscription events. Supported events include subscription created, updated, deleted, and invoice payment state changes. Duplicate Stripe event deliveries return a successful duplicate response without applying the event twice.
+
+Workspace subscription synchronization stores:
+
+- Stripe customer id
+- Stripe subscription id
+- billing status
+- current billing period
+- plan metadata when present on the subscription or price
+
+Relevant configuration:
+
+- `STRIPE_WEBHOOK_SECRET`
+- `STRIPE_WEBHOOK_TOLERANCE_SECONDS`
+
+Validate webhook verification, idempotency, billing event persistence, and subscription state sync with the API running locally:
+
+```bash
+pnpm validate:billing
+```
+
 ## Runtime observability
 
 API and Worker logs are emitted as structured JSON. Every HTTP response includes `x-request-id` and `x-correlation-id`. Valid incoming values are preserved and missing or invalid values are replaced with generated identifiers. Sensitive values are redacted before logs are written.
@@ -248,6 +275,7 @@ pnpm validate:ai-decision
 pnpm validate:notifications
 pnpm validate:usage
 pnpm validate:plans
+pnpm validate:billing
 powershell -ExecutionPolicy Bypass -File scripts/validate-operational-endpoints.ps1
 powershell -ExecutionPolicy Bypass -File scripts/validate-registration.ps1
 ```
