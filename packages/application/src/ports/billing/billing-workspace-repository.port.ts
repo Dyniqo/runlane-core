@@ -5,6 +5,7 @@ export const BILLING_WORKSPACE_REPOSITORY = Symbol('BILLING_WORKSPACE_REPOSITORY
 
 export interface BillingWorkspaceRecord {
   readonly id: string;
+  readonly name: string;
   readonly plan: WorkspacePlan;
   readonly stripeCustomerId: string | null;
   readonly stripeSubscriptionId: string | null;
@@ -15,9 +16,16 @@ export interface UpdateBillingSubscriptionStateInput extends BillingSubscription
   readonly workspaceId: string;
 }
 
+export interface UpdateBillingStripeCustomerInput {
+  readonly workspaceId: string;
+  readonly stripeCustomerId: string;
+}
+
 export interface BillingWorkspaceRepositoryPort {
+  findByWorkspaceId(workspaceId: string): Promise<BillingWorkspaceRecord | null>;
   findByStripeCustomerId(stripeCustomerId: string): Promise<BillingWorkspaceRecord | null>;
   findByStripeSubscriptionId(stripeSubscriptionId: string): Promise<BillingWorkspaceRecord | null>;
+  updateStripeCustomerId(input: UpdateBillingStripeCustomerInput): Promise<BillingWorkspaceRecord>;
   updateBillingSubscriptionState(
     input: UpdateBillingSubscriptionStateInput,
   ): Promise<BillingWorkspaceRecord>;

@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type {
   BillingWorkspaceRecord,
   BillingWorkspaceRepositoryPort,
+  UpdateBillingStripeCustomerInput,
   UpdateBillingSubscriptionStateInput,
 } from '@runlane/application';
 import { normalizeBillingStatus, normalizeWorkspacePlan } from '@runlane/domain';
@@ -12,6 +13,15 @@ export class PrismaBillingWorkspaceRepository implements BillingWorkspaceReposit
   constructor(
     @Inject(PrismaPersistenceContext) private readonly persistence: PrismaPersistenceContext,
   ) {}
+
+  async findByWorkspaceId(workspaceId: string): Promise<BillingWorkspaceRecord | null> {
+    const workspace = await this.persistence.client.workspace.findUnique({
+      where: { id: workspaceId },
+      select: workspaceBillingSelect,
+    });
+
+    return workspace ? mapBillingWorkspace(workspace) : null;
+  }
 
   async findByStripeCustomerId(stripeCustomerId: string): Promise<BillingWorkspaceRecord | null> {
     const workspace = await this.persistence.client.workspace.findFirst({
@@ -31,6 +41,18 @@ export class PrismaBillingWorkspaceRepository implements BillingWorkspaceReposit
     });
 
     return workspace ? mapBillingWorkspace(workspace) : null;
+  }
+
+  async updateStripeCustomerId(
+    input: UpdateBillingStripeCustomerInput,
+  ): Promise<BillingWorkspaceRecord> {
+    const workspace = await this.persistence.client.workspace.update({
+      where: { id: input.workspaceId },
+      data: { stripeCustomerId: input.stripeCustomerId },
+      select: workspaceBillingSelect,
+    });
+
+    return mapBillingWorkspace(workspace);
   }
 
   async updateBillingSubscriptionState(
@@ -55,6 +77,7 @@ export class PrismaBillingWorkspaceRepository implements BillingWorkspaceReposit
 
 const workspaceBillingSelect = {
   id: true,
+  name: true,
   plan: true,
   stripeCustomerId: true,
   stripeSubscriptionId: true,
@@ -63,6 +86,7 @@ const workspaceBillingSelect = {
 
 interface PrismaBillingWorkspaceRecord {
   readonly id: string;
+  readonly name: string;
   readonly plan: string;
   readonly stripeCustomerId: string | null;
   readonly stripeSubscriptionId: string | null;
@@ -72,6 +96,7 @@ interface PrismaBillingWorkspaceRecord {
 function mapBillingWorkspace(workspace: PrismaBillingWorkspaceRecord): BillingWorkspaceRecord {
   return {
     id: workspace.id,
+    name: workspace.name,
     plan: normalizeWorkspacePlan(workspace.plan),
     stripeCustomerId: workspace.stripeCustomerId,
     stripeSubscriptionId: workspace.stripeSubscriptionId,

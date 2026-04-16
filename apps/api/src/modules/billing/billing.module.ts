@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { RunlaneBillingModule } from '@runlane/infrastructure';
+import { RunlaneBillingModule, RunlaneIdentityModule } from '@runlane/infrastructure';
 import { BillingController } from './billing.controller';
 
 @Module({
-  imports: [RunlaneBillingModule],
+  imports: [RunlaneIdentityModule, RunlaneBillingModule],
   controllers: [BillingController],
 })
 export class BillingModule {}

@@ -221,7 +221,14 @@ pnpm validate:usage
 pnpm validate:plans
 ```
 
-## Stripe billing webhook sync
+## Stripe billing
+
+Runlane creates Stripe subscription checkout and customer portal sessions through:
+
+- `POST /v1/billing/checkout`
+- `POST /v1/billing/portal`
+
+Checkout and portal endpoints are workspace-scoped, owner-only, and return Stripe-hosted session URLs. Checkout sessions attach `runlane_workspace_id` and `runlane_plan` metadata to subscriptions so webhook synchronization can map Stripe subscription state back to the correct workspace. The portal endpoint requires an existing Stripe customer id for the workspace and fails fast when no customer has been created yet.
 
 Runlane receives Stripe billing webhooks through:
 
@@ -239,13 +246,22 @@ Workspace subscription synchronization stores:
 
 Relevant configuration:
 
+- `STRIPE_API_KEY`
+- `STRIPE_API_BASE_URL`
+- `STRIPE_PRICE_STARTER_ID`
+- `STRIPE_PRICE_PRO_ID`
+- `STRIPE_PRICE_AGENCY_ID`
+- `STRIPE_CHECKOUT_SUCCESS_URL`
+- `STRIPE_CHECKOUT_CANCEL_URL`
+- `STRIPE_PORTAL_RETURN_URL`
 - `STRIPE_WEBHOOK_SECRET`
 - `STRIPE_WEBHOOK_TOLERANCE_SECONDS`
 
-Validate webhook verification, idempotency, billing event persistence, and subscription state sync with the API running locally:
+Validate webhook verification, idempotency, billing event persistence, subscription state sync, and billing session fail-fast behavior with the API running locally:
 
 ```bash
 pnpm validate:billing
+pnpm validate:billing-sessions
 ```
 
 ## Runtime observability
@@ -276,6 +292,7 @@ pnpm validate:notifications
 pnpm validate:usage
 pnpm validate:plans
 pnpm validate:billing
+pnpm validate:billing-sessions
 powershell -ExecutionPolicy Bypass -File scripts/validate-operational-endpoints.ps1
 powershell -ExecutionPolicy Bypass -File scripts/validate-registration.ps1
 ```

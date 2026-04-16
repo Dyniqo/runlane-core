@@ -114,6 +114,42 @@ export class RuntimeConfigService {
     return this.environment.STRIPE_WEBHOOK_TOLERANCE_SECONDS;
   }
 
+  get stripeApiKey(): string | null {
+    return this.environment.STRIPE_API_KEY;
+  }
+
+  get stripeApiBaseUrl(): string {
+    return this.environment.STRIPE_API_BASE_URL;
+  }
+
+  get stripeRequestTimeoutMs(): number {
+    return this.environment.STRIPE_REQUEST_TIMEOUT_MS;
+  }
+
+  get stripePriceStarterId(): string | null {
+    return this.environment.STRIPE_PRICE_STARTER_ID;
+  }
+
+  get stripePriceProId(): string | null {
+    return this.environment.STRIPE_PRICE_PRO_ID;
+  }
+
+  get stripePriceAgencyId(): string | null {
+    return this.environment.STRIPE_PRICE_AGENCY_ID;
+  }
+
+  get stripeCheckoutSuccessUrl(): string {
+    return this.environment.STRIPE_CHECKOUT_SUCCESS_URL;
+  }
+
+  get stripeCheckoutCancelUrl(): string {
+    return this.environment.STRIPE_CHECKOUT_CANCEL_URL;
+  }
+
+  get stripePortalReturnUrl(): string {
+    return this.environment.STRIPE_PORTAL_RETURN_URL;
+  }
+
   get apiUrl(): string {
     return this.environment.API_URL;
   }

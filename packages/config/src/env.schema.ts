@@ -36,6 +36,15 @@ export interface RuntimeEnvironment {
   readonly NOTIFICATION_FAILURE_ALERTS_ENABLED: boolean;
   readonly STRIPE_WEBHOOK_SECRET: string | null;
   readonly STRIPE_WEBHOOK_TOLERANCE_SECONDS: number;
+  readonly STRIPE_API_KEY: string | null;
+  readonly STRIPE_API_BASE_URL: string;
+  readonly STRIPE_REQUEST_TIMEOUT_MS: number;
+  readonly STRIPE_PRICE_STARTER_ID: string | null;
+  readonly STRIPE_PRICE_PRO_ID: string | null;
+  readonly STRIPE_PRICE_AGENCY_ID: string | null;
+  readonly STRIPE_CHECKOUT_SUCCESS_URL: string;
+  readonly STRIPE_CHECKOUT_CANCEL_URL: string;
+  readonly STRIPE_PORTAL_RETURN_URL: string;
   readonly API_URL: string;
   readonly APP_URL: string;
   readonly DATABASE_URL: string;
@@ -89,6 +98,15 @@ const LOCAL_DEFAULTS = {
   NOTIFICATION_FAILURE_ALERTS_ENABLED: true,
   STRIPE_WEBHOOK_SECRET: '',
   STRIPE_WEBHOOK_TOLERANCE_SECONDS: 300,
+  STRIPE_API_KEY: '',
+  STRIPE_API_BASE_URL: 'https://api.stripe.com/v1',
+  STRIPE_REQUEST_TIMEOUT_MS: 10000,
+  STRIPE_PRICE_STARTER_ID: '',
+  STRIPE_PRICE_PRO_ID: '',
+  STRIPE_PRICE_AGENCY_ID: '',
+  STRIPE_CHECKOUT_SUCCESS_URL: 'http://localhost:4600/billing/success',
+  STRIPE_CHECKOUT_CANCEL_URL: 'http://localhost:4600/billing/cancel',
+  STRIPE_PORTAL_RETURN_URL: 'http://localhost:4600/billing',
   API_URL: 'http://localhost:4600',
   APP_URL: 'http://localhost:4600',
   DATABASE_URL: 'postgresql://runlane:runlane_local_database@127.0.0.1:15432/runlane?schema=public',
@@ -285,6 +303,69 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
       LOCAL_DEFAULTS.STRIPE_WEBHOOK_TOLERANCE_SECONDS,
       30,
       3600,
+      errors,
+    ),
+    STRIPE_API_KEY: readOptionalSecret(
+      source.STRIPE_API_KEY,
+      'STRIPE_API_KEY',
+      LOCAL_DEFAULTS.STRIPE_API_KEY,
+      errors,
+    ),
+    STRIPE_API_BASE_URL: readUrl(
+      source.STRIPE_API_BASE_URL,
+      'STRIPE_API_BASE_URL',
+      LOCAL_DEFAULTS.STRIPE_API_BASE_URL,
+      ['https:'],
+      errors,
+    ),
+    STRIPE_REQUEST_TIMEOUT_MS: readInteger(
+      source.STRIPE_REQUEST_TIMEOUT_MS,
+      'STRIPE_REQUEST_TIMEOUT_MS',
+      LOCAL_DEFAULTS.STRIPE_REQUEST_TIMEOUT_MS,
+      250,
+      30000,
+      errors,
+    ),
+    STRIPE_PRICE_STARTER_ID: readOptionalStripeObjectId(
+      source.STRIPE_PRICE_STARTER_ID,
+      'STRIPE_PRICE_STARTER_ID',
+      LOCAL_DEFAULTS.STRIPE_PRICE_STARTER_ID,
+      'price_',
+      errors,
+    ),
+    STRIPE_PRICE_PRO_ID: readOptionalStripeObjectId(
+      source.STRIPE_PRICE_PRO_ID,
+      'STRIPE_PRICE_PRO_ID',
+      LOCAL_DEFAULTS.STRIPE_PRICE_PRO_ID,
+      'price_',
+      errors,
+    ),
+    STRIPE_PRICE_AGENCY_ID: readOptionalStripeObjectId(
+      source.STRIPE_PRICE_AGENCY_ID,
+      'STRIPE_PRICE_AGENCY_ID',
+      LOCAL_DEFAULTS.STRIPE_PRICE_AGENCY_ID,
+      'price_',
+      errors,
+    ),
+    STRIPE_CHECKOUT_SUCCESS_URL: readUrl(
+      source.STRIPE_CHECKOUT_SUCCESS_URL,
+      'STRIPE_CHECKOUT_SUCCESS_URL',
+      LOCAL_DEFAULTS.STRIPE_CHECKOUT_SUCCESS_URL,
+      ['http:', 'https:'],
+      errors,
+    ),
+    STRIPE_CHECKOUT_CANCEL_URL: readUrl(
+      source.STRIPE_CHECKOUT_CANCEL_URL,
+      'STRIPE_CHECKOUT_CANCEL_URL',
+      LOCAL_DEFAULTS.STRIPE_CHECKOUT_CANCEL_URL,
+      ['http:', 'https:'],
+      errors,
+    ),
+    STRIPE_PORTAL_RETURN_URL: readUrl(
+      source.STRIPE_PORTAL_RETURN_URL,
+      'STRIPE_PORTAL_RETURN_URL',
+      LOCAL_DEFAULTS.STRIPE_PORTAL_RETURN_URL,
+      ['http:', 'https:'],
       errors,
     ),
     API_URL: readUrl(
@@ -794,6 +875,32 @@ function readNonEmptyString(
   if (normalizedValue.length === 0 || normalizedValue.length > maximumLength) {
     errors.push(`${name} must be a non-empty string up to ${maximumLength} characters`);
     return defaultValue;
+  }
+
+  return normalizedValue;
+}
+
+function readOptionalStripeObjectId(
+  value: string | undefined,
+  name: string,
+  defaultValue: string,
+  prefix: string,
+  errors: string[],
+): string | null {
+  const normalizedValue = value?.trim() || defaultValue;
+
+  if (!normalizedValue) {
+    return null;
+  }
+
+  if (!normalizedValue.startsWith(prefix) || normalizedValue.length > 255) {
+    errors.push(`${name} must be a valid Stripe object id starting with ${prefix}`);
+    return null;
+  }
+
+  if (!/^[A-Za-z0-9_]+$/.test(normalizedValue)) {
+    errors.push(`${name} must only contain letters, numbers and underscores`);
+    return null;
   }
 
   return normalizedValue;

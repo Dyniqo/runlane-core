@@ -14,10 +14,12 @@ export const BILLING_STATUSES = [
   'incomplete_expired',
   'paused',
 ] as const;
+export const BILLING_CHECKOUT_PLANS = ['starter', 'pro', 'agency'] as const;
 
 export type BillingProvider = (typeof BILLING_PROVIDERS)[number];
 export type BillingEventStatus = (typeof BILLING_EVENT_STATUSES)[number];
 export type BillingStatus = (typeof BILLING_STATUSES)[number];
+export type BillingCheckoutPlan = (typeof BILLING_CHECKOUT_PLANS)[number];
 
 const STRIPE_OBJECT_ID_PATTERN = /^[A-Za-z0-9_]{3,255}$/;
 const STRIPE_EVENT_TYPES = [
@@ -73,6 +75,16 @@ export function normalizeOptionalBillingPlan(
   }
 
   return normalizeWorkspacePlan(value);
+}
+
+export function assertBillingCheckoutPlan(value: string): BillingCheckoutPlan {
+  const plan = normalizeWorkspacePlan(value);
+
+  if (BILLING_CHECKOUT_PLANS.some((checkoutPlan) => checkoutPlan === plan)) {
+    return plan as BillingCheckoutPlan;
+  }
+
+  throw billingCheckoutPlanInvalid();
 }
 
 export function assertStripeObjectId(value: string, name: string): string {
@@ -137,6 +149,14 @@ export function billingEventInvalid(message: string): DomainError {
   });
 }
 
+export function billingCheckoutPlanInvalid(): DomainError {
+  return new DomainError({
+    code: 'BILLING_CHECKOUT_PLAN_INVALID',
+    category: 'validation',
+    message: 'Billing checkout plan is invalid',
+  });
+}
+
 export function stripeWebhookSignatureInvalid(): DomainError {
   return new DomainError({
     code: 'STRIPE_WEBHOOK_SIGNATURE_INVALID',
@@ -151,5 +171,64 @@ export function billingWorkspaceNotFound(stripeCustomerId: string): DomainError 
     category: 'not_found',
     message: 'Billing workspace was not found',
     details: { stripeCustomerId },
+  });
+}
+
+export function billingWorkspaceIdNotFound(workspaceId: string): DomainError {
+  return new DomainError({
+    code: 'BILLING_WORKSPACE_NOT_FOUND',
+    category: 'not_found',
+    message: 'Billing workspace was not found',
+    details: { workspaceId },
+  });
+}
+
+export function billingStripeApiKeyMissing(): DomainError {
+  return new DomainError({
+    code: 'BILLING_STRIPE_API_KEY_MISSING',
+    category: 'business_rule',
+    message: 'Stripe API key is required for billing sessions',
+  });
+}
+
+export function billingStripePriceMissing(plan: BillingCheckoutPlan): DomainError {
+  return new DomainError({
+    code: 'BILLING_STRIPE_PRICE_MISSING',
+    category: 'business_rule',
+    message: 'Stripe price is not configured for the requested plan',
+    details: { plan },
+  });
+}
+
+export function billingStripeCustomerMissing(workspaceId: string): DomainError {
+  return new DomainError({
+    code: 'BILLING_STRIPE_CUSTOMER_MISSING',
+    category: 'business_rule',
+    message: 'Stripe customer is required before opening the billing portal',
+    details: { workspaceId },
+  });
+}
+
+export function billingStripeSessionInvalid(message: string): DomainError {
+  return new DomainError({
+    code: 'BILLING_STRIPE_SESSION_INVALID',
+    category: 'validation',
+    message,
+  });
+}
+
+export function billingStripeRequestFailed(input: {
+  readonly operation: string;
+  readonly statusCode: number;
+  readonly message: string;
+}): DomainError {
+  return new DomainError({
+    code: 'BILLING_STRIPE_REQUEST_FAILED',
+    category: 'business_rule',
+    message: input.message,
+    details: {
+      operation: input.operation,
+      statusCode: input.statusCode,
+    },
   });
 }
