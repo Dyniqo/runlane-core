@@ -13,6 +13,7 @@ export { ApiKeyGuard, readApiKeyScope, RunlaneAccessModule } from './access';
 export type { ApiKeyScopedHttpRequest } from './access';
 export { RunlaneHttpConnectorModule, SecureHttpConnector } from './connectors';
 export { AesGcmSecretCipher, RunlaneCryptoModule } from './crypto';
+export { RunlaneDemoModule } from './demo';
 export { getDomainErrorHttpStatus } from './errors';
 export {
   HEALTH_INDICATOR_STATES,

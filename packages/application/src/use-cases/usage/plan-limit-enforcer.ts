@@ -1,6 +1,7 @@
 import {
   assertPlanLimitAvailable,
   buildCurrentUsagePeriod,
+  demoLimitExceeded,
   getPlanResourceLimit,
   getUsageMetricPlanResource,
   getWorkspacePlanLimits,
@@ -18,9 +19,16 @@ export interface EnforcePlanLimitInput {
 
 export type EnforceWorkflowCreationInput = Omit<EnforcePlanLimitInput, 'resource'>;
 
+export interface DemoSafetyLimitOptions {
+  readonly demoModeEnabled: boolean;
+  readonly executionLimitPerHour: number;
+  readonly aiCallLimitPerDay: number;
+}
+
 export interface CurrentPlanUsageSnapshot {
   readonly workspaceId: string;
   readonly plan: WorkspacePlan;
+  readonly isDemo: boolean;
   readonly limits: {
     readonly workflows: number;
     readonly monthlyExecutions: number;
@@ -43,7 +51,10 @@ export interface CurrentPlanUsageSnapshot {
 }
 
 export class PlanLimitEnforcer {
-  constructor(private readonly plans: PlanLimitRepositoryPort) {}
+  constructor(
+    private readonly plans: PlanLimitRepositoryPort,
+    private readonly demoLimits: DemoSafetyLimitOptions,
+  ) {}
 
   async enforceWorkflowCreation(input: EnforceWorkflowCreationInput): Promise<void> {
     await this.enforce({ ...input, resource: 'workflow' });
@@ -105,6 +116,61 @@ export class PlanLimitEnforcer {
       used,
       limit,
     });
+
+    await this.enforceDemoLimit(snapshot, input);
+  }
+
+  private async enforceDemoLimit(
+    snapshot: CurrentPlanUsageSnapshot,
+    input: EnforcePlanLimitInput,
+  ): Promise<void> {
+    if (!this.demoLimits.demoModeEnabled || !snapshot.isDemo) {
+      return;
+    }
+
+    const now = input.now ?? new Date();
+
+    if (input.resource === 'execution') {
+      const periodEnd = now;
+      const periodStart = new Date(periodEnd.getTime() - 60 * 60 * 1000);
+      const used = await this.plans.readMetricQuantity({
+        workspaceId: input.workspaceId,
+        type: 'execution',
+        periodStart,
+        periodEnd,
+      });
+
+      if (used >= this.demoLimits.executionLimitPerHour) {
+        throw demoLimitExceeded({
+          resource: 'execution',
+          used,
+          limit: this.demoLimits.executionLimitPerHour,
+          window: 'hour',
+        });
+      }
+    }
+
+    if (input.resource === 'ai_call') {
+      const periodStart = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0),
+      );
+      const periodEnd = new Date(periodStart.getTime() + 24 * 60 * 60 * 1000);
+      const used = await this.plans.readMetricQuantity({
+        workspaceId: input.workspaceId,
+        type: 'ai_call',
+        periodStart,
+        periodEnd,
+      });
+
+      if (used >= this.demoLimits.aiCallLimitPerDay) {
+        throw demoLimitExceeded({
+          resource: 'ai_call',
+          used,
+          limit: this.demoLimits.aiCallLimitPerDay,
+          window: 'day',
+        });
+      }
+    }
   }
 }
 
@@ -112,6 +178,7 @@ interface BuildUsageSnapshotInput {
   readonly state: {
     readonly workspaceId: string;
     readonly plan: WorkspacePlan;
+    readonly isDemo: boolean;
     readonly workflowCount: number;
     readonly usage: readonly UsageMetricQuantityRecord[];
   };
@@ -128,6 +195,7 @@ function buildUsageSnapshot(input: BuildUsageSnapshotInput): CurrentPlanUsageSna
   return {
     workspaceId: input.state.workspaceId,
     plan: input.state.plan,
+    isDemo: input.state.isDemo,
     limits,
     used: {
       workflows: input.state.workflowCount,

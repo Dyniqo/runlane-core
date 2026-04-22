@@ -1,4 +1,11 @@
 export * from './billing';
+export { ResetDemoWorkspaceUseCase, SeedDemoWorkspaceUseCase } from './demo';
+export type {
+  ResetDemoWorkspaceUseCaseInput,
+  ResetDemoWorkspaceUseCaseOptions,
+  SeedDemoWorkspaceUseCaseInput,
+  SeedDemoWorkspaceUseCaseOptions,
+} from './demo';
 export { ListAuditLogsUseCase } from './audit';
 export {
   GetCurrentUsageUseCase,

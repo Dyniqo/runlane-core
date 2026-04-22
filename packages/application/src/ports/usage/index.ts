@@ -2,6 +2,7 @@ export { PLAN_LIMIT_REPOSITORY } from './plan-limit-repository.port';
 export type {
   PlanLimitRepositoryPort,
   PlanLimitUsageRecord,
+  ReadMetricQuantityInput,
   ReadPlanLimitUsageInput,
 } from './plan-limit-repository.port';
 export { USAGE_RECORD_REPOSITORY } from './usage-record-repository.port';

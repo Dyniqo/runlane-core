@@ -150,6 +150,42 @@ export class RuntimeConfigService {
     return this.environment.STRIPE_PORTAL_RETURN_URL;
   }
 
+  get demoModeEnabled(): boolean {
+    return this.environment.DEMO_MODE;
+  }
+
+  get demoUserEmail(): string {
+    return this.environment.DEMO_USER_EMAIL;
+  }
+
+  get demoUserPassword(): string {
+    return this.environment.DEMO_USER_PASSWORD;
+  }
+
+  get demoUserName(): string {
+    return this.environment.DEMO_USER_NAME;
+  }
+
+  get demoWorkspaceName(): string {
+    return this.environment.DEMO_WORKSPACE_NAME;
+  }
+
+  get demoApiKey(): string {
+    return this.environment.DEMO_API_KEY;
+  }
+
+  get demoExecutionLimitPerHour(): number {
+    return this.environment.DEMO_EXECUTION_LIMIT_PER_HOUR;
+  }
+
+  get demoAiCallLimitPerDay(): number {
+    return this.environment.DEMO_AI_CALL_LIMIT_PER_DAY;
+  }
+
+  get publicRegistrationEnabled(): boolean {
+    return this.environment.PUBLIC_REGISTRATION_ENABLED;
+  }
+
   get apiUrl(): string {
     return this.environment.API_URL;
   }

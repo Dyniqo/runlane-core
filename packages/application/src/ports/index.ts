@@ -1,6 +1,20 @@
 export * from './billing';
+export { DEMO_REPOSITORY } from './demo';
 export { AI_PROVIDER } from './ai';
 export type { AiProviderPort } from './ai';
+export type {
+  DemoApiKeyRecord,
+  DemoRepositoryPort,
+  DemoSeedRecord,
+  DemoUsageQuantityInput,
+  DemoUserRecord,
+  DemoWorkflowRecord,
+  DemoWorkflowSeedInput,
+  DemoWorkspaceRecord,
+  DemoWorkspaceStateRecord,
+  ResetDemoWorkspaceInput,
+  SeedDemoWorkspaceInput,
+} from './demo';
 export { AUDIT_LOG_REPOSITORY } from './audit';
 export { HTTP_CONNECTOR } from './connectors';
 export type {
@@ -51,6 +65,7 @@ export type {
   GetUsageSummaryInput,
   PlanLimitRepositoryPort,
   PlanLimitUsageRecord,
+  ReadMetricQuantityInput,
   ReadPlanLimitUsageInput,
   UsageMetricQuantityRecord,
   UsageRecordRepositoryPort,

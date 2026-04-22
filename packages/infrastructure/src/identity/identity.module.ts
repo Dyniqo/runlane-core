@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { RunlaneConfigModule, RuntimeConfigService } from '@runlane/config';
 import {
   AUDIT_LOG_REPOSITORY,
   AUTH_TOKEN_SERVICE,
@@ -37,7 +38,7 @@ import { DefaultWorkspaceScopeResolver } from './scope';
 import { HmacAuthTokenService } from './tokens/hmac-auth-token.service';
 
 @Module({
-  imports: [RunlaneDatabaseModule, RunlaneAuditModule],
+  imports: [RunlaneConfigModule, RunlaneDatabaseModule, RunlaneAuditModule],
   providers: [
     HmacAuthTokenService,
     ScryptPasswordHasher,
@@ -78,6 +79,7 @@ import { HmacAuthTokenService } from './tokens/hmac-auth-token.service';
         PASSWORD_HASHER,
         AUDIT_LOG_REPOSITORY,
         TRANSACTION_BOUNDARY,
+        RuntimeConfigService,
       ],
       useFactory: (
         users: UserRepositoryPort,
@@ -85,8 +87,11 @@ import { HmacAuthTokenService } from './tokens/hmac-auth-token.service';
         passwordHasher: PasswordHasherPort,
         auditLogs: AuditLogRepositoryPort,
         transactionBoundary: TransactionBoundary,
+        config: RuntimeConfigService,
       ) =>
-        new RegisterUserUseCase(users, workspaces, passwordHasher, auditLogs, transactionBoundary),
+        new RegisterUserUseCase(users, workspaces, passwordHasher, auditLogs, transactionBoundary, {
+          publicRegistrationEnabled: config.publicRegistrationEnabled,
+        }),
     },
     {
       provide: LoginUserUseCase,

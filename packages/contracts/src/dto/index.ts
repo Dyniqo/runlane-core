@@ -40,6 +40,17 @@ export type {
   RegisterUserResponseDto,
 } from './auth.dto';
 export type { CursorPageDto, CursorPageQueryDto } from './cursor-page.dto';
+export type {
+  DemoApiKeyDto,
+  DemoCredentialDto,
+  DemoLimitsDto,
+  DemoResetResponseDto,
+  DemoSeedResponseDto,
+  DemoStateDto,
+  DemoUserDto,
+  DemoWorkflowDto,
+  DemoWorkspaceDto,
+} from './demo.dto';
 export type { OperationAcceptedDto } from './operation-accepted.dto';
 export type {
   CreateWorkflowRequestDto,

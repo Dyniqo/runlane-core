@@ -7,11 +7,12 @@ import {
   UsageRecorder,
 } from '@runlane/application';
 import type { PlanLimitRepositoryPort, UsageRecordRepositoryPort } from '@runlane/application';
+import { RunlaneConfigModule, RuntimeConfigService } from '@runlane/config';
 import { RunlaneDatabaseModule } from '../prisma';
 import { PrismaPlanLimitRepository, PrismaUsageRecordRepository } from './repositories';
 
 @Module({
-  imports: [RunlaneDatabaseModule],
+  imports: [RunlaneConfigModule, RunlaneDatabaseModule],
   providers: [
     PrismaPlanLimitRepository,
     PrismaUsageRecordRepository,
@@ -30,8 +31,13 @@ import { PrismaPlanLimitRepository, PrismaUsageRecordRepository } from './reposi
     },
     {
       provide: PlanLimitEnforcer,
-      inject: [PLAN_LIMIT_REPOSITORY],
-      useFactory: (plans: PlanLimitRepositoryPort) => new PlanLimitEnforcer(plans),
+      inject: [PLAN_LIMIT_REPOSITORY, RuntimeConfigService],
+      useFactory: (plans: PlanLimitRepositoryPort, config: RuntimeConfigService) =>
+        new PlanLimitEnforcer(plans, {
+          demoModeEnabled: config.demoModeEnabled,
+          executionLimitPerHour: config.demoExecutionLimitPerHour,
+          aiCallLimitPerDay: config.demoAiCallLimitPerDay,
+        }),
     },
     {
       provide: GetCurrentUsageUseCase,

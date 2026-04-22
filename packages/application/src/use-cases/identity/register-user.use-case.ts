@@ -4,6 +4,7 @@ import {
   DomainError,
   normalizeUserEmail,
   normalizeUserName,
+  publicRegistrationDisabled,
   validateRegistrationPassword,
 } from '@runlane/domain';
 import type {
@@ -14,6 +15,10 @@ import type {
   WorkspaceRepositoryPort,
 } from '../../ports';
 import type { UseCase } from '../use-case';
+
+export interface RegisterUserUseCaseOptions {
+  readonly publicRegistrationEnabled: boolean;
+}
 
 export interface RegisterUserInput {
   readonly email: string;
@@ -30,9 +35,14 @@ export class RegisterUserUseCase implements UseCase<RegisterUserInput, RegisterU
     private readonly passwordHasher: PasswordHasherPort,
     private readonly auditLogs: AuditLogRepositoryPort,
     private readonly transactionBoundary: TransactionBoundary,
+    private readonly options: RegisterUserUseCaseOptions,
   ) {}
 
   execute(input: RegisterUserInput): Promise<RegisterUserResponseDto> {
+    if (!this.options.publicRegistrationEnabled) {
+      throw publicRegistrationDisabled();
+    }
+
     const email = normalizeUserEmail(input.email);
     const name = normalizeUserName(input.name);
     validateRegistrationPassword(input.password);

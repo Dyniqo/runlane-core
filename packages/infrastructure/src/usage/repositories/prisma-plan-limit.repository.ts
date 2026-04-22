@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type {
   PlanLimitRepositoryPort,
   PlanLimitUsageRecord,
+  ReadMetricQuantityInput,
   ReadPlanLimitUsageInput,
   UsageMetricQuantityRecord,
 } from '@runlane/application';
@@ -21,6 +22,7 @@ export class PrismaPlanLimitRepository implements PlanLimitRepositoryPort {
       select: {
         id: true,
         plan: true,
+        isDemo: true,
       },
     });
 
@@ -50,9 +52,28 @@ export class PrismaPlanLimitRepository implements PlanLimitRepositoryPort {
     return {
       workspaceId: workspace.id,
       plan: normalizeWorkspacePlan(workspace.plan),
+      isDemo: workspace.isDemo,
       workflowCount,
       usage: usage.map((row) => mapUsageMetricQuantity(row)),
     };
+  }
+
+  async readMetricQuantity(input: ReadMetricQuantityInput): Promise<number> {
+    const result = await this.persistence.client.usageRecord.aggregate({
+      where: {
+        workspaceId: input.workspaceId,
+        type: mapUsageMetricTypeToPrisma(input.type),
+        createdAt: {
+          gte: input.periodStart,
+          lt: input.periodEnd,
+        },
+      },
+      _sum: {
+        quantity: true,
+      },
+    });
+
+    return result._sum.quantity ?? 0;
   }
 }
 
@@ -65,12 +86,12 @@ interface PrismaUsageGroupByRecord {
 
 function mapUsageMetricQuantity(row: PrismaUsageGroupByRecord): UsageMetricQuantityRecord {
   return {
-    type: mapUsageMetricType(row.type),
+    type: mapPrismaUsageMetricType(row.type),
     quantity: row._sum.quantity ?? 0,
   };
 }
 
-function mapUsageMetricType(type: string): UsageMetricType {
+function mapPrismaUsageMetricType(type: string): UsageMetricType {
   if (type === 'EXECUTION') {
     return 'execution';
   }
@@ -92,4 +113,26 @@ function mapUsageMetricType(type: string): UsageMetricType {
   }
 
   throw new TypeError(`Unsupported usage metric type '${type}'`);
+}
+
+function mapUsageMetricTypeToPrisma(
+  type: UsageMetricType,
+): 'EXECUTION' | 'AI_CALL' | 'HTTP_CALL' | 'WEBHOOK_REQUEST' | 'RETRY' {
+  if (type === 'execution') {
+    return 'EXECUTION';
+  }
+
+  if (type === 'ai_call') {
+    return 'AI_CALL';
+  }
+
+  if (type === 'http_call') {
+    return 'HTTP_CALL';
+  }
+
+  if (type === 'webhook_request') {
+    return 'WEBHOOK_REQUEST';
+  }
+
+  return 'RETRY';
 }

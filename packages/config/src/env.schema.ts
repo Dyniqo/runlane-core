@@ -45,6 +45,15 @@ export interface RuntimeEnvironment {
   readonly STRIPE_CHECKOUT_SUCCESS_URL: string;
   readonly STRIPE_CHECKOUT_CANCEL_URL: string;
   readonly STRIPE_PORTAL_RETURN_URL: string;
+  readonly DEMO_MODE: boolean;
+  readonly DEMO_USER_EMAIL: string;
+  readonly DEMO_USER_PASSWORD: string;
+  readonly DEMO_USER_NAME: string;
+  readonly DEMO_WORKSPACE_NAME: string;
+  readonly DEMO_API_KEY: string;
+  readonly DEMO_EXECUTION_LIMIT_PER_HOUR: number;
+  readonly DEMO_AI_CALL_LIMIT_PER_DAY: number;
+  readonly PUBLIC_REGISTRATION_ENABLED: boolean;
   readonly API_URL: string;
   readonly APP_URL: string;
   readonly DATABASE_URL: string;
@@ -107,6 +116,15 @@ const LOCAL_DEFAULTS = {
   STRIPE_CHECKOUT_SUCCESS_URL: 'http://localhost:4600/billing/success',
   STRIPE_CHECKOUT_CANCEL_URL: 'http://localhost:4600/billing/cancel',
   STRIPE_PORTAL_RETURN_URL: 'http://localhost:4600/billing',
+  DEMO_MODE: true,
+  DEMO_USER_EMAIL: 'demo@runlane.local',
+  DEMO_USER_PASSWORD: 'RunlaneDemoPassword123!',
+  DEMO_USER_NAME: 'Runlane Demo Operator',
+  DEMO_WORKSPACE_NAME: 'Runlane Demo Workspace',
+  DEMO_API_KEY: 'rln_demoDemo001_demoDemoDemoDemoDemoDemoDemoDemoDemoDemo001',
+  DEMO_EXECUTION_LIMIT_PER_HOUR: 20,
+  DEMO_AI_CALL_LIMIT_PER_DAY: 5,
+  PUBLIC_REGISTRATION_ENABLED: true,
   API_URL: 'http://localhost:4600',
   APP_URL: 'http://localhost:4600',
   DATABASE_URL: 'postgresql://runlane:runlane_local_database@127.0.0.1:15432/runlane?schema=public',
@@ -368,6 +386,67 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
       ['http:', 'https:'],
       errors,
     ),
+    DEMO_MODE: readBoolean(
+      source.DEMO_MODE,
+      'DEMO_MODE',
+      deployRequired ? false : LOCAL_DEFAULTS.DEMO_MODE,
+      errors,
+    ),
+    DEMO_USER_EMAIL: readEmail(
+      source.DEMO_USER_EMAIL,
+      'DEMO_USER_EMAIL',
+      LOCAL_DEFAULTS.DEMO_USER_EMAIL,
+      errors,
+    ),
+    DEMO_USER_PASSWORD: readNonEmptyString(
+      source.DEMO_USER_PASSWORD,
+      'DEMO_USER_PASSWORD',
+      LOCAL_DEFAULTS.DEMO_USER_PASSWORD,
+      200,
+      errors,
+    ),
+    DEMO_USER_NAME: readNonEmptyString(
+      source.DEMO_USER_NAME,
+      'DEMO_USER_NAME',
+      LOCAL_DEFAULTS.DEMO_USER_NAME,
+      120,
+      errors,
+    ),
+    DEMO_WORKSPACE_NAME: readNonEmptyString(
+      source.DEMO_WORKSPACE_NAME,
+      'DEMO_WORKSPACE_NAME',
+      LOCAL_DEFAULTS.DEMO_WORKSPACE_NAME,
+      120,
+      errors,
+    ),
+    DEMO_API_KEY: readApiKeyToken(
+      source.DEMO_API_KEY,
+      'DEMO_API_KEY',
+      LOCAL_DEFAULTS.DEMO_API_KEY,
+      errors,
+    ),
+    DEMO_EXECUTION_LIMIT_PER_HOUR: readInteger(
+      source.DEMO_EXECUTION_LIMIT_PER_HOUR,
+      'DEMO_EXECUTION_LIMIT_PER_HOUR',
+      LOCAL_DEFAULTS.DEMO_EXECUTION_LIMIT_PER_HOUR,
+      1,
+      10000,
+      errors,
+    ),
+    DEMO_AI_CALL_LIMIT_PER_DAY: readInteger(
+      source.DEMO_AI_CALL_LIMIT_PER_DAY,
+      'DEMO_AI_CALL_LIMIT_PER_DAY',
+      LOCAL_DEFAULTS.DEMO_AI_CALL_LIMIT_PER_DAY,
+      0,
+      10000,
+      errors,
+    ),
+    PUBLIC_REGISTRATION_ENABLED: readBoolean(
+      source.PUBLIC_REGISTRATION_ENABLED,
+      'PUBLIC_REGISTRATION_ENABLED',
+      deployRequired ? false : LOCAL_DEFAULTS.PUBLIC_REGISTRATION_ENABLED,
+      errors,
+    ),
     API_URL: readUrl(
       source.API_URL,
       'API_URL',
@@ -534,6 +613,10 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
       errors,
     ),
   };
+
+  if (environment.DEMO_MODE && deployRequired && !source.DEMO_USER_PASSWORD?.trim()) {
+    errors.push('DEMO_USER_PASSWORD is required when DEMO_MODE is enabled for deploy runtime');
+  }
 
   if (environment.JWT_ACCESS_SECRET === environment.JWT_REFRESH_SECRET) {
     errors.push('JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must be different values');
@@ -782,6 +865,42 @@ function readOptionalUrlAllowlist(
   }
 
   return Object.freeze(uniqueEntries);
+}
+
+function readEmail(
+  value: string | undefined,
+  name: string,
+  defaultValue: string,
+  errors: string[],
+): string {
+  const normalizedValue = value?.trim().toLowerCase() || defaultValue;
+
+  if (
+    normalizedValue.length === 0 ||
+    normalizedValue.length > 320 ||
+    !normalizedValue.includes('@')
+  ) {
+    errors.push(`${name} must be a valid email address`);
+    return defaultValue;
+  }
+
+  return normalizedValue;
+}
+
+function readApiKeyToken(
+  value: string | undefined,
+  name: string,
+  defaultValue: string,
+  errors: string[],
+): string {
+  const normalizedValue = value?.trim() || defaultValue;
+
+  if (!/^(rln_[A-Za-z0-9_-]{11})_[A-Za-z0-9_-]{43}$/.test(normalizedValue)) {
+    errors.push(`${name} must be a valid Runlane API key token`);
+    return defaultValue;
+  }
+
+  return normalizedValue;
 }
 
 function readUrl(

@@ -11,6 +11,7 @@ import { AutomationModule } from './modules/automation/automation.module';
 import { AuditLogsModule } from './modules/audit/audit-logs.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { DemoModule } from './modules/demo/demo.module';
 import { ExecutionsModule } from './modules/executions/executions.module';
 import { HooksModule } from './modules/hooks/hooks.module';
 import { SecretsModule } from './modules/secrets/secrets.module';
@@ -30,6 +31,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
     AutomationModule,
     AuditLogsModule,
     BillingModule,
+    DemoModule,
     WorkflowsModule,
     ExecutionsModule,
     HooksModule,
