@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type {
   AuthenticatedWorkspaceRecord,
   CreateWorkspaceWithOwnerInput,
+  ListWorkspacesForUserInput,
   UpdateWorkspaceNameInput,
   WorkspaceMembershipRecord,
   WorkspaceRepositoryPort,
@@ -24,6 +25,8 @@ export class PrismaWorkspaceRepository implements WorkspaceRepositoryPort {
         name: input.name,
         ownerId: input.ownerId,
         plan: 'FREE',
+        isDemo: false,
+        demoSessionId: null,
         members: {
           create: {
             userId: input.ownerId,
@@ -34,6 +37,8 @@ export class PrismaWorkspaceRepository implements WorkspaceRepositoryPort {
       select: {
         id: true,
         name: true,
+        isDemo: true,
+        demoSessionId: true,
         members: {
           where: { userId: input.ownerId },
           select: { role: true },
@@ -56,12 +61,19 @@ export class PrismaWorkspaceRepository implements WorkspaceRepositoryPort {
       id: workspace.id,
       name: workspace.name,
       role: mapOwnerWorkspaceRole(ownerMembership.role),
+      isDemo: workspace.isDemo,
+      demoSessionId: workspace.demoSessionId,
     };
   }
 
   async findPrimaryWorkspaceForUser(userId: string): Promise<AuthenticatedWorkspaceRecord | null> {
     const membership = await this.persistence.client.workspaceMember.findFirst({
-      where: { userId },
+      where: {
+        userId,
+        workspace: {
+          demoSessionId: null,
+        },
+      },
       orderBy: [{ role: 'asc' }, { createdAt: 'asc' }],
       select: workspaceMembershipSelect,
     });
@@ -86,9 +98,30 @@ export class PrismaWorkspaceRepository implements WorkspaceRepositoryPort {
     return membership ? mapWorkspaceMembership(membership) : null;
   }
 
-  async listWorkspacesForUser(userId: string): Promise<readonly AuthenticatedWorkspaceRecord[]> {
+  async listWorkspacesForUser(
+    input: ListWorkspacesForUserInput,
+  ): Promise<readonly AuthenticatedWorkspaceRecord[]> {
+    const current = await this.findWorkspaceForUser({
+      userId: input.userId,
+      workspaceId: input.currentWorkspaceId,
+    });
+
+    if (!current) {
+      return [];
+    }
+
+    if (current.isDemo || current.demoSessionId !== null) {
+      return [current];
+    }
+
     const memberships = await this.persistence.client.workspaceMember.findMany({
-      where: { userId },
+      where: {
+        userId: input.userId,
+        workspace: {
+          isDemo: false,
+          demoSessionId: null,
+        },
+      },
       orderBy: [{ role: 'asc' }, { createdAt: 'asc' }],
       select: workspaceMembershipSelect,
     });
@@ -114,6 +147,8 @@ export class PrismaWorkspaceRepository implements WorkspaceRepositoryPort {
       select: {
         id: true,
         name: true,
+        isDemo: true,
+        demoSessionId: true,
       },
     });
 
@@ -121,6 +156,8 @@ export class PrismaWorkspaceRepository implements WorkspaceRepositoryPort {
       id: workspace.id,
       name: workspace.name,
       role: membership.role,
+      isDemo: workspace.isDemo,
+      demoSessionId: workspace.demoSessionId,
     };
   }
 }
@@ -132,6 +169,8 @@ const workspaceMembershipSelect = {
     select: {
       id: true,
       name: true,
+      isDemo: true,
+      demoSessionId: true,
     },
   },
 } as const;
@@ -142,6 +181,8 @@ interface PrismaWorkspaceMembershipRecord {
   readonly workspace: {
     readonly id: string;
     readonly name: string;
+    readonly isDemo: boolean;
+    readonly demoSessionId: string | null;
   };
 }
 
@@ -149,11 +190,21 @@ function mapWorkspaceMembership(
   membership: PrismaWorkspaceMembershipRecord,
 ): WorkspaceMembershipRecord {
   return {
+    userId: membership.userId,
     id: membership.workspace.id,
     name: membership.workspace.name,
-    role: mapAuthenticatedWorkspaceRole(membership.role),
-    userId: membership.userId,
+    role: mapWorkspaceRole(membership.role),
+    isDemo: membership.workspace.isDemo,
+    demoSessionId: membership.workspace.demoSessionId,
   };
+}
+
+function mapWorkspaceRole(role: string): 'owner' | 'member' {
+  if (role === 'OWNER') {
+    return 'owner';
+  }
+
+  return 'member';
 }
 
 function mapOwnerWorkspaceRole(role: string): 'owner' {
@@ -167,21 +218,4 @@ function mapOwnerWorkspaceRole(role: string): 'owner' {
   }
 
   return 'owner';
-}
-
-function mapAuthenticatedWorkspaceRole(role: string): 'owner' | 'member' {
-  if (role === 'OWNER') {
-    return 'owner';
-  }
-
-  if (role === 'MEMBER') {
-    return 'member';
-  }
-
-  throw new DomainError({
-    code: 'WORKSPACE_MEMBER_ROLE_INVALID',
-    category: 'business_rule',
-    message: 'Workspace membership has an invalid role',
-    details: { role },
-  });
 }

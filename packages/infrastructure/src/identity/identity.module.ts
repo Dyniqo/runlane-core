@@ -3,6 +3,7 @@ import { RunlaneConfigModule, RuntimeConfigService } from '@runlane/config';
 import {
   AUDIT_LOG_REPOSITORY,
   AUTH_TOKEN_SERVICE,
+  DEMO_REPOSITORY,
   GetAuthenticatedUserUseCase,
   GetCurrentWorkspaceUseCase,
   ListWorkspacesUseCase,
@@ -21,6 +22,7 @@ import {
 import type {
   AuditLogRepositoryPort,
   AuthTokenServicePort,
+  DemoRepositoryPort,
   PasswordHasherPort,
   SessionRepositoryPort,
   TransactionBoundary,
@@ -28,6 +30,7 @@ import type {
   WorkspaceRepositoryPort,
 } from '@runlane/application';
 import { RunlaneAuditModule } from '../audit';
+import { PrismaDemoRepository } from '../demo/repositories';
 import { RunlaneDatabaseModule } from '../prisma';
 import { WorkspaceTenantGuard } from './guards';
 import { ScryptPasswordHasher } from './passwords/scrypt-password-hasher';
@@ -45,6 +48,7 @@ import { HmacAuthTokenService } from './tokens/hmac-auth-token.service';
     PrismaSessionRepository,
     PrismaUserRepository,
     PrismaWorkspaceRepository,
+    PrismaDemoRepository,
     DefaultWorkspaceScopeResolver,
     WorkspaceTenantGuard,
     {
@@ -66,6 +70,10 @@ import { HmacAuthTokenService } from './tokens/hmac-auth-token.service';
     {
       provide: WORKSPACE_REPOSITORY,
       useExisting: PrismaWorkspaceRepository,
+    },
+    {
+      provide: DEMO_REPOSITORY,
+      useExisting: PrismaDemoRepository,
     },
     {
       provide: WORKSPACE_SCOPE_RESOLVER,
@@ -103,6 +111,8 @@ import { HmacAuthTokenService } from './tokens/hmac-auth-token.service';
         AUTH_TOKEN_SERVICE,
         AUDIT_LOG_REPOSITORY,
         TRANSACTION_BOUNDARY,
+        DEMO_REPOSITORY,
+        RuntimeConfigService,
       ],
       useFactory: (
         users: UserRepositoryPort,
@@ -112,6 +122,8 @@ import { HmacAuthTokenService } from './tokens/hmac-auth-token.service';
         tokens: AuthTokenServicePort,
         auditLogs: AuditLogRepositoryPort,
         transactionBoundary: TransactionBoundary,
+        demo: DemoRepositoryPort,
+        config: RuntimeConfigService,
       ) =>
         new LoginUserUseCase(
           users,
@@ -121,6 +133,14 @@ import { HmacAuthTokenService } from './tokens/hmac-auth-token.service';
           tokens,
           auditLogs,
           transactionBoundary,
+          demo,
+          {
+            demoModeEnabled: config.demoModeEnabled,
+            demoSessionEnabled: config.demoSessionEnabled,
+            demoUserEmail: config.demoUserEmail,
+            demoSessionTtlHours: config.demoSessionTtlHours,
+            demoMaxSessionsPerIpPerHour: config.demoMaxSessionsPerIpPerHour,
+          },
         ),
     },
     {

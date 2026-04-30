@@ -134,6 +134,12 @@ export class PrismaWorkflowRepository implements WorkflowRepositoryPort {
 const workflowSelect = {
   id: true,
   workspaceId: true,
+  workspace: {
+    select: {
+      isDemo: true,
+      demoSessionId: true,
+    },
+  },
   publicId: true,
   name: true,
   status: true,
@@ -148,6 +154,10 @@ const workflowSelect = {
 type PrismaWorkflowRecord = {
   readonly id: string;
   readonly workspaceId: string;
+  readonly workspace: {
+    readonly isDemo: boolean;
+    readonly demoSessionId: string | null;
+  };
   readonly publicId: string;
   readonly name: string;
   readonly status: string;
@@ -163,6 +173,8 @@ function mapWorkflowRecord(workflow: PrismaWorkflowRecord): StoredWorkflowRecord
   return {
     id: workflow.id,
     workspaceId: workflow.workspaceId,
+    isDemo: workflow.workspace.isDemo,
+    demoSessionId: workflow.workspace.demoSessionId,
     publicId: workflow.publicId,
     name: workflow.name,
     status: mapWorkflowStatus(workflow.status),

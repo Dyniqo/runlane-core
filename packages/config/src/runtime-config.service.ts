@@ -154,6 +154,26 @@ export class RuntimeConfigService {
     return this.environment.DEMO_MODE;
   }
 
+  get demoSessionEnabled(): boolean {
+    return this.environment.DEMO_SESSION_ENABLED;
+  }
+
+  get demoSessionTtlHours(): number {
+    return this.environment.DEMO_SESSION_TTL_HOURS;
+  }
+
+  get demoSessionStorageKey(): string {
+    return this.environment.DEMO_SESSION_STORAGE_KEY;
+  }
+
+  get demoMaxSessionsPerIpPerHour(): number {
+    return this.environment.DEMO_MAX_SESSIONS_PER_IP_PER_HOUR;
+  }
+
+  get demoCleanupIntervalHours(): number {
+    return this.environment.DEMO_CLEANUP_INTERVAL_HOURS;
+  }
+
   get demoUserEmail(): string {
     return this.environment.DEMO_USER_EMAIL;
   }

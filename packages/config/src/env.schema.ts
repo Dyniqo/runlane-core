@@ -46,6 +46,11 @@ export interface RuntimeEnvironment {
   readonly STRIPE_CHECKOUT_CANCEL_URL: string;
   readonly STRIPE_PORTAL_RETURN_URL: string;
   readonly DEMO_MODE: boolean;
+  readonly DEMO_SESSION_ENABLED: boolean;
+  readonly DEMO_SESSION_TTL_HOURS: number;
+  readonly DEMO_SESSION_STORAGE_KEY: string;
+  readonly DEMO_MAX_SESSIONS_PER_IP_PER_HOUR: number;
+  readonly DEMO_CLEANUP_INTERVAL_HOURS: number;
   readonly DEMO_USER_EMAIL: string;
   readonly DEMO_USER_PASSWORD: string;
   readonly DEMO_USER_NAME: string;
@@ -117,6 +122,11 @@ const LOCAL_DEFAULTS = {
   STRIPE_CHECKOUT_CANCEL_URL: 'http://localhost:4600/billing/cancel',
   STRIPE_PORTAL_RETURN_URL: 'http://localhost:4600/billing',
   DEMO_MODE: true,
+  DEMO_SESSION_ENABLED: true,
+  DEMO_SESSION_TTL_HOURS: 12,
+  DEMO_SESSION_STORAGE_KEY: 'runlane.demoSessionId',
+  DEMO_MAX_SESSIONS_PER_IP_PER_HOUR: 20,
+  DEMO_CLEANUP_INTERVAL_HOURS: 6,
   DEMO_USER_EMAIL: 'demo@runlane.local',
   DEMO_USER_PASSWORD: 'RunlaneDemoPassword123!',
   DEMO_USER_NAME: 'Runlane Demo Operator',
@@ -392,6 +402,44 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
       deployRequired ? false : LOCAL_DEFAULTS.DEMO_MODE,
       errors,
     ),
+
+    DEMO_SESSION_ENABLED: readBoolean(
+      source.DEMO_SESSION_ENABLED,
+      'DEMO_SESSION_ENABLED',
+      deployRequired ? false : LOCAL_DEFAULTS.DEMO_SESSION_ENABLED,
+      errors,
+    ),
+    DEMO_SESSION_TTL_HOURS: readInteger(
+      source.DEMO_SESSION_TTL_HOURS,
+      'DEMO_SESSION_TTL_HOURS',
+      LOCAL_DEFAULTS.DEMO_SESSION_TTL_HOURS,
+      1,
+      168,
+      errors,
+    ),
+    DEMO_SESSION_STORAGE_KEY: readNonEmptyString(
+      source.DEMO_SESSION_STORAGE_KEY,
+      'DEMO_SESSION_STORAGE_KEY',
+      LOCAL_DEFAULTS.DEMO_SESSION_STORAGE_KEY,
+      120,
+      errors,
+    ),
+    DEMO_MAX_SESSIONS_PER_IP_PER_HOUR: readInteger(
+      source.DEMO_MAX_SESSIONS_PER_IP_PER_HOUR,
+      'DEMO_MAX_SESSIONS_PER_IP_PER_HOUR',
+      LOCAL_DEFAULTS.DEMO_MAX_SESSIONS_PER_IP_PER_HOUR,
+      1,
+      10000,
+      errors,
+    ),
+    DEMO_CLEANUP_INTERVAL_HOURS: readInteger(
+      source.DEMO_CLEANUP_INTERVAL_HOURS,
+      'DEMO_CLEANUP_INTERVAL_HOURS',
+      LOCAL_DEFAULTS.DEMO_CLEANUP_INTERVAL_HOURS,
+      1,
+      168,
+      errors,
+    ),
     DEMO_USER_EMAIL: readEmail(
       source.DEMO_USER_EMAIL,
       'DEMO_USER_EMAIL',
@@ -613,6 +661,10 @@ export function validateEnvironment(source: NodeJS.ProcessEnv): RuntimeEnvironme
       errors,
     ),
   };
+
+  if (!environment.DEMO_MODE && environment.DEMO_SESSION_ENABLED) {
+    errors.push('DEMO_SESSION_ENABLED requires DEMO_MODE to be enabled');
+  }
 
   if (environment.DEMO_MODE && deployRequired && !source.DEMO_USER_PASSWORD?.trim()) {
     errors.push('DEMO_USER_PASSWORD is required when DEMO_MODE is enabled for deploy runtime');

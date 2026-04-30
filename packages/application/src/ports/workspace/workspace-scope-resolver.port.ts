@@ -6,6 +6,8 @@ export interface WorkspaceScopeRecord {
   readonly sessionId: string;
   readonly workspaceId: string;
   readonly workspaceRole: 'owner' | 'member';
+  readonly isDemo: boolean;
+  readonly demoSessionId: string | null;
   readonly issuedAt: Date;
   readonly expiresAt: Date;
 }

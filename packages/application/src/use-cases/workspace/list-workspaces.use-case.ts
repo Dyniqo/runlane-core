@@ -14,8 +14,26 @@ export class ListWorkspacesUseCase implements UseCase<
   constructor(private readonly workspaces: WorkspaceRepositoryPort) {}
 
   async execute(input: ListWorkspacesInput): Promise<ListWorkspacesResponseDto> {
-    const workspaces = await this.workspaces.listWorkspacesForUser(input.scope.userId);
+    const current = await this.workspaces.findWorkspaceForUser({
+      userId: input.scope.userId,
+      workspaceId: input.scope.workspaceId,
+    });
 
-    return buildListWorkspacesResponse(workspaces);
+    if (!current) {
+      return buildListWorkspacesResponse([]);
+    }
+
+    if (current.isDemo || current.demoSessionId !== null) {
+      return buildListWorkspacesResponse([current]);
+    }
+
+    const workspaces = await this.workspaces.listWorkspacesForUser({
+      userId: input.scope.userId,
+      currentWorkspaceId: input.scope.workspaceId,
+    });
+
+    return buildListWorkspacesResponse(
+      workspaces.filter((workspace) => !workspace.isDemo && workspace.demoSessionId === null),
+    );
   }
 }

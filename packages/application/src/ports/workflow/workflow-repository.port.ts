@@ -7,6 +7,8 @@ export interface StoredWorkflowRecord {
   readonly id: string;
   readonly publicId: string;
   readonly workspaceId: string;
+  readonly isDemo: boolean;
+  readonly demoSessionId: string | null;
   readonly name: string;
   readonly status: WorkflowStatus;
   readonly version: number;

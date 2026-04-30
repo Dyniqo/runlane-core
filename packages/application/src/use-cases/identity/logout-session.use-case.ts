@@ -35,7 +35,12 @@ export class LogoutSessionUseCase implements UseCase<LogoutSessionInput, LogoutS
       });
 
       if (session && revoked) {
-        const workspace = await this.workspaces.findPrimaryWorkspaceForUser(session.userId);
+        const workspace = session.workspaceId
+          ? await this.workspaces.findWorkspaceForUser({
+              userId: session.userId,
+              workspaceId: session.workspaceId,
+            })
+          : await this.workspaces.findPrimaryWorkspaceForUser(session.userId);
 
         if (workspace) {
           await this.auditLogs.create({
@@ -46,6 +51,7 @@ export class LogoutSessionUseCase implements UseCase<LogoutSessionInput, LogoutS
             entityId: session.id,
             metadata: {
               workspaceRole: workspace.role,
+              demoSessionScoped: workspace.isDemo && workspace.demoSessionId !== null,
             },
             ip: input.ip,
             userAgent: input.userAgent,

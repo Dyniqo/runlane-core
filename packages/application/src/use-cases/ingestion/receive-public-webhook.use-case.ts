@@ -54,6 +54,8 @@ interface CreatedExecutionQueueContext {
   readonly workflowId: string;
   readonly workflowPublicId: string;
   readonly workflowVersion: number;
+  readonly isDemo: boolean;
+  readonly demoSessionId: string | null;
   readonly executionId: string;
   readonly webhookRequestId: string;
   readonly source: string;
@@ -315,7 +317,8 @@ export class ReceivePublicWebhookUseCase implements UseCase<
       workspaceId: context.workspaceId,
       workflowId: context.workflowId,
       executionId: context.executionId,
-      isDemo: false,
+      isDemo: context.isDemo,
+      ...(context.demoSessionId ? { demoSessionId: context.demoSessionId } : {}),
       correlationId: randomUUID(),
       causationId: context.webhookRequestId,
       enqueuedAt,
@@ -352,6 +355,8 @@ export class ReceivePublicWebhookUseCase implements UseCase<
   }): Promise<ResolvedWebhookExecution> {
     const existingExecution = await this.executions.findLatestByTriggerSource({
       workspaceId: input.workflow.workspaceId,
+      isDemo: input.workflow.isDemo,
+      demoSessionId: input.workflow.demoSessionId,
       workflowId: input.workflow.id,
       triggerType: 'webhook',
       sourceId: input.webhookRequest.id,
@@ -378,6 +383,8 @@ export class ReceivePublicWebhookUseCase implements UseCase<
       workflowId: input.workflow.id,
       workflowPublicId: input.workflow.publicId,
       workflowVersion: input.workflow.version,
+      isDemo: input.workflow.isDemo,
+      demoSessionId: input.workflow.demoSessionId,
       executionId: input.execution.id,
       webhookRequestId: input.webhookRequest.id,
       source: input.source,

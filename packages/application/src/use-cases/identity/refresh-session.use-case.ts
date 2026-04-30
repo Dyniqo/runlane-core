@@ -61,7 +61,12 @@ export class RefreshSessionUseCase implements UseCase<
         throw missingAuthenticatedUser();
       }
 
-      const workspace = await this.workspaces.findPrimaryWorkspaceForUser(user.id);
+      const workspace = session.workspaceId
+        ? await this.workspaces.findWorkspaceForUser({
+            userId: user.id,
+            workspaceId: session.workspaceId,
+          })
+        : await this.workspaces.findPrimaryWorkspaceForUser(user.id);
 
       if (!workspace) {
         throw missingWorkspaceMembership();
@@ -102,6 +107,7 @@ export class RefreshSessionUseCase implements UseCase<
         entityId: rotatedSession.id,
         metadata: {
           workspaceRole: workspace.role,
+          demoSessionScoped: workspace.isDemo && workspace.demoSessionId !== null,
         },
         ip: input.ip,
         userAgent: input.userAgent,

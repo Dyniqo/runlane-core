@@ -3,6 +3,7 @@ export const SESSION_REPOSITORY = Symbol('SESSION_REPOSITORY');
 export interface StoredSessionRecord {
   readonly id: string;
   readonly userId: string;
+  readonly workspaceId: string | null;
   readonly refreshTokenHash: string;
   readonly userAgent: string | null;
   readonly ip: string | null;
@@ -14,6 +15,7 @@ export interface StoredSessionRecord {
 export interface CreateSessionInput {
   readonly id: string;
   readonly userId: string;
+  readonly workspaceId: string;
   readonly refreshTokenHash: string;
   readonly userAgent: string | null;
   readonly ip: string | null;

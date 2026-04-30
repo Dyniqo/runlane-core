@@ -2,6 +2,7 @@ export { WORKSPACE_REPOSITORY } from './workspace-repository.port';
 export type {
   AuthenticatedWorkspaceRecord,
   CreateWorkspaceWithOwnerInput,
+  ListWorkspacesForUserInput,
   UpdateWorkspaceNameInput,
   WorkspaceMembershipRecord,
   WorkspaceRepositoryPort,

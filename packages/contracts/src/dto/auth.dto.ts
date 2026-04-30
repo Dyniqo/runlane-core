@@ -24,6 +24,7 @@ export interface RegisterUserResponseDto {
 export interface LoginUserRequestDto {
   readonly email: string;
   readonly password: string;
+  readonly demoSessionId?: string;
 }
 
 export interface RefreshSessionRequestDto {

@@ -6,6 +6,8 @@ export const EXECUTION_REPOSITORY = Symbol('EXECUTION_REPOSITORY');
 export interface StoredExecutionRecord {
   readonly id: string;
   readonly workspaceId: string;
+  readonly isDemo: boolean;
+  readonly demoSessionId: string | null;
   readonly workflowId: string;
   readonly status: ExecutionStatus;
   readonly input: JsonObject;
@@ -34,6 +36,8 @@ export interface FindExecutionByWorkspaceAndIdInput {
 
 export interface FindExecutionByTriggerSourceInput {
   readonly workspaceId: string;
+  readonly isDemo: boolean;
+  readonly demoSessionId: string | null;
   readonly workflowId: string;
   readonly triggerType: ExecutionTriggerType;
   readonly sourceId: string;

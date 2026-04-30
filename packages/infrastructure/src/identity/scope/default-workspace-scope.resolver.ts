@@ -44,6 +44,10 @@ export class DefaultWorkspaceScopeResolver implements WorkspaceScopeResolverPort
       throw invalidRefreshToken();
     }
 
+    if (session.workspaceId !== null && session.workspaceId !== principal.workspaceId) {
+      throw invalidRefreshToken();
+    }
+
     const user = await this.users.findById(principal.userId);
 
     if (!user || user.email !== principal.email) {
@@ -65,6 +69,8 @@ export class DefaultWorkspaceScopeResolver implements WorkspaceScopeResolverPort
       sessionId: principal.sessionId,
       workspaceId: workspace.id,
       workspaceRole: workspace.role,
+      isDemo: workspace.isDemo,
+      demoSessionId: workspace.demoSessionId,
       issuedAt: principal.issuedAt,
       expiresAt: principal.expiresAt,
     };

@@ -95,6 +95,7 @@ model User {
 model Session {
   id               String    @id @default(uuid()) @db.Uuid
   userId           String    @map("user_id") @db.Uuid
+  workspaceId      String?   @map("workspace_id") @db.Uuid
   refreshTokenHash String    @map("refresh_token_hash") @db.VarChar(128)
   userAgent        String?   @map("user_agent") @db.VarChar(512)
   ip               String?   @db.VarChar(64)
@@ -103,8 +104,10 @@ model Session {
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
   user             User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  workspace        Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([userId, revokedAt], map: "sessions_user_id_revoked_at_idx")
+  @@index([workspaceId, createdAt], map: "sessions_workspace_id_created_at_idx")
   @@index([expiresAt], map: "sessions_expires_at_idx")
   @@map("sessions")
 }
@@ -120,6 +123,7 @@ model Workspace {
   billingCurrentPeriodStart DateTime?     @map("billing_current_period_start") @db.Timestamptz(3)
   billingCurrentPeriodEnd   DateTime?     @map("billing_current_period_end") @db.Timestamptz(3)
   isDemo    Boolean           @default(false) @map("is_demo")
+  demoSessionId String?       @map("demo_session_id") @db.VarChar(64)
   createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
   owner     User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
@@ -135,12 +139,16 @@ model Workspace {
   usageRecords UsageRecord[]
   billingEvents BillingEvent[]
   demoState DemoState?
+  demoSession DemoSession?
+  sessions Session[]
 
   @@index([ownerId], map: "workspaces_owner_id_idx")
   @@index([stripeCustomerId], map: "workspaces_stripe_customer_id_idx")
   @@index([stripeSubscriptionId], map: "workspaces_stripe_subscription_id_idx")
   @@index([id, ownerId], map: "workspaces_id_owner_id_idx")
   @@index([isDemo, createdAt], map: "workspaces_is_demo_created_at_idx")
+  @@index([ownerId, isDemo, demoSessionId], map: "workspaces_owner_id_is_demo_demo_session_id_idx")
+  @@index([demoSessionId], map: "workspaces_demo_session_id_idx")
   @@map("workspaces")
 }
 
@@ -155,6 +163,25 @@ model DemoState {
 
   @@index([resetAt], map: "demo_states_reset_at_idx")
   @@map("demo_states")
+}
+
+model DemoSession {
+  id             String    @id @default(uuid()) @db.Uuid
+  sessionKeyHash String    @unique(map: "demo_sessions_session_key_hash_key") @map("session_key_hash") @db.VarChar(64)
+  workspaceId    String    @unique(map: "demo_sessions_workspace_id_key") @map("workspace_id") @db.Uuid
+  ipHash         String?   @map("ip_hash") @db.VarChar(64)
+  userAgentHash  String?   @map("user_agent_hash") @db.VarChar(64)
+  expiresAt      DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt      DateTime? @map("revoked_at") @db.Timestamptz(3)
+  lastSeenAt     DateTime  @map("last_seen_at") @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([workspaceId], map: "demo_sessions_workspace_id_idx")
+  @@index([expiresAt], map: "demo_sessions_expires_at_idx")
+  @@index([ipHash, createdAt], map: "demo_sessions_ip_hash_created_at_idx")
+  @@map("demo_sessions")
 }
 
 model WorkspaceMember {

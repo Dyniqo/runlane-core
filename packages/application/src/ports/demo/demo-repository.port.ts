@@ -32,6 +32,22 @@ export interface ResetDemoWorkspaceInput extends SeedDemoWorkspaceInput {
   readonly userAgent: string | null;
 }
 
+export interface ResolveDemoSessionWorkspaceInput {
+  readonly ownerId: string;
+  readonly sessionKeyHash: string;
+  readonly ipHash: string | null;
+  readonly userAgentHash: string | null;
+  readonly now: Date;
+  readonly expiresAt: Date;
+  readonly maxSessionsPerIpPerHour: number;
+  readonly seedVersion: string;
+}
+
+export interface CleanupExpiredDemoSessionsInput {
+  readonly now: Date;
+  readonly limit: number;
+}
+
 export interface DemoWorkflowRecord {
   readonly id: string;
   readonly publicId: string;
@@ -73,6 +89,20 @@ export interface DemoWorkspaceStateRecord {
   readonly isDemo: boolean;
 }
 
+export interface DemoSessionWorkspaceRecord {
+  readonly id: string;
+  readonly name: string;
+  readonly role: 'owner';
+  readonly isDemo: true;
+  readonly demoSessionId: string;
+  readonly expiresAt: Date;
+}
+
+export interface DemoSessionCleanupRecord {
+  readonly sessionsDeleted: number;
+  readonly workspacesDeleted: number;
+}
+
 export interface DemoUsageQuantityInput {
   readonly workspaceId: string;
   readonly type: 'execution' | 'ai_call';
@@ -83,6 +113,10 @@ export interface DemoUsageQuantityInput {
 export interface DemoRepositoryPort {
   seed(input: SeedDemoWorkspaceInput): Promise<DemoSeedRecord>;
   reset(input: ResetDemoWorkspaceInput): Promise<DemoSeedRecord>;
+  resolveSessionWorkspace(
+    input: ResolveDemoSessionWorkspaceInput,
+  ): Promise<DemoSessionWorkspaceRecord>;
+  cleanupExpiredSessions(input: CleanupExpiredDemoSessionsInput): Promise<DemoSessionCleanupRecord>;
   findWorkspaceState(workspaceId: string): Promise<DemoWorkspaceStateRecord | null>;
   countUsage(input: DemoUsageQuantityInput): Promise<number>;
 }

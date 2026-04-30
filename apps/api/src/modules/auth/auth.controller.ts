@@ -73,6 +73,12 @@ const loginUserRequestSchema = {
   properties: {
     email: { type: 'string', format: 'email', example: 'operator@example.com' },
     password: { type: 'string', minLength: 12, example: 'RunlanePassword123!' },
+    demoSessionId: {
+      type: 'string',
+      minLength: 8,
+      maxLength: 128,
+      example: 'browser-demo-session-001',
+    },
   },
 } satisfies OpenApiSchemaObject;
 
@@ -286,6 +292,7 @@ function parseLoginUserRequest(body: unknown): Omit<LoginUserInput, 'userAgent' 
   return {
     email: readString(body, 'email', 'LOGIN_PAYLOAD_INVALID', 'Login'),
     password: readString(body, 'password', 'LOGIN_PAYLOAD_INVALID', 'Login'),
+    demoSessionId: readOptionalString(body, 'demoSessionId', 'LOGIN_PAYLOAD_INVALID', 'Login', 128),
   };
 }
 
@@ -329,6 +336,30 @@ function readString(
 
   if (typeof value !== 'string') {
     throw invalidPayload(code, `${label} ${key} must be a string`);
+  }
+
+  return value;
+}
+
+function readOptionalString(
+  body: Readonly<Record<string, unknown>>,
+  key: keyof LoginUserRequestDto,
+  code: string,
+  label: string,
+  maximumLength: number,
+): string | null {
+  const value = body[key];
+
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+
+  if (typeof value !== 'string') {
+    throw invalidPayload(code, `${label} ${key} must be a string`);
+  }
+
+  if (value.length > maximumLength) {
+    throw invalidPayload(code, `${label} ${key} is too long`);
   }
 
   return value;

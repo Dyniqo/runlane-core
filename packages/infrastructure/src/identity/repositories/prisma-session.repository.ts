@@ -19,6 +19,7 @@ export class PrismaSessionRepository implements SessionRepositoryPort {
       data: {
         id: input.id,
         userId: input.userId,
+        workspaceId: input.workspaceId,
         refreshTokenHash: input.refreshTokenHash,
         userAgent: input.userAgent,
         ip: input.ip,
@@ -78,6 +79,7 @@ export class PrismaSessionRepository implements SessionRepositoryPort {
 const sessionSelect = {
   id: true,
   userId: true,
+  workspaceId: true,
   refreshTokenHash: true,
   userAgent: true,
   ip: true,

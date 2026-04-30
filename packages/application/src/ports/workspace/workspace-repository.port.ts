@@ -4,12 +4,16 @@ export interface WorkspaceWithOwnerMembershipRecord {
   readonly id: string;
   readonly name: string;
   readonly role: 'owner';
+  readonly isDemo: boolean;
+  readonly demoSessionId: string | null;
 }
 
 export interface AuthenticatedWorkspaceRecord {
   readonly id: string;
   readonly name: string;
   readonly role: 'owner' | 'member';
+  readonly isDemo: boolean;
+  readonly demoSessionId: string | null;
 }
 
 export interface WorkspaceMembershipRecord extends AuthenticatedWorkspaceRecord {
@@ -27,6 +31,11 @@ export interface UpdateWorkspaceNameInput {
   readonly name: string;
 }
 
+export interface ListWorkspacesForUserInput {
+  readonly userId: string;
+  readonly currentWorkspaceId: string;
+}
+
 export interface WorkspaceRepositoryPort {
   createDefaultWorkspaceForOwner(
     input: CreateWorkspaceWithOwnerInput,
@@ -35,7 +44,9 @@ export interface WorkspaceRepositoryPort {
   findWorkspaceForUser(
     input: Readonly<{ userId: string; workspaceId: string }>,
   ): Promise<WorkspaceMembershipRecord | null>;
-  listWorkspacesForUser(userId: string): Promise<readonly AuthenticatedWorkspaceRecord[]>;
+  listWorkspacesForUser(
+    input: ListWorkspacesForUserInput,
+  ): Promise<readonly AuthenticatedWorkspaceRecord[]>;
   updateWorkspaceName(
     input: UpdateWorkspaceNameInput,
   ): Promise<AuthenticatedWorkspaceRecord | null>;

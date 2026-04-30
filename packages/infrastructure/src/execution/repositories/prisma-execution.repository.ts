@@ -248,6 +248,12 @@ export class PrismaExecutionRepository implements ExecutionRepositoryPort {
 const executionSelect = {
   id: true,
   workspaceId: true,
+  workspace: {
+    select: {
+      isDemo: true,
+      demoSessionId: true,
+    },
+  },
   workflowId: true,
   status: true,
   inputJson: true,
@@ -265,6 +271,10 @@ const executionSelect = {
 type PrismaExecutionRecord = {
   readonly id: string;
   readonly workspaceId: string;
+  readonly workspace: {
+    readonly isDemo: boolean;
+    readonly demoSessionId: string | null;
+  };
   readonly workflowId: string;
   readonly status: string;
   readonly inputJson: Prisma.JsonValue;
@@ -283,6 +293,8 @@ function mapExecutionRecord(record: PrismaExecutionRecord): StoredExecutionRecor
   return {
     id: record.id,
     workspaceId: record.workspaceId,
+    isDemo: record.workspace.isDemo,
+    demoSessionId: record.workspace.demoSessionId,
     workflowId: record.workflowId,
     status: mapExecutionStatus(record.status),
     input: record.inputJson as JsonObject,

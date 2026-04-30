@@ -64,6 +64,7 @@ export {
 export type {
   GetAuthenticatedUserInput,
   LoginUserInput,
+  LoginUserOptions,
   LogoutSessionInput,
   RefreshSessionInput,
   RegisterUserInput,

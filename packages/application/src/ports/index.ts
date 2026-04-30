@@ -3,9 +3,12 @@ export { DEMO_REPOSITORY } from './demo';
 export { AI_PROVIDER } from './ai';
 export type { AiProviderPort } from './ai';
 export type {
+  CleanupExpiredDemoSessionsInput,
   DemoApiKeyRecord,
   DemoRepositoryPort,
   DemoSeedRecord,
+  DemoSessionCleanupRecord,
+  DemoSessionWorkspaceRecord,
   DemoUsageQuantityInput,
   DemoUserRecord,
   DemoWorkflowRecord,
@@ -13,6 +16,7 @@ export type {
   DemoWorkspaceRecord,
   DemoWorkspaceStateRecord,
   ResetDemoWorkspaceInput,
+  ResolveDemoSessionWorkspaceInput,
   SeedDemoWorkspaceInput,
 } from './demo';
 export { AUDIT_LOG_REPOSITORY } from './audit';
@@ -120,6 +124,7 @@ export { WORKSPACE_REPOSITORY, WORKSPACE_SCOPE_RESOLVER } from './workspace';
 export type {
   AuthenticatedWorkspaceRecord,
   CreateWorkspaceWithOwnerInput,
+  ListWorkspacesForUserInput,
   ResolveWorkspaceScopeInput,
   UpdateWorkspaceNameInput,
   WorkspaceMembershipRecord,

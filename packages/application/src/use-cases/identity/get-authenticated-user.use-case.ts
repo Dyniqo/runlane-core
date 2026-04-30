@@ -39,6 +39,10 @@ export class GetAuthenticatedUserUseCase implements UseCase<
       rejectInvalidRefreshToken();
     }
 
+    if (session.workspaceId !== null && session.workspaceId !== principal.workspaceId) {
+      rejectInvalidRefreshToken();
+    }
+
     ensureActiveSession(session);
 
     const user = await this.users.findById(principal.userId);
@@ -47,13 +51,12 @@ export class GetAuthenticatedUserUseCase implements UseCase<
       throw missingAuthenticatedUser();
     }
 
-    const workspace = await this.workspaces.findPrimaryWorkspaceForUser(user.id);
+    const workspace = await this.workspaces.findWorkspaceForUser({
+      userId: user.id,
+      workspaceId: principal.workspaceId,
+    });
 
-    if (!workspace) {
-      throw missingWorkspaceMembership();
-    }
-
-    if (workspace.id !== principal.workspaceId) {
+    if (!workspace || workspace.role !== principal.workspaceRole) {
       throw missingWorkspaceMembership();
     }
 

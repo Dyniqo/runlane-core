@@ -306,3 +306,26 @@ pnpm build
 pnpm start:api:built
 pnpm start:worker:built
 ```
+
+## Session-scoped demo workspaces
+
+Runlane can run a shared demo account without sharing mutable data between browsers. When `DEMO_MODE=true` and `DEMO_SESSION_ENABLED=true`, `POST /v1/auth/login` accepts an optional `demoSessionId`. The value is normalized, hashed, and resolved to a dedicated demo workspace before the JWT is issued. Every request after login continues through the existing workspace scope guard and uses the `workspaceId` from the token.
+
+The canonical demo seed workspace remains the source template for cloned workflows. Session workspaces receive their own workflow public IDs and isolated database rows, so reset and workflow operations in one browser do not affect another browser. Expired demo sessions are removed with their session workspaces through database cleanup during session resolution.
+
+Relevant environment variables:
+
+```env
+DEMO_SESSION_ENABLED=true
+DEMO_SESSION_TTL_HOURS=12
+DEMO_SESSION_STORAGE_KEY=runlane.demoSessionId
+DEMO_MAX_SESSIONS_PER_IP_PER_HOUR=20
+DEMO_CLEANUP_INTERVAL_HOURS=6
+```
+
+Local validation:
+
+```powershell
+pnpm validate:demo
+pnpm validate:demo-isolation
+```

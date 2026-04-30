@@ -86,7 +86,7 @@ function Assert-WorkflowPublicIdsPresent {
 
 Write-Host "Seeding demo workspace through $baseUrl"
 $seed = Invoke-RunlaneJsonRequest -Method "Post" -Url "$baseUrl/v1/demo/seed"
-$seedWorkflows = ConvertTo-RunlaneArray -Value $seed.demo.workflows
+$seedWorkflows = @(ConvertTo-RunlaneArray -Value $seed.demo.workflows)
 Assert-Value -Condition ($seed.demo.enabled -eq $true) -Message "Demo seed did not report enabled=true"
 Assert-Value -Condition ($seedWorkflows.Count -ge 2) -Message "Demo seed did not create the expected workflows"
 Assert-Value -Condition (-not [string]::IsNullOrWhiteSpace($seed.demo.credentials.email)) -Message "Demo seed did not return an email"
@@ -108,20 +108,20 @@ $authHeaders = @{
 
 Write-Host "Reading demo workflows from the authenticated workspace"
 $workflowResponse = Invoke-RunlaneJsonRequest -Method "Get" -Url "$baseUrl/v1/workflows" -Headers $authHeaders
-$workflowItems = Read-WorkflowItems -Response $workflowResponse
+$workflowItems = @(Read-WorkflowItems -Response $workflowResponse)
 Assert-Value -Condition ($workflowItems.Count -ge 2) -Message "Authenticated workflow list does not include seeded demo workflows"
 Assert-WorkflowPublicIdsPresent -ExpectedWorkflows $seedWorkflows -ActualWorkflows $workflowItems -Message "Authenticated workflow list is missing a seeded workflow."
 
 Write-Host "Resetting the current demo workspace"
 $reset = Invoke-RunlaneJsonRequest -Method "Post" -Url "$baseUrl/v1/demo/reset" -Headers $authHeaders
-$resetWorkflows = ConvertTo-RunlaneArray -Value $reset.demo.workflows
+$resetWorkflows = @(ConvertTo-RunlaneArray -Value $reset.demo.workflows)
 Assert-Value -Condition ($reset.reset -eq $true) -Message "Demo reset did not report reset=true"
 Assert-Value -Condition ($reset.demo.workspace.id -eq $seed.demo.workspace.id) -Message "Demo reset returned an unexpected workspace"
 Assert-Value -Condition ($resetWorkflows.Count -ge 2) -Message "Demo reset did not restore demo workflows"
 
 Write-Host "Reading demo workflows after reset"
 $workflowResponseAfterReset = Invoke-RunlaneJsonRequest -Method "Get" -Url "$baseUrl/v1/workflows" -Headers $authHeaders
-$workflowItemsAfterReset = Read-WorkflowItems -Response $workflowResponseAfterReset
+$workflowItemsAfterReset = @(Read-WorkflowItems -Response $workflowResponseAfterReset)
 Assert-Value -Condition ($workflowItemsAfterReset.Count -ge 2) -Message "Authenticated workflow list does not include reset demo workflows"
 Assert-WorkflowPublicIdsPresent -ExpectedWorkflows $resetWorkflows -ActualWorkflows $workflowItemsAfterReset -Message "Authenticated workflow list after reset is missing a seeded workflow."
 

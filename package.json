@@ -84,7 +84,8 @@
     "validate:plans": "powershell -ExecutionPolicy Bypass -File scripts/validate-plan-enforcement.ps1",
     "validate:billing": "powershell -ExecutionPolicy Bypass -File scripts/validate-billing-webhook.ps1",
     "validate:billing-sessions": "powershell -ExecutionPolicy Bypass -File scripts/validate-billing-sessions.ps1",
-    "validate:demo": "powershell -ExecutionPolicy Bypass -File scripts/validate-demo-safety.ps1"
+    "validate:demo": "powershell -ExecutionPolicy Bypass -File scripts/validate-demo-safety.ps1",
+    "validate:demo-isolation": "powershell -ExecutionPolicy Bypass -File scripts/validate-demo-session-isolation.ps1"
   },
   "dependencies": {
     "@nestjs/common": "11.1.24",
