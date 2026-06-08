@@ -1,125 +1,138 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 
 const root = process.cwd();
-const scriptDirectory = join(root, 'scripts');
-const packageJsonPath = join(root, 'package.json');
-const dockerfilePath = join(root, 'Dockerfile');
-const errors = [];
-const forbiddenFragments = [
-  `import { PrismaClient } from ${quote('@prisma/client')}`,
-  `import { PrismaClient } from ${doubleQuote('@prisma/client')}`,
-];
+const packageJsonPath = resolve(root, 'package.json');
+const dockerfilePath = resolve(root, 'Dockerfile');
+const scriptsDirectory = resolve(root, 'scripts');
+const failures = [];
 
-const scriptFiles = listFiles(scriptDirectory).filter(
-  (path) => path.endsWith('.mjs') || path.endsWith('.ps1'),
-);
+if (!existsSync(packageJsonPath)) {
+  failures.push('package.json is missing');
+}
 
-for (const filePath of scriptFiles) {
-  const content = readFileSync(filePath, 'utf8');
-  const displayPath = toDisplayPath(filePath);
+if (!existsSync(dockerfilePath)) {
+  failures.push('Dockerfile is missing');
+}
 
-  for (const fragment of forbiddenFragments) {
-    if (content.includes(fragment)) {
-      errors.push(`${displayPath} must load PrismaClient through scripts/prisma-client-loader.mjs`);
+if (!existsSync(scriptsDirectory)) {
+  failures.push('scripts directory is missing');
+}
+
+if (failures.length === 0) {
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+  const dockerfile = readFileSync(dockerfilePath, 'utf8');
+  const runtimeScripts = readRuntimeScripts(scriptsDirectory);
+
+  if (
+    packageJson.scripts['db:migrate:deploy'] !==
+    'pnpm db:generate && pnpm db:migrate:preflight && prisma migrate deploy'
+  ) {
+    failures.push(
+      'package.json script db:migrate:deploy must generate Prisma Client before migration preflight',
+    );
+  }
+
+  if (
+    packageJson.scripts['db:migrate:deploy:runtime'] !==
+    'pnpm db:migrate:preflight && prisma migrate deploy'
+  ) {
+    failures.push(
+      'package.json script db:migrate:deploy:runtime must run migration preflight without runtime generation',
+    );
+  }
+
+  if (
+    packageJson.scripts['validate:runtime-scripts'] !== 'node scripts/validate-runtime-scripts.mjs'
+  ) {
+    failures.push(
+      'package.json script validate:runtime-scripts must run node scripts/validate-runtime-scripts.mjs',
+    );
+  }
+
+  if (!packageJson.scripts.verify.includes('pnpm validate:runtime-scripts')) {
+    failures.push('package.json verify script must include pnpm validate:runtime-scripts');
+  }
+
+  requireFragments('Dockerfile', dockerfile, [
+    'ENV NPM_CONFIG_REGISTRY=$NPM_REGISTRY',
+    'RUN pnpm build',
+    'FROM prisma AS migrator',
+    'CMD ["pnpm", "db:migrate:deploy:runtime"]',
+  ]);
+
+  forbidFragments('Dockerfile', dockerfile, [
+    'ENV npm_config_registry=',
+    'CMD ["pnpm", "db:migrate:deploy"]',
+  ]);
+
+  const preflightScript = readFileSync(
+    resolve(root, 'scripts/database-migration-preflight.mjs'),
+    'utf8',
+  );
+
+  requireFragments('scripts/database-migration-preflight.mjs', preflightScript, [
+    "import prismaClientPackage from '@prisma/client';",
+    'const { PrismaClient } = prismaClientPackage;',
+    'await prisma.$disconnect();',
+  ]);
+
+  forbidFragments('scripts/database-migration-preflight.mjs', preflightScript, [
+    `import { PrismaClient } from '@${'prisma'}/client';`,
+  ]);
+
+  for (const scriptPath of runtimeScripts) {
+    const relativePath = scriptPath.slice(root.length + 1).replaceAll('\\\\', '/');
+    const content = readFileSync(scriptPath, 'utf8');
+
+    if (/import\s+\{\s*PrismaClient\s*\}\s+from\s+['"]@prisma\/client['"]/.test(content)) {
+      failures.push(`${relativePath} must not named-import PrismaClient from @prisma/client`);
     }
   }
 }
 
-for (const requiredFile of [
-  'scripts/prisma-client-loader.mjs',
-  'scripts/database-migration-preflight.mjs',
-]) {
-  const fullPath = join(root, requiredFile);
-
-  try {
-    statSync(fullPath);
-  } catch {
-    errors.push(`${requiredFile} is required`);
-  }
-}
-
-const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
-const dockerfile = readFileSync(dockerfilePath, 'utf8');
-const preflightContent = readFileSync(
-  join(root, 'scripts/database-migration-preflight.mjs'),
-  'utf8',
-);
-
-if (!preflightContent.includes("import { PrismaClient } from './prisma-client-loader.mjs';")) {
-  errors.push('database-migration-preflight.mjs must use the shared Prisma client loader');
-}
-
-if (
-  packageJson.scripts['db:migrate:deploy'] !==
-  'pnpm db:generate && pnpm db:migrate:preflight && prisma migrate deploy'
-) {
-  errors.push('db:migrate:deploy must generate Prisma Client before migration preflight');
-}
-
-if (
-  packageJson.scripts['validate:runtime-scripts'] !== 'node scripts/validate-runtime-scripts.mjs'
-) {
-  errors.push('package.json script validate:runtime-scripts is missing or invalid');
-}
-
-if (!packageJson.scripts.verify.includes('pnpm validate:runtime-scripts')) {
-  errors.push('package.json verify script must include pnpm validate:runtime-scripts');
-}
-
-if (
-  !dockerfile.includes(
-    'COPY scripts/database-migration-preflight.mjs ./scripts/database-migration-preflight.mjs',
-  )
-) {
-  errors.push('Dockerfile must copy database-migration-preflight.mjs into the Prisma stage');
-}
-
-if (
-  !dockerfile.includes('COPY scripts/prisma-client-loader.mjs ./scripts/prisma-client-loader.mjs')
-) {
-  errors.push('Dockerfile must copy prisma-client-loader.mjs into the Prisma stage');
-}
-
-if (!/FROM\s+prisma\s+AS\s+migrator/.test(dockerfile)) {
-  errors.push('Dockerfile must keep the migrator image based on the Prisma stage');
-}
-
-if (!dockerfile.includes('CMD ["pnpm", "db:migrate:deploy"]')) {
-  errors.push('Dockerfile migrator target must run pnpm db:migrate:deploy');
-}
-
-if (errors.length > 0) {
+if (failures.length > 0) {
   console.error('Runtime script validation failed');
-  for (const error of errors) {
-    console.error(`- ${error}`);
+  for (const failure of failures) {
+    console.error(`- ${failure}`);
   }
   process.exit(1);
 }
 
 console.log('Runtime script validation completed');
 
-function listFiles(directory) {
-  return readdirSync(directory).flatMap((entry) => {
-    const fullPath = join(directory, entry);
-    const stats = statSync(fullPath);
+function readRuntimeScripts(directory) {
+  const files = [];
+
+  for (const entry of readdirSync(directory)) {
+    const path = join(directory, entry);
+    const stats = statSync(path);
 
     if (stats.isDirectory()) {
-      return listFiles(fullPath);
+      files.push(...readRuntimeScripts(path));
+      continue;
     }
 
-    return [fullPath];
-  });
+    if (entry.endsWith('.mjs')) {
+      files.push(path);
+    }
+  }
+
+  return files;
 }
 
-function toDisplayPath(filePath) {
-  return relative(root, filePath).replaceAll('\\\\', '/');
+function requireFragments(label, content, fragments) {
+  for (const fragment of fragments) {
+    if (!content.includes(fragment)) {
+      failures.push(`${label} is missing fragment: ${fragment}`);
+    }
+  }
 }
 
-function quote(value) {
-  return `'${value}'`;
-}
-
-function doubleQuote(value) {
-  return `"${value}"`;
+function forbidFragments(label, content, fragments) {
+  for (const fragment of fragments) {
+    if (content.includes(fragment)) {
+      failures.push(`${label} contains forbidden fragment: ${fragment}`);
+    }
+  }
 }

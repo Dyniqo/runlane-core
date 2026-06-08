@@ -19,7 +19,6 @@ ARG HTTPS_PROXY
 ARG NO_PROXY
 
 ENV NPM_CONFIG_REGISTRY=$NPM_REGISTRY
-ENV npm_config_registry=$NPM_REGISTRY
 ENV PRISMA_ENGINES_MIRROR=$PRISMA_ENGINES_MIRROR
 
 RUN --mount=type=cache,id=runlane-apt-cache,target=/var/cache/apt,sharing=locked \
@@ -58,7 +57,6 @@ ENV DATABASE_URL=$DATABASE_URL
 
 COPY prisma ./prisma
 COPY scripts/database-migration-preflight.mjs ./scripts/database-migration-preflight.mjs
-COPY scripts/prisma-client-loader.mjs ./scripts/prisma-client-loader.mjs
 
 RUN --mount=type=cache,id=runlane-prisma-cache,target=/root/.cache/prisma \
   pnpm db:generate \
@@ -133,4 +131,4 @@ ENV XDG_CACHE_HOME=/tmp/.cache
 
 USER node
 
-CMD ["pnpm", "db:migrate:deploy"]
+CMD ["pnpm", "db:migrate:deploy:runtime"]

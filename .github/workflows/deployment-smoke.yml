@@ -3,8 +3,8 @@ name: Deployment image smoke
 on:
   workflow_dispatch:
     inputs:
-      image_tag:
-        description: Image tag to smoke test. Leave empty to use sha for this workflow revision.
+      commit_sha:
+        description: Commit SHA to smoke test. Leave empty to use the selected workflow revision.
         required: false
         default: ''
         type: string
@@ -42,11 +42,19 @@ jobs:
       - name: Create smoke environment
         shell: bash
         run: |
-          image_tag="${{ inputs.image_tag }}"
-          if [[ -z "$image_tag" ]]; then
-            image_tag="sha-${GITHUB_SHA}"
+          commit_sha="${{ inputs.commit_sha }}"
+          commit_sha="${commit_sha#sha-}"
+          if [[ -z "$commit_sha" ]]; then
+            commit_sha="$GITHUB_SHA"
           fi
 
+          if ! [[ "$commit_sha" =~ ^[0-9a-fA-F]{7,40}$ ]]; then
+            echo "commit_sha must be a Git commit hash without the sha- prefix."
+            exit 1
+          fi
+
+          commit_sha="${commit_sha,,}"
+          image_tag="sha-${commit_sha}"
           owner="${GITHUB_REPOSITORY_OWNER,,}"
           repository="${GITHUB_REPOSITORY#*/}"
           repository="${repository,,}"
@@ -98,10 +106,15 @@ jobs:
         run: |
           docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" pull
 
-      - name: Start deployment stack
+      - name: Run database migrator
         shell: bash
         run: |
-          docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d
+          docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up --abort-on-container-exit --exit-code-from migrator migrator
+
+      - name: Start application services
+        shell: bash
+        run: |
+          docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d api worker caddy
 
       - name: Wait for API readiness through Caddy
         shell: bash
@@ -156,7 +169,7 @@ jobs:
         run: |
           if [[ -f "$ENV_FILE" ]]; then
             docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps --all || true
-            docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --no-color --tail=300 || true
+            docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --no-color --tail=300 postgres redis migrator api worker caddy || true
           fi
 
       - name: Stop deployment stack

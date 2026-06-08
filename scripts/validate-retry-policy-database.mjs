@@ -1,4 +1,6 @@
-import { PrismaClient } from './prisma-client-loader.mjs';
+import prismaClientPackage from '@prisma/client';
+
+const { PrismaClient } = prismaClientPackage;
 
 const [, , email, executionId, expectedAttemptsInput] = process.argv;
 

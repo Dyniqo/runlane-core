@@ -1,5 +1,6 @@
-import { PrismaClient } from './prisma-client-loader.mjs';
+import prismaClientPackage from '@prisma/client';
 
+const { PrismaClient } = prismaClientPackage;
 const prisma = new PrismaClient();
 const legacyTable = '_runlane_bootstrap_migrations';
 const migrationTable = '_prisma_migrations';

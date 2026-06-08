@@ -8,6 +8,7 @@ const files = {
   caddyfile: resolve(root, 'docker/Caddyfile'),
   deployEnvironment: resolve(root, '.env.deploy.example'),
   deploymentSmoke: resolve(root, '.github/workflows/deployment-smoke.yml'),
+  dockerfile: resolve(root, 'Dockerfile'),
 };
 
 const failures = [];
@@ -24,6 +25,7 @@ if (failures.length === 0) {
   const caddyfile = readFileSync(files.caddyfile, 'utf8');
   const deployEnvironment = readFileSync(files.deployEnvironment, 'utf8');
   const deploymentSmoke = readFileSync(files.deploymentSmoke, 'utf8');
+  const dockerfile = readFileSync(files.dockerfile, 'utf8');
 
   requireFragments('docker-compose.deploy.yml', deployCompose, [
     'image: ${RUNLANE_IMAGE_REGISTRY:-ghcr.io}/${RUNLANE_IMAGE_NAMESPACE:-dyniqo}/${RUNLANE_IMAGE_REPOSITORY:-runlane-core}-api:${RUNLANE_IMAGE_TAG:?RUNLANE_IMAGE_TAG is required}',
@@ -78,26 +80,33 @@ if (failures.length === 0) {
 
   requireFragments('.github/workflows/deployment-smoke.yml', deploymentSmoke, [
     'name: Deployment image smoke',
+    'commit_sha:',
+    'description: Commit SHA to smoke test. Leave empty to use the selected workflow revision.',
+    'commit_sha="${commit_sha#sha-}"',
+    'image_tag="sha-${commit_sha}"',
     'runs-on: ubuntu-24.04',
     'actions/checkout@v6.0.3',
     'docker/login-action@v4.2.0',
     'packages: read',
-    'cat > "$ENV_FILE" <<EOF_ENV',
-    'RUNLANE_COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}',
-    'RUNLANE_IMAGE_REGISTRY=ghcr.io',
-    'RUNLANE_IMAGE_TAG=${image_tag}',
-    'API_URL=http://127.0.0.1:18080',
-    'API_DOCS_ENABLED=false',
-    'EOF_ENV',
     'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" config --quiet',
     'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" pull',
-    'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d',
+    'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up --abort-on-container-exit --exit-code-from migrator migrator',
+    'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d api worker caddy',
     'http://127.0.0.1:18080/health/ready',
     'migrator exit code',
+    'logs --no-color --tail=300 postgres redis migrator api worker caddy',
     'down -v --remove-orphans',
   ]);
 
-  assertSmokeEnvironmentHeredocIsYmlBlockSafe(deploymentSmoke);
+  requireFragments('Dockerfile', dockerfile, [
+    'FROM prisma AS migrator',
+    'CMD ["pnpm", "db:migrate:deploy:runtime"]',
+  ]);
+
+  forbidFragments('Dockerfile', dockerfile, [
+    'ENV npm_config_registry=',
+    'CMD ["pnpm", "db:migrate:deploy"]',
+  ]);
 
   forbidFragments(
     'deployment files',
@@ -115,6 +124,15 @@ if (failures.length === 0) {
   );
 
   assertNoPublicPortsForDataStores(deployCompose);
+
+  if (
+    packageJson.scripts['db:migrate:deploy:runtime'] !==
+    'pnpm db:migrate:preflight && prisma migrate deploy'
+  ) {
+    failures.push(
+      'package.json script db:migrate:deploy:runtime must run migration preflight without runtime generation',
+    );
+  }
 
   if (packageJson.scripts['validate:deploy'] !== 'node scripts/validate-deploy-config.mjs') {
     failures.push(
@@ -166,72 +184,6 @@ function assertNoPublicPortsForDataStores(content) {
       failures.push(`${service} must not expose public ports in docker-compose.deploy.yml`);
     }
   }
-}
-
-function assertSmokeEnvironmentHeredocIsYmlBlockSafe(content) {
-  const lines = content.replaceAll('\r\n', '\n').split('\n');
-  const startIndex = lines.findIndex((line) => line.trim() === 'cat > "$ENV_FILE" <<EOF_ENV');
-
-  if (startIndex === -1) {
-    failures.push('deployment-smoke.yml must write the smoke environment with a heredoc');
-    return;
-  }
-
-  const startIndent = readIndent(lines[startIndex]);
-  if (startIndent.length === 0) {
-    failures.push('deployment-smoke.yml heredoc command must remain inside the YAML run block');
-    return;
-  }
-
-  const bodyLines = [];
-  let foundEnd = false;
-
-  for (let index = startIndex + 1; index < lines.length; index += 1) {
-    const line = lines[index];
-
-    if (line === `${startIndent}EOF_ENV`) {
-      foundEnd = true;
-      break;
-    }
-
-    bodyLines.push(line);
-  }
-
-  if (!foundEnd) {
-    failures.push('deployment-smoke.yml must close the smoke environment heredoc');
-    return;
-  }
-
-  for (const line of bodyLines) {
-    if (!line.trim()) {
-      continue;
-    }
-
-    if (!line.startsWith(startIndent)) {
-      failures.push(
-        `deployment-smoke.yml env heredoc line must stay inside the run block: ${line.trim()}`,
-      );
-      continue;
-    }
-
-    const deindentedLine = line.slice(startIndent.length);
-    if (/^\s/.test(deindentedLine)) {
-      failures.push(
-        `deployment-smoke.yml env heredoc line must not be indented after YAML parsing: ${deindentedLine.trim()}`,
-      );
-    }
-
-    if (!/^[A-Z0-9_]+=/.test(deindentedLine)) {
-      failures.push(
-        `deployment-smoke.yml env heredoc line must be KEY=value: ${deindentedLine.trim()}`,
-      );
-    }
-  }
-}
-
-function readIndent(line) {
-  const match = /^(\s*)/.exec(line);
-  return match?.[1] ?? '';
 }
 
 function readComposeServiceBlocks(content) {
