@@ -11,7 +11,7 @@ pnpm format
 pnpm verify
 ```
 
-`pnpm verify` checks formatting, lockfile registry safety, GitHub Actions configuration, deployment configuration, documentation artifacts, release readiness, runtime script compatibility, linting, Prisma schema validity, TypeScript type checking and build output.
+`pnpm verify` checks formatting, lockfile registry safety, GitHub Actions configuration, deployment configuration, documentation artifacts, release validation, runtime script compatibility, linting, Prisma schema validity, TypeScript type checking and build output.
 
 ## Local API validation
 
@@ -76,7 +76,7 @@ pnpm demo:api-integration
 
 ## Release validation
 
-Run release readiness checks:
+Run release validation checks:
 
 ```powershell
 pnpm validate:release
@@ -88,7 +88,7 @@ Run the clean-room Docker validation when Docker or deployment files change:
 pnpm validate:clean-room
 ```
 
-The clean-room command is intentionally not part of `pnpm verify` because it rebuilds the Docker path and starts a dedicated Compose namespace.
+The clean-room command is separate from `pnpm verify` because it rebuilds the Docker path and starts a dedicated Compose namespace.
 
 ## Configuration validation
 
@@ -98,4 +98,4 @@ Deployment configuration validation prevents public datastore ports, floating im
 
 Documentation artifact validation verifies that required docs, demo scripts and Postman folders are present and aligned with package scripts.
 
-Release readiness validation verifies that the README, release checklist, clean-room validation guide, case study index and release commands remain aligned.
+Release validation verifies that the README, release verification guide, clean-room validation guide, operational scenario index and release commands remain aligned.

@@ -53,4 +53,4 @@ GET  /health/queue
 
 ## Operational value
 
-This case demonstrates secure public ingestion, durable queue handoff, idempotency, replay protection, Worker-side validation, retries, dead-letter behavior and structured operational health.
+This scenario covers secure webhook ingestion, durable queue transfer, idempotency, replay protection, Worker-side validation, retries, dead-letter behavior and structured operational health.

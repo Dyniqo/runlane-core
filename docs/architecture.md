@@ -75,7 +75,7 @@ Audit handles durable records for identity, access, workflow, ingestion, executi
 
 Observability handles structured logs, request IDs, correlation IDs, health checks, readiness checks, queue health and runtime lifecycle logging.
 
-Demo handles demo seed data, reset safety, session-scoped demo workspaces, TTL, cleanup and public demo limits.
+Demo handles demo seed data, reset safety, session-scoped demo workspaces, TTL, cleanup and demo runtime limits.
 
 ## Workspace isolation
 

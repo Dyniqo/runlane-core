@@ -37,7 +37,7 @@ audit
 pnpm demo:api-integration
 ```
 
-The command creates a workflow with an HTTP step, publishes it, executes it through the automation bridge and waits for queue handoff.
+The command creates a workflow with an HTTP step, publishes it, executes it through the automation bridge and waits for queue transfer.
 
 ## API endpoints
 
@@ -51,4 +51,4 @@ GET  /v1/executions/:id/steps
 
 ## Operational value
 
-This case demonstrates safe API integration with secret boundaries, request mapping, response-size controls, retryable status classification and Worker-side execution.
+This scenario covers safe API integration with secret boundaries, request mapping, response-size controls, retryable status classification and Worker-side execution.

@@ -1,0 +1,27 @@
+name: Feature request
+description: Suggest a focused backend, deployment or documentation improvement.
+title: 'feature: '
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Explain the operational or workflow problem this solves.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Describe the expected behavior and boundaries.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation
+      description: Describe how this should be validated.
+    validations:
+      required: false

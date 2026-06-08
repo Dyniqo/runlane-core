@@ -60,4 +60,4 @@ GET  /health/ready
 
 ## Operational value
 
-This case demonstrates a deployment-oriented backend core with separate API and Worker runtimes, PostgreSQL, Redis, queue processing, billing state, tenant boundaries, validation scripts and image-based deployment configuration.
+This scenario covers separate API and Worker runtimes, PostgreSQL, Redis, queue processing, billing state, tenant boundaries, validation scripts and image-based deployment configuration.

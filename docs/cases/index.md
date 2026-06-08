@@ -1,12 +1,12 @@
-# Case Study Index
+# Operational Scenario Index
 
-Runlane Core includes five operational case studies. Each case maps a real backend problem to the modules, endpoints and validation commands that prove the behavior.
+Runlane Core includes five operational scenarios. Each scenario maps a backend problem to the modules, endpoints and validation commands that exercise the behavior.
 
 ## AI Lead Routing
 
-[AI Lead Routing](ai-lead-routing.md) shows the webhook-to-queue-to-worker path with an AI decision step and notification routing.
+[AI Lead Routing](ai-lead-routing.md) covers the webhook-to-queue-to-worker path with an AI decision step and notification routing.
 
-Primary proof points:
+What this covers:
 
 - Signed webhook ingestion
 - Execution creation
@@ -17,9 +17,9 @@ Primary proof points:
 
 ## Reliable Webhook Queue Worker
 
-[Reliable Webhook Queue Worker](webhook-queue-worker.md) shows webhook reliability controls and background job processing.
+[Reliable Webhook Queue Worker](webhook-queue-worker.md) covers webhook reliability controls and background job processing.
 
-Primary proof points:
+What this covers:
 
 - Signature verification
 - Timestamp validation
@@ -30,9 +30,9 @@ Primary proof points:
 
 ## Stripe Webhook Subscription Sync
 
-[Stripe Webhook Subscription Sync](stripe-webhook-sync.md) shows billing webhook verification and subscription state synchronization.
+[Stripe Webhook Subscription Sync](stripe-webhook-sync.md) covers billing webhook verification and subscription state synchronization.
 
-Primary proof points:
+What this covers:
 
 - Stripe signature verification
 - Provider event idempotency
@@ -42,9 +42,9 @@ Primary proof points:
 
 ## API Integration Backend
 
-[API Integration Backend](api-integration-backend.md) shows safe outbound HTTP connector execution for external APIs.
+[API Integration Backend](api-integration-backend.md) covers safe outbound HTTP connector execution for external APIs.
 
-Primary proof points:
+What this covers:
 
 - Secret injection at the connector boundary
 - Authentication modes
@@ -55,9 +55,9 @@ Primary proof points:
 
 ## SaaS Backend Infrastructure
 
-[SaaS Backend Infrastructure](saas-backend-infrastructure.md) shows the complete infrastructure slice for a workspace-scoped backend system.
+[SaaS Backend Infrastructure](saas-backend-infrastructure.md) covers the infrastructure slice for a workspace-scoped backend system.
 
-Primary proof points:
+What this covers:
 
 - Auth and workspace scope
 - API key access

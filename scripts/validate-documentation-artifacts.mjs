@@ -29,9 +29,21 @@ const requiredFiles = [
   'scripts/validate-clean-room-docker.ps1',
 ];
 
+const removedFiles = [
+  ['docs', ['ui', 'panel', ['hand', 'off'].join('')].join('-') + '.md'].join('/'),
+  ['docs', ['saas', 'panel', 'ui', ['hand', 'off'].join('')].join('-') + '.md'].join('/'),
+  ['docs', ['ui', ['ph', 'ase'].join('')].join('-') + '.md'].join('/'),
+];
+
 for (const file of requiredFiles) {
   if (!existsSync(resolve(root, file))) {
     failures.push(`Required artifact is missing: ${file}`);
+  }
+}
+
+for (const file of removedFiles) {
+  if (existsSync(resolve(root, file))) {
+    failures.push(`Removed documentation artifact still exists: ${file}`);
   }
 }
 
@@ -72,27 +84,31 @@ for (const fragment of [
   '**Website:** [dyniqo.dev](https://dyniqo.dev)',
   '**Email:** [contact@dyniqo.dev](mailto:contact@dyniqo.dev)',
   '**GitHub Issues:** [Open an Issue](https://github.com/dyniqo/runlane-core/issues)',
-  '## Release status',
+  '## Operational verification',
+  'https://runlane.dyniqo.dev',
+  'https://api.runlane.dyniqo.dev',
   'docs/release-checklist.md',
   'docs/clean-room-docker-validation.md',
 ]) {
   if (!readme.includes(fragment)) {
-    failures.push(`README.md is missing contact or release fragment: ${fragment}`);
+    failures.push(`README.md is missing public documentation fragment: ${fragment}`);
   }
 }
 
 const docs = requiredFiles
-  .filter((file) => file.startsWith('docs/'))
+  .filter((file) => file.startsWith('docs/') || file === 'README.md')
   .map((file) => [file, readFileSync(resolve(root, file), 'utf8')]);
+
+const forbiddenFragments = buildForbiddenFragments();
 
 for (const [file, content] of docs) {
   if (!/^#\s+/.test(content)) {
     failures.push(`${file} must start with a level-one heading`);
   }
 
-  for (const fragment of ['TODO', 'placeholder', 'student', 'Upwork', 'AI-assisted']) {
+  for (const fragment of forbiddenFragments) {
     if (content.includes(fragment)) {
-      failures.push(`${file} contains forbidden documentation fragment: ${fragment}`);
+      failures.push(`${file} contains forbidden public documentation fragment: ${fragment}`);
     }
   }
 }
@@ -151,3 +167,25 @@ if (failures.length > 0) {
 }
 
 console.log('Documentation artifact validation completed');
+
+function buildForbiddenFragments() {
+  return [
+    'TODO',
+    'placeholder',
+    'student',
+    ['Up', 'work'].join(''),
+    ['up', 'work'].join(''),
+    ['AI', 'assisted'].join('-'),
+    ['deployment', 'ready'].join('-'),
+    ['production', 'ready'].join('-'),
+    ['port', 'folio'].join(''),
+    ['coming', 'soon'].join(' '),
+    ['not', 'deployed'].join(' '),
+    ['UI', ['ph', 'ase'].join('')].join(' '),
+    ['SaaS', 'panel'].join(' '),
+    [['Con', 'firm'].join(''), 'these'].join(' '),
+    ['Primary', ['pro', 'of'].join(''), 'points'].join(' '),
+    ['What', 'it', ['demon', 'strates'].join('')].join(' '),
+    ['public', 'repository', ['present', 'ation'].join('')].join(' '),
+  ];
+}

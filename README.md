@@ -1,16 +1,16 @@
 # Runlane Core
 
-Runlane Core is a deployment-ready NestJS backend for workflow automation, webhook processing, API integrations, AI decision steps, Stripe billing synchronization, usage metering and queue-based execution.
+Runlane Core is a NestJS backend for workflow automation, webhook processing, API integrations, AI decision steps, Stripe billing synchronization, usage metering and queue-based execution.
 
 It is built as a pnpm monorepo with independent API and Worker runtimes, shared domain/application/infrastructure packages, PostgreSQL persistence, Redis/BullMQ queues, Docker-based operations, image-based deployment and automated validation artifacts.
 
-## What it demonstrates
+## Core capabilities
 
-Runlane Core demonstrates a complete backend vertical slice:
+Runlane Core includes a complete backend vertical slice:
 
 - Workspace-scoped authentication and API keys
 - Workflow definitions with versioning and publish lifecycle
-- Public webhook ingestion with signature, timestamp, replay and idempotency controls
+- Webhook ingestion with signature, timestamp, replay and idempotency controls
 - API-key protected automation bridge execution
 - Queue-backed execution processing through a separate Worker runtime
 - Sequential workflow steps, retries, dead-letter state and manual retry
@@ -22,6 +22,15 @@ Runlane Core demonstrates a complete backend vertical slice:
 - Audit logs, structured runtime logs, request IDs and readiness endpoints
 - Session-scoped demo workspaces with isolated mutable state
 - Local and image-based deployment flows with CI and smoke validation
+
+## Service endpoints
+
+The deployment configuration uses these service endpoints:
+
+- Application: `https://runlane.dyniqo.dev`
+- API: `https://api.runlane.dyniqo.dev`
+- API documentation path: `https://api.runlane.dyniqo.dev/docs`
+- Health path: `https://api.runlane.dyniqo.dev/health`
 
 ## Architecture overview
 
@@ -69,7 +78,7 @@ Redis keys for workspace-owned runtime state use explicit namespace builders. Bu
 
 ## HTTP connector security
 
-The Worker-side HTTP connector is designed for public demo and deployment usage where users can create outbound HTTP workflow steps. It enforces:
+The Worker-side HTTP connector is built for controlled outbound HTTP workflow steps. It enforces:
 
 - Blocking localhost, private IP ranges, link-local ranges and cloud metadata endpoints
 - DNS resolution validation before outbound requests
@@ -105,9 +114,9 @@ pnpm demo:automation-bridge
 pnpm demo:api-integration
 ```
 
-## Primary case studies
+## Operational scenarios
 
-The repository includes case studies for the main operational flows:
+The repository includes operational scenario documentation for the main flows:
 
 - [AI Lead Routing](docs/cases/ai-lead-routing.md)
 - [Reliable Webhook Queue Worker](docs/cases/webhook-queue-worker.md)
@@ -115,7 +124,7 @@ The repository includes case studies for the main operational flows:
 - [API Integration Backend](docs/cases/api-integration-backend.md)
 - [SaaS Backend Infrastructure](docs/cases/saas-backend-infrastructure.md)
 
-Use [Case Study Index](docs/cases/index.md) as the entry point for the complete scenario map.
+Use [Operational Scenario Index](docs/cases/index.md) as the entry point for the complete scenario map.
 
 ## Requirements
 
@@ -257,7 +266,7 @@ Local Docker binds API to `http://127.0.0.1:14600`, PostgreSQL to loopback port 
 
 Commit SHA tagged images are published to GHCR for API, Worker and migrator targets. The deployment Compose file runs PostgreSQL, Redis, migrator, API, Worker and Caddy.
 
-Deployment assets:
+Deployment files:
 
 - `docker-compose.deploy.yml`
 - `docker/Caddyfile`
@@ -275,7 +284,7 @@ pnpm format
 pnpm verify
 ```
 
-`pnpm verify` checks formatting, lockfile registry safety, GitHub Actions configuration, deployment configuration, documentation artifacts, release readiness, runtime script compatibility, linting, Prisma schema validity, TypeScript type checking and build output.
+`pnpm verify` checks formatting, lockfile registry safety, GitHub Actions configuration, deployment configuration, documentation artifacts, release validation, runtime script compatibility, linting, Prisma schema validity, TypeScript type checking and build output.
 
 API-level validation requires API and Worker runtimes to be running:
 
@@ -291,14 +300,14 @@ pnpm validate:billing
 pnpm validate:billing-sessions
 ```
 
-Release-oriented validation:
+Release validation:
 
 ```powershell
 pnpm validate:release
 pnpm validate:clean-room
 ```
 
-The clean-room validation script uses Docker and rebuilds the deployment path from a clean Compose namespace. It is intentionally not part of `pnpm verify`.
+The clean-room validation script uses Docker and rebuilds the deployment path from a clean Compose namespace. It is separate from `pnpm verify` because it starts containers and consumes more time than the fast local checks.
 
 ## Documentation map
 
@@ -307,21 +316,21 @@ The clean-room validation script uses Docker and rebuilds the deployment path fr
 - [API](docs/api.md)
 - [Deployment](docs/deployment.md)
 - [Validation](docs/validation.md)
-- [Release Checklist](docs/release-checklist.md)
+- [Release Verification](docs/release-checklist.md)
 - [Clean-room Docker Validation](docs/clean-room-docker-validation.md)
-- [Case Study Index](docs/cases/index.md)
+- [Operational Scenario Index](docs/cases/index.md)
 
-## Release status
+## Operational verification
 
-Runlane Core is ready for final release when:
+Runlane Core has a complete release verification path:
 
-- `pnpm verify` passes.
-- `pnpm validate:integration` passes against local API and Worker runtimes.
-- `pnpm validate:clean-room` passes when a full Docker validation is required.
-- CI verification passes.
-- Deployment image smoke passes against the published commit SHA images.
-- No secret values are committed.
-- `.env.deploy.example` is copied to a private deployment environment file and filled with real external credentials.
+- `pnpm verify` for formatting, static validation, type checking and build output.
+- `pnpm validate:integration` for the curated API and Worker flow.
+- `pnpm validate:clean-room` for a full Docker deployment validation when the container path changes.
+- CI verification for repository validation and image publishing.
+- Deployment image smoke for published commit SHA images.
+- Secret values remain environment-supplied and are not committed.
+- `.env.deploy.example` documents the required deployment environment shape.
 
 ## Contact Us
 

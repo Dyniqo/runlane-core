@@ -49,4 +49,4 @@ GET  /v1/audit-logs
 
 ## Operational value
 
-This case demonstrates reliable billing ingestion, duplicate-safe provider events, plan mapping, failed payment handling and workspace-scoped subscription state.
+This scenario covers reliable billing ingestion, duplicate-safe provider events, plan mapping, failed payment handling and workspace-scoped subscription state.

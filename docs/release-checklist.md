@@ -1,19 +1,17 @@
-# Release Checklist
+# Release Verification
 
-This checklist defines the final release gate for Runlane Core. It keeps release work operational, repeatable and safe without adding a separate stabilization phase.
+This document summarizes the operational verification path for Runlane Core. It is written for repository readers who want to inspect how the backend, workers, deployment files and validation commands are kept aligned.
 
-## Local repository gate
-
-Run these commands before creating the release commit:
+## Repository verification
 
 ```powershell
 pnpm format
 pnpm verify
 ```
 
-The verification command must include formatting, lockfile registry validation, GitHub Actions validation, deployment configuration validation, documentation artifact validation, release readiness validation, runtime script validation, linting, Prisma schema validation, TypeScript type checking and build output.
+`pnpm verify` includes formatting, lockfile registry validation, GitHub Actions validation, deployment configuration validation, documentation artifact validation, release validation, runtime script validation, linting, Prisma schema validation, TypeScript type checking and build output.
 
-## Runtime gate
+## Runtime verification
 
 Start the datastore services, apply migrations, then run API and Worker in separate terminals:
 
@@ -31,7 +29,7 @@ Run the curated integration validation:
 pnpm validate:integration
 ```
 
-Run focused validations when the related area changed:
+Focused runtime validations are available for related areas:
 
 ```powershell
 pnpm validate:demo
@@ -41,44 +39,39 @@ pnpm validate:billing
 pnpm validate:billing-sessions
 ```
 
-## Deployment image gate
+## Image deployment verification
 
-After pushing the release commit, GitHub Actions must complete successfully:
+GitHub Actions verifies the repository, builds the API, Worker and migrator images, publishes commit SHA image tags, and runs the deployment image smoke workflow.
 
-- Verification and container image publishing
-- Deployment image smoke
+The smoke workflow accepts a raw commit SHA and applies the `sha-` image tag prefix internally.
 
-The smoke workflow should use the release commit SHA. The workflow accepts the raw SHA and applies the `sha-` image tag prefix internally.
-
-## Clean-room Docker gate
-
-Run the clean-room validation when the deployment path, Dockerfile, deployment Compose, Caddy configuration or migration behavior changes:
+## Clean-room Docker verification
 
 ```powershell
 pnpm validate:clean-room
 ```
 
-This command rebuilds the deployment path with a dedicated Compose namespace and cleans up its resources when it finishes.
+This command rebuilds the deployment path with a dedicated Compose namespace and removes its resources at completion.
 
-## Security gate
+## Security verification
 
-Confirm these items before deployment:
+The release validation path covers these operational checks:
 
-- No raw secrets are committed.
+- Raw secrets are not committed.
 - `.env` remains local and private.
-- `.env.deploy.example` contains no real external credentials.
-- `PUBLIC_REGISTRATION_ENABLED` is intentionally configured.
-- `DEMO_MODE` and `DEMO_SESSION_ENABLED` are intentionally configured.
-- `HTTP_CONNECTOR_DEMO_URL_ALLOWLIST` is configured for public demo environments.
-- `HTTP_CONNECTOR_TIMEOUT_MS`, `HTTP_CONNECTOR_REDIRECT_LIMIT` and `HTTP_CONNECTOR_MAX_RESPONSE_BYTES` are set.
-- PostgreSQL and Redis are not exposed publicly.
-- CORS origins match the deployed API and application URLs.
-- JWT, refresh token, encryption and webhook signing secrets are replaced with private values.
-- Stripe webhook and API credentials are replaced with private values before enabling billing flows.
+- `.env.deploy.example` contains no external secret values.
+- `PUBLIC_REGISTRATION_ENABLED` is explicit.
+- `DEMO_MODE` and `DEMO_SESSION_ENABLED` are explicit.
+- `HTTP_CONNECTOR_DEMO_URL_ALLOWLIST` is available for demo URL restrictions.
+- `HTTP_CONNECTOR_TIMEOUT_MS`, `HTTP_CONNECTOR_REDIRECT_LIMIT` and `HTTP_CONNECTOR_MAX_RESPONSE_BYTES` are configured.
+- PostgreSQL and Redis have no public deployment ports.
+- CORS origins match the application and API URLs.
+- JWT, refresh token, encryption and webhook signing secrets are environment-supplied.
+- Stripe webhook and API credentials are environment-supplied.
 
-## Documentation gate
+## Documentation verification
 
-Confirm these artifacts are present and aligned:
+The repository includes these aligned artifacts:
 
 - README
 - Architecture guide
@@ -86,10 +79,10 @@ Confirm these artifacts are present and aligned:
 - API guide
 - Deployment guide
 - Validation guide
-- Release checklist
+- Release verification guide
 - Clean-room Docker validation guide
 - Postman collection
-- Case studies for AI routing, webhook queue processing, Stripe sync, API integration and backend infrastructure
+- Operational scenarios for AI routing, webhook queue processing, Stripe sync, API integration and backend infrastructure
 
 Run:
 
@@ -99,7 +92,7 @@ pnpm validate:release
 
 ## Operational acceptance
 
-A release is acceptable when these outcomes are true:
+The release validation path covers these outcomes:
 
 - API and Worker start independently.
 - Migrations run from a clean database.

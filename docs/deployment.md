@@ -1,6 +1,17 @@
 # Runlane Core Deployment
 
-Runlane Core ships with two container paths: source-based local Compose and image-based deployment Compose.
+Runlane Core includes two container paths: source-based local Compose and image-based deployment Compose.
+
+## Service domains
+
+The deployment configuration uses these public service domains:
+
+```txt
+https://runlane.dyniqo.dev
+https://api.runlane.dyniqo.dev
+```
+
+The application origin is `https://runlane.dyniqo.dev`. The API origin is `https://api.runlane.dyniqo.dev`.
 
 ## Local validation path
 
@@ -38,7 +49,7 @@ docker-compose.deploy.yml
 .env.deploy
 ```
 
-Create `.env.deploy` from `.env.deploy.example` and replace secrets, domains, image namespace and image tag values.
+Create `.env.deploy` from `.env.deploy.example` and replace secrets, domain values, image namespace and image tag values.
 
 Required deployment secrets:
 
@@ -82,3 +93,25 @@ PostgreSQL and Redis remain internal services and do not expose public ports in 
 ## Smoke workflow
 
 The deployment smoke workflow pulls published images, validates Compose configuration, starts the deployment stack, checks health endpoints and tears the stack down with volumes removed. It uses the image tag supplied through workflow input or the current commit SHA tag.
+
+## Operational endpoints
+
+```txt
+https://api.runlane.dyniqo.dev/health
+https://api.runlane.dyniqo.dev/health/ready
+https://api.runlane.dyniqo.dev/health/queue
+https://api.runlane.dyniqo.dev/docs
+```
+
+## Deployment environment reference
+
+Important deployment values:
+
+```txt
+RUNLANE_PUBLIC_DOMAIN=api.runlane.dyniqo.dev
+RUNLANE_HTTP_PORT=80
+RUNLANE_HTTPS_PORT=443
+API_URL=https://api.runlane.dyniqo.dev
+APP_URL=https://runlane.dyniqo.dev
+CORS_ORIGIN=https://runlane.dyniqo.dev,https://api.runlane.dyniqo.dev
+```

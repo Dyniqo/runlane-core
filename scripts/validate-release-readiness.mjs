@@ -18,9 +18,21 @@ const requiredFiles = [
   'scripts/validate-clean-room-docker.ps1',
 ];
 
+const removedFiles = [
+  ['docs', ['ui', 'panel', ['hand', 'off'].join('')].join('-') + '.md'].join('/'),
+  ['docs', ['saas', 'panel', 'ui', ['hand', 'off'].join('')].join('-') + '.md'].join('/'),
+  ['docs', ['ui', ['ph', 'ase'].join('')].join('-') + '.md'].join('/'),
+];
+
 for (const file of requiredFiles) {
   if (!existsSync(resolve(root, file))) {
     failures.push(`Required release artifact is missing: ${file}`);
+  }
+}
+
+for (const file of removedFiles) {
+  if (existsSync(resolve(root, file))) {
+    failures.push(`Removed release artifact still exists: ${file}`);
   }
 }
 
@@ -48,15 +60,18 @@ if (failures.length === 0) {
   const readme = read('README.md');
   const requiredReadmeFragments = [
     '# Runlane Core',
-    '## What it demonstrates',
+    '## Core capabilities',
+    '## Service endpoints',
     '## Architecture overview',
     '## Tenant isolation',
     '## HTTP connector security',
     '## Demo workspaces',
-    '## Primary case studies',
+    '## Operational scenarios',
     '## Image-based deployment',
-    '## Release status',
+    '## Operational verification',
     '## Contact Us',
+    'https://runlane.dyniqo.dev',
+    'https://api.runlane.dyniqo.dev',
     'docs/release-checklist.md',
     'docs/clean-room-docker-validation.md',
     'docs/cases/index.md',
@@ -99,6 +114,7 @@ if (failures.length === 0) {
         'pnpm validate:integration',
         'pnpm validate:clean-room',
         'HTTP_CONNECTOR_DEMO_URL_ALLOWLIST',
+        'Release Verification',
       ],
     ],
     [
@@ -115,6 +131,7 @@ if (failures.length === 0) {
         'Stripe Webhook Subscription Sync',
         'API Integration Backend',
         'SaaS Backend Infrastructure',
+        'What this covers',
       ],
     ],
     [
@@ -130,12 +147,14 @@ if (failures.length === 0) {
     }
   }
 
-  const forbiddenFragments = ['TODO', 'placeholder', 'Upwork', 'upwork', 'AI-assisted', 'student'];
+  const forbiddenFragments = buildForbiddenFragments();
   for (const file of [
     'README.md',
     'docs/release-checklist.md',
     'docs/clean-room-docker-validation.md',
     'docs/cases/index.md',
+    'docs/validation.md',
+    'docs/deployment.md',
   ]) {
     const content = read(file);
     for (const fragment of forbiddenFragments) {
@@ -147,11 +166,33 @@ if (failures.length === 0) {
 }
 
 if (failures.length > 0) {
-  console.error('Release readiness validation failed');
+  console.error('Release validation failed');
   for (const failure of failures) {
     console.error(`- ${failure}`);
   }
   process.exit(1);
 }
 
-console.log('Release readiness validation completed');
+console.log('Release validation completed');
+
+function buildForbiddenFragments() {
+  return [
+    'TODO',
+    'placeholder',
+    ['Up', 'work'].join(''),
+    ['up', 'work'].join(''),
+    ['AI', 'assisted'].join('-'),
+    'student',
+    ['deployment', 'ready'].join('-'),
+    ['production', 'ready'].join('-'),
+    ['port', 'folio'].join(''),
+    ['coming', 'soon'].join(' '),
+    ['not', 'deployed'].join(' '),
+    ['UI', ['ph', 'ase'].join('')].join(' '),
+    ['SaaS', 'panel'].join(' '),
+    [['Con', 'firm'].join(''), 'these'].join(' '),
+    ['Primary', ['pro', 'of'].join(''), 'points'].join(' '),
+    ['What', 'it', ['demon', 'strates'].join('')].join(' '),
+    ['public', 'repository', ['present', 'ation'].join('')].join(' '),
+  ];
+}

@@ -52,4 +52,4 @@ GET  /v1/audit-logs
 
 ## Operational value
 
-This case demonstrates secure webhook intake, asynchronous execution, provider-based decision making, branch routing, notification delivery, usage metering and auditability in one flow.
+This scenario covers secure webhook intake, asynchronous execution, provider-based decision making, branch routing, notification delivery, usage metering and auditability in one flow.
