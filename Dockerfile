@@ -58,6 +58,7 @@ ENV DATABASE_URL=$DATABASE_URL
 
 COPY prisma ./prisma
 COPY scripts/database-migration-preflight.mjs ./scripts/database-migration-preflight.mjs
+COPY scripts/prisma-client-loader.mjs ./scripts/prisma-client-loader.mjs
 
 RUN --mount=type=cache,id=runlane-prisma-cache,target=/root/.cache/prisma \
   pnpm db:generate \

@@ -47,6 +47,8 @@ const requiredWorkflowFragments = [
   'node scripts/normalize-pnpm-lockfile-registry.mjs --check',
   'pnpm fetch --frozen-lockfile',
   'pnpm install --frozen-lockfile --prefer-offline',
+  'Validate runtime scripts',
+  'pnpm validate:runtime-scripts',
 ];
 
 for (const fragment of requiredWorkflowFragments) {

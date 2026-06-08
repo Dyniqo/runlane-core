@@ -334,7 +334,7 @@ pnpm validate:demo-isolation
 
 We'd love to hear from you! If you have questions, suggestions, or need support, here are the ways to reach us:
 
-**Website:** [dyniqo.dev](https://dyniqo.dev)     
+**Website:** [dyniqo.dev](https://dyniqo.dev)  
 **Email:** [contact@dyniqo.dev](mailto:contact@dyniqo.dev)  
 **GitHub Issues:** [Open an Issue](https://github.com/dyniqo/runlane-core/issues)
 

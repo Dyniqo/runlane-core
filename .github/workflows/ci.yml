@@ -112,6 +112,9 @@ jobs:
           pnpm fetch --frozen-lockfile
           pnpm install --frozen-lockfile --prefer-offline
 
+      - name: Validate runtime scripts
+        run: pnpm validate:runtime-scripts
+
       - name: Apply database migrations
         run: pnpm db:migrate:deploy
 

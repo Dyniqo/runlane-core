@@ -31,7 +31,7 @@
     "db:format": "prisma format",
     "db:generate": "prisma generate",
     "db:migrate:create": "prisma migrate dev --create-only",
-    "db:migrate:deploy": "pnpm db:migrate:preflight && prisma migrate deploy",
+    "db:migrate:deploy": "pnpm db:generate && pnpm db:migrate:preflight && prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:preflight": "node scripts/database-migration-preflight.mjs",
     "db:migrate:status": "prisma migrate status",
