@@ -9,6 +9,9 @@ const requiredFiles = [
   'docs/api.md',
   'docs/deployment.md',
   'docs/validation.md',
+  'docs/release-checklist.md',
+  'docs/clean-room-docker-validation.md',
+  'docs/cases/index.md',
   'docs/cases/ai-lead-routing.md',
   'docs/cases/webhook-queue-worker.md',
   'docs/cases/stripe-webhook-sync.md',
@@ -22,6 +25,8 @@ const requiredFiles = [
   'scripts/demo-automation-bridge.ps1',
   'scripts/demo-api-integration.ps1',
   'scripts/validate-integration-flow.ps1',
+  'scripts/validate-release-readiness.mjs',
+  'scripts/validate-clean-room-docker.ps1',
 ];
 
 for (const file of requiredFiles) {
@@ -42,6 +47,9 @@ const requiredScripts = {
   'validate:integration':
     'powershell -ExecutionPolicy Bypass -File scripts/validate-integration-flow.ps1',
   'validate:docs': 'node scripts/validate-documentation-artifacts.mjs',
+  'validate:release': 'node scripts/validate-release-readiness.mjs',
+  'validate:clean-room':
+    'powershell -ExecutionPolicy Bypass -File scripts/validate-clean-room-docker.ps1',
 };
 
 for (const [name, command] of Object.entries(requiredScripts)) {
@@ -54,15 +62,22 @@ if (!packageJson.scripts.verify.includes('pnpm validate:docs')) {
   failures.push('package.json verify script must include pnpm validate:docs');
 }
 
+if (!packageJson.scripts.verify.includes('pnpm validate:release')) {
+  failures.push('package.json verify script must include pnpm validate:release');
+}
+
 const readme = readFileSync(resolve(root, 'README.md'), 'utf8');
 for (const fragment of [
   '## Contact Us',
   '**Website:** [dyniqo.dev](https://dyniqo.dev)',
   '**Email:** [contact@dyniqo.dev](mailto:contact@dyniqo.dev)',
   '**GitHub Issues:** [Open an Issue](https://github.com/dyniqo/runlane-core/issues)',
+  '## Release status',
+  'docs/release-checklist.md',
+  'docs/clean-room-docker-validation.md',
 ]) {
   if (!readme.includes(fragment)) {
-    failures.push(`README.md is missing contact fragment: ${fragment}`);
+    failures.push(`README.md is missing contact or release fragment: ${fragment}`);
   }
 }
 

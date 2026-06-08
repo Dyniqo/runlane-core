@@ -1,6 +1,121 @@
 # Runlane Core
 
-Runlane Core is a workflow orchestration platform built as a pnpm monorepo with independent NestJS API and Worker runtimes.
+Runlane Core is a deployment-ready NestJS backend for workflow automation, webhook processing, API integrations, AI decision steps, Stripe billing synchronization, usage metering and queue-based execution.
+
+It is built as a pnpm monorepo with independent API and Worker runtimes, shared domain/application/infrastructure packages, PostgreSQL persistence, Redis/BullMQ queues, Docker-based operations, image-based deployment and automated validation artifacts.
+
+## What it demonstrates
+
+Runlane Core demonstrates a complete backend vertical slice:
+
+- Workspace-scoped authentication and API keys
+- Workflow definitions with versioning and publish lifecycle
+- Public webhook ingestion with signature, timestamp, replay and idempotency controls
+- API-key protected automation bridge execution
+- Queue-backed execution processing through a separate Worker runtime
+- Sequential workflow steps, retries, dead-letter state and manual retry
+- HTTP connector execution with secret injection and SSRF protection
+- OpenAI-compatible AI decision steps with structured JSON validation
+- Slack and Discord notification connectors
+- Usage tracking and plan enforcement
+- Stripe checkout, portal and webhook subscription synchronization
+- Audit logs, structured runtime logs, request IDs and readiness endpoints
+- Session-scoped demo workspaces with isolated mutable state
+- Local and image-based deployment flows with CI and smoke validation
+
+## Architecture overview
+
+The repository uses a modular DDD monolith with a separate Worker runtime and queue boundary.
+
+```txt
+apps/api          HTTP API, controllers, guards, OpenAPI and runtime wiring
+apps/worker       BullMQ processing, workflow execution and connector execution
+packages/domain   Entities, value objects and business rules
+packages/application  Use cases, ports and orchestration boundaries
+packages/infrastructure  Prisma, Redis, BullMQ, Stripe, AI, HTTP, crypto and logger adapters
+packages/contracts  DTOs, jobs, events, workflow schemas and shared runtime contracts
+packages/config   Typed environment validation and configuration modules
+packages/testing  Shared validation fixtures and helpers
+```
+
+Dependency direction is inward:
+
+- Domain code does not depend on NestJS, Prisma, Redis, Stripe or external SDKs.
+- Application use cases depend on domain rules and explicit ports.
+- Infrastructure implements ports and owns integration details.
+- API and Worker apps compose modules and expose runtime boundaries.
+
+## Request and execution flow
+
+A typical workflow request moves through these boundaries:
+
+1. A caller sends a signed webhook or API-key protected automation request.
+2. The API resolves the workflow and workspace without trusting a client-supplied workspace id.
+3. Replay, idempotency, payload size and signature rules are enforced.
+4. An execution and initial audit/usage records are created transactionally.
+5. A workspace-scoped BullMQ job is enqueued.
+6. The Worker reloads the execution by `executionId` and `workspaceId` before processing.
+7. The execution engine runs each step, records step output and classifies failures.
+8. Retryable failures use the configured backoff policy.
+9. Terminal states persist usage, audit records and safe output snapshots.
+
+## Tenant isolation
+
+`workspaceId` is the only valid access boundary for workspace-owned data.
+
+Runlane does not trust `workspaceId` from request bodies, query strings or arbitrary headers. The active workspace is resolved from JWT scope, API key scope or internal workflow resolution. Workspace-owned repository operations require `workspaceId` and filter reads, writes, updates and deletes by that scope.
+
+Redis keys for workspace-owned runtime state use explicit namespace builders. BullMQ execution jobs carry `workspaceId`, `workflowId` and `executionId`, and the Worker verifies those values before execution.
+
+## HTTP connector security
+
+The Worker-side HTTP connector is designed for public demo and deployment usage where users can create outbound HTTP workflow steps. It enforces:
+
+- Blocking localhost, private IP ranges, link-local ranges and cloud metadata endpoints
+- DNS resolution validation before outbound requests
+- Redirect validation on every hop
+- Redirect count limits through `HTTP_CONNECTOR_REDIRECT_LIMIT`
+- Response size limits through `HTTP_CONNECTOR_MAX_RESPONSE_BYTES`
+- Hard request timeouts through `HTTP_CONNECTOR_TIMEOUT_MS`
+- Demo URL restrictions through `HTTP_CONNECTOR_DEMO_URL_ALLOWLIST`
+- Blocking URL credentials and unsupported protocols
+- Secret masking in logs, execution input and API responses
+
+Validate the connector with the API and Worker running:
+
+```powershell
+pnpm validate:http-connector
+```
+
+## Demo workspaces
+
+Runlane supports a shared demo account without shared mutable data. When demo mode and demo sessions are enabled, `POST /v1/auth/login` accepts a `demoSessionId`, resolves it to an isolated workspace, and issues a JWT scoped to that workspace.
+
+Every request after login uses the standard workspace guard. Other modules do not branch on demo behavior. Resetting one session workspace does not change another session workspace.
+
+Useful commands:
+
+```powershell
+pnpm validate:demo
+pnpm validate:demo-isolation
+pnpm demo:seed
+pnpm demo:reset
+pnpm demo:lead-routing
+pnpm demo:automation-bridge
+pnpm demo:api-integration
+```
+
+## Primary case studies
+
+The repository includes case studies for the main operational flows:
+
+- [AI Lead Routing](docs/cases/ai-lead-routing.md)
+- [Reliable Webhook Queue Worker](docs/cases/webhook-queue-worker.md)
+- [Stripe Webhook Subscription Sync](docs/cases/stripe-webhook-sync.md)
+- [API Integration Backend](docs/cases/api-integration-backend.md)
+- [SaaS Backend Infrastructure](docs/cases/saas-backend-infrastructure.md)
+
+Use [Case Study Index](docs/cases/index.md) as the entry point for the complete scenario map.
 
 ## Requirements
 
@@ -10,269 +125,123 @@ Runlane Core is a workflow orchestration platform built as a pnpm monorepo with 
 
 ## Install
 
-```bash
+```powershell
 pnpm install --frozen-lockfile --fetch-retries=10
 ```
 
 ## Configuration
 
-The API and Worker load `.env.local` first and `.env` second without overriding variables already provided by the operating system. Local defaults provide runtime values when no environment file is present. PostgreSQL and Redis must be available before either runtime starts.
+Use `.env.example` as the local configuration reference and `.env.deploy.example` as the image-based deployment reference.
 
-Use `.env.example` as the complete local configuration reference. Use `.env.deploy.example` as the deployment configuration reference. The local `.env` file remains excluded from version control. The deploy runtime profile requires explicit public URLs and datastore connection URLs and stops during startup when they are missing or invalid.
+The API and Worker load `.env.local` first and `.env` second without overriding variables already provided by the operating system. PostgreSQL and Redis must be available before API or Worker readiness succeeds.
 
-## Architecture boundaries
+Important environment groups:
 
-Runlane Core separates domain rules, application orchestration, infrastructure adapters, shared contracts, and runtime composition roots. The dependency direction is enforced during linting:
-
-- Domain code remains independent from frameworks and outer layers.
-- Application use cases depend only on domain rules and shared contracts.
-- Infrastructure implements external-system adapters and may depend inward.
-- API and Worker runtimes compose modules without accessing datastores directly.
-
-Domain failures use stable machine-readable codes and semantic categories. The infrastructure exception boundary maps them to consistent HTTP responses without coupling domain code to HTTP concepts.
-
-Application persistence contracts expose explicit read and write repository operations without depending on Prisma. Transactional use cases depend on the application transaction boundary, while infrastructure coordinates Prisma interactive transactions and transparently routes repository adapters through the active transaction context. Nested transaction calls reuse the active transaction and cannot override its options.
-
-Shared contracts define stable transport shapes for jobs, events, DTOs, connector execution, workflow definitions, workspace scope, and Redis keys. Workspace-owned Redis keys can only be created through explicit builders that preserve tenant namespaces and reject unsafe key segments.
-
-Identity registration is implemented as an application use case with explicit repository and password hashing ports. User creation, default workspace creation, and owner membership creation are committed in a single database transaction.
+- Runtime: `RUNTIME_PROFILE`, `API_HOST`, `API_PORT`, `WORKER_HOST`, `WORKER_PORT`
+- Datastores: `DATABASE_URL`, `REDIS_URL`
+- Auth: `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `ACCESS_TOKEN_TTL`, `REFRESH_TOKEN_TTL`
+- Security: `ENCRYPTION_KEY`, `WEBHOOK_SIGNING_SECRET`, `CORS_ORIGIN`, `RATE_LIMIT_TTL`, `RATE_LIMIT_MAX`, `MAX_PAYLOAD_SIZE`
+- HTTP connector: `HTTP_CONNECTOR_TIMEOUT_MS`, `HTTP_CONNECTOR_MAX_RESPONSE_BYTES`, `HTTP_CONNECTOR_REDIRECT_LIMIT`, `HTTP_CONNECTOR_DEMO_URL_ALLOWLIST`
+- AI: `AI_PROVIDER`, `AI_API_KEY`, `AI_BASE_URL`, `AI_MODEL`, `AI_TIMEOUT_MS`
+- Billing: `STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_STARTER_ID`, `STRIPE_PRICE_PRO_ID`, `STRIPE_PRICE_AGENCY_ID`
+- Demo: `DEMO_MODE`, `DEMO_SESSION_ENABLED`, `DEMO_SESSION_TTL_HOURS`, `DEMO_MAX_SESSIONS_PER_IP_PER_HOUR`, `DEMO_CLEANUP_INTERVAL_HOURS`
 
 ## Database
 
-Start the datastore services and apply all committed migrations:
+Start infrastructure services and apply migrations:
 
-```bash
+```powershell
 pnpm docker:infra:up
+pnpm db:generate
+pnpm db:migrate:deploy
 ```
 
 Create a migration after changing `prisma/schema.prisma`:
 
-```bash
+```powershell
 pnpm db:migrate:create -- --name migration_name
 ```
 
-Apply migrations to an existing database:
+Validate schema and migration state:
 
-```bash
-pnpm db:migrate:deploy
-```
-
-Validate the schema and migration state:
-
-```bash
+```powershell
 pnpm db:validate
 pnpm db:migrate:status
 ```
 
 ## Run locally
 
-```bash
+```powershell
 pnpm db:generate
 pnpm docker:infra:up
 pnpm db:migrate:deploy
-pnpm start:api:dev
-pnpm start:worker:dev
+pnpm start:api
+pnpm start:worker
 ```
 
-Generate the Prisma Client before starting either runtime. API and Worker start commands never regenerate the client, which allows both runtimes to run concurrently without replacing loaded native engine files.
-
-The local API listens on `http://localhost:4600` and the local Worker runtime listens on `http://localhost:4601`.
+The API listens on `http://localhost:4600`. The Worker listens on `http://localhost:4601` for operational endpoints.
 
 ## API and operational endpoints
 
-The API uses URI versioning. The current API descriptor is available at `GET /v1`. OpenAPI documentation is available at `/docs` and the OpenAPI JSON document is available at `/docs/openapi.json` when `API_DOCS_ENABLED=true`.
+The API uses URI versioning. The current descriptor is available at `GET /v1`. OpenAPI documentation is available at `/docs` and the OpenAPI JSON document is available at `/docs/openapi.json` when `API_DOCS_ENABLED=true`.
 
-Both runtimes expose unversioned operational endpoints:
+Operational endpoints:
 
 - `GET /health`
 - `GET /health/ready`
 - `GET /health/queue`
 
-Liveness does not query external dependencies. Readiness verifies PostgreSQL and Redis. Queue health verifies the Redis transport used by the queue boundary.
+## Core API surface
 
-## Identity endpoints
-
-The registration endpoint creates a user, a default workspace, and an owner membership in one transaction:
+Identity:
 
 - `POST /v1/auth/register`
+- `POST /v1/auth/login`
+- `POST /v1/auth/refresh`
+- `POST /v1/auth/logout`
+- `GET /v1/auth/me`
 
-Registration uses normalized email addresses and scrypt password hashing. Existing emails return a conflict response with a stable error code.
+Workspace and access:
 
-## Run with Docker
+- `GET /v1/workspaces`
+- `GET /v1/workspaces/current`
+- `PATCH /v1/workspaces/current`
+- `GET /v1/api-keys`
+- `POST /v1/api-keys`
+- `DELETE /v1/api-keys/:id`
 
-```bash
-pnpm docker:up
-```
+Workflows and executions:
 
-The Docker API listens on `http://127.0.0.1:14600`. PostgreSQL and Redis are bound to loopback on ports `15432` and `16379`. The Worker runtime is available only inside the Docker network.
+- `GET /v1/workflows`
+- `POST /v1/workflows`
+- `GET /v1/workflows/:id`
+- `PATCH /v1/workflows/:id`
+- `POST /v1/workflows/:id/publish`
+- `POST /v1/workflows/:id/test`
+- `GET /v1/executions`
+- `GET /v1/executions/:id`
+- `GET /v1/executions/:id/steps`
+- `POST /v1/executions/:id/retry`
 
-Docker host ports can be changed with `RUNLANE_API_PORT`, `RUNLANE_POSTGRES_PORT`, and `RUNLANE_REDIS_PORT` without changing container ports. Public runtime URLs can be changed with `RUNLANE_PUBLIC_API_URL` and `RUNLANE_PUBLIC_APP_URL`. The Compose project namespace can be changed with `RUNLANE_COMPOSE_PROJECT_NAME`.
+Ingestion and automation:
 
-## Workflow secrets and connector credentials
+- `POST /v1/hooks/:workflowPublicId`
+- `POST /v1/automation/execute/:workflowPublicId`
+- `GET /v1/automation/contracts/:workflowPublicId`
 
-Workflow secrets and connector credentials are encrypted before persistence and are only returned through masked API responses. Secret and credential operations are scoped by the authenticated workspace and workflow, and object access never trusts a workspace identifier from the request body.
-
-Available endpoints:
-
-- `GET /v1/workflows/:workflowId/secrets`
-- `POST /v1/workflows/:workflowId/secrets`
-- `DELETE /v1/workflows/:workflowId/secrets/:key`
-- `GET /v1/workflows/:workflowId/connector-credentials`
-- `POST /v1/workflows/:workflowId/connector-credentials`
-- `DELETE /v1/workflows/:workflowId/connector-credentials/:name`
-
-Secret references inside workflow step templates use `{{ secrets.key_name }}`. The execution engine validates that every referenced secret exists for the same workspace and workflow before a step runs, while persisted step input stores only safe reference markers and masked metadata.
-
-## HTTP connector
-
-Workflow HTTP steps execute inside the Worker through the connector boundary. The connector supports `none`, `api_key`, `bearer`, `basic`, and `custom_header` authentication modes, request URL, query, headers, JSON or text bodies, success status mapping, retryable status mapping, response body path extraction, response size limits, redirect limits, and hard timeouts.
-
-HTTP connector requests use the workflow template resolver before execution. Workflow secret references and connector credentials are resolved only at the connector boundary and raw values are not written to execution step input, execution output, logs, or API responses.
-
-Outbound URL safety is enforced before every request and every redirect. The connector blocks localhost, private IP ranges, link-local addresses, cloud metadata endpoints, unsafe DNS results, URL credentials, unsupported protocols, oversized responses, and redirects beyond the configured limit. `HTTP_CONNECTOR_DEMO_URL_ALLOWLIST` can restrict outbound requests to approved demo destinations.
-
-Relevant configuration:
-
-- `HTTP_CONNECTOR_TIMEOUT_MS`
-- `HTTP_CONNECTOR_MAX_RESPONSE_BYTES`
-- `HTTP_CONNECTOR_REDIRECT_LIMIT`
-- `HTTP_CONNECTOR_DEMO_URL_ALLOWLIST`
-
-Validate the connector with the API and Worker running locally:
-
-```bash
-pnpm validate:http-connector
-```
-
-## AI provider
-
-The AI provider boundary exposes an OpenAI-compatible structured response adapter for Worker-side workflow steps. The adapter sends chat completion requests to `AI_BASE_URL`, uses `AI_MODEL` by default, enforces a hard timeout through `AI_TIMEOUT_MS`, validates provider responses as JSON, and rejects structured outputs that do not match the requested schema.
-
-The provider API key is supplied through `AI_API_KEY`. Runtime startup does not require the key, but the adapter fails fast with a configuration error when a workflow tries to call the provider without credentials.
-
-Relevant configuration:
-
-- `AI_PROVIDER`
-- `AI_API_KEY`
-- `AI_BASE_URL`
-- `AI_MODEL`
-- `AI_TIMEOUT_MS`
-
-Validate the local structured response contract without credentials:
-
-```bash
-pnpm validate:ai-provider
-```
-
-When `AI_API_KEY` is configured, the same command performs a live OpenAI-compatible structured response request.
-
-## AI decision workflow step
-
-Workflow steps with type `ai_decision` run inside the Worker through the AI provider port. The step builds templated provider messages from the execution payload and previous step output, requests a structured JSON object from the configured OpenAI-compatible provider, validates that object against the step schema, persists safe decision output, and exposes a `branch` value for workflow transitions.
-
-AI decision steps support `messages`, `schema`, optional `model`, optional `temperature`, optional `maxOutputTokens`, and optional `branchPath`. The default branch path is `branch`. When a step transition defines `branches`, the execution engine routes to the matching target step after the AI decision succeeds.
-
-Validate AI decision execution with the API and Worker running locally:
-
-```bash
-pnpm validate:ai-decision
-```
-
-When `AI_API_KEY` is not configured, the validation confirms the Worker fail-fast path without retrying. When `AI_API_KEY` is configured, the same command validates a real AI decision execution and branch transition.
-
-## Notification connectors
-
-Workflow steps with type `notification` deliver Slack or Discord messages from the Worker through the notification connector boundary. The connector supports templated messages, optional titles, severity, metadata, execution context fields, workflow-scoped `webhook_url` connector credentials, and environment-supplied default webhooks.
-
-Failure alerts can be delivered to configured Slack and Discord webhooks when an execution reaches `failed` or `dead_letter`. Failure alert delivery is best-effort and never changes the terminal execution status.
-
-Relevant configuration:
-
-- `SLACK_WEBHOOK_URL`
-- `DISCORD_WEBHOOK_URL`
-- `NOTIFICATION_CONNECTOR_TIMEOUT_MS`
-- `NOTIFICATION_CONNECTOR_MAX_PAYLOAD_BYTES`
-- `NOTIFICATION_FAILURE_ALERTS_ENABLED`
-
-Validate notification execution with the API and Worker running locally:
-
-```bash
-pnpm validate:notifications
-```
-
-When `SLACK_WEBHOOK_URL` is not configured, the validation confirms the Worker fail-fast path without retrying. When `SLACK_WEBHOOK_URL` is configured, the same command validates real Slack notification delivery.
-
-## Usage tracking and plan enforcement
-
-Runlane records workspace-scoped usage as durable database events. Execution creation, public webhook ingestion, HTTP connector attempts, AI decision attempts, and execution retries are metered with idempotent source keys so retries and repeated validation calls do not double-count the same runtime event.
-
-Current usage is exposed through:
+Usage, billing, audit and demo:
 
 - `GET /v1/usage/current`
-
-The response includes the current UTC monthly window, normalized metric rows, totals, active plan limits, current usage, and remaining capacity for workflow count, executions, AI calls, HTTP calls, webhook requests, and request rate limits.
-
-Plan enforcement is applied before accepting new workflows, public webhook requests, automation executions, HTTP connector calls, and AI decision calls. Limits fail fast with `PLAN_LIMIT_EXCEEDED` and do not create queued jobs or external connector calls when capacity is exhausted.
-
-Validate usage metering and plan enforcement with the API and Worker running locally:
-
-```bash
-pnpm validate:usage
-pnpm validate:plans
-```
-
-## Stripe billing
-
-Runlane creates Stripe subscription checkout and customer portal sessions through:
-
 - `POST /v1/billing/checkout`
 - `POST /v1/billing/portal`
-
-Checkout and portal endpoints are workspace-scoped, owner-only, and return Stripe-hosted session URLs. Checkout sessions attach `runlane_workspace_id` and `runlane_plan` metadata to subscriptions so webhook synchronization can map Stripe subscription state back to the correct workspace. The portal endpoint requires an existing Stripe customer id for the workspace and fails fast when no customer has been created yet.
-
-Runlane receives Stripe billing webhooks through:
-
 - `POST /v1/billing/webhook`
-
-The endpoint verifies the `Stripe-Signature` header against `STRIPE_WEBHOOK_SECRET`, persists each Stripe event with an idempotent provider event id, and synchronizes workspace billing state from subscription events. Supported events include subscription created, updated, deleted, and invoice payment state changes. Duplicate Stripe event deliveries return a successful duplicate response without applying the event twice.
-
-Workspace subscription synchronization stores:
-
-- Stripe customer id
-- Stripe subscription id
-- billing status
-- current billing period
-- plan metadata when present on the subscription or price
-
-Relevant configuration:
-
-- `STRIPE_API_KEY`
-- `STRIPE_API_BASE_URL`
-- `STRIPE_PRICE_STARTER_ID`
-- `STRIPE_PRICE_PRO_ID`
-- `STRIPE_PRICE_AGENCY_ID`
-- `STRIPE_CHECKOUT_SUCCESS_URL`
-- `STRIPE_CHECKOUT_CANCEL_URL`
-- `STRIPE_PORTAL_RETURN_URL`
-- `STRIPE_WEBHOOK_SECRET`
-- `STRIPE_WEBHOOK_TOLERANCE_SECONDS`
-
-Validate webhook verification, idempotency, billing event persistence, subscription state sync, and billing session fail-fast behavior with the API running locally:
-
-```bash
-pnpm validate:billing
-pnpm validate:billing-sessions
-```
-
-## Runtime observability
-
-API and Worker logs are emitted as structured JSON. Every HTTP response includes `x-request-id` and `x-correlation-id`. Valid incoming values are preserved and missing or invalid values are replaced with generated identifiers. Sensitive values are redacted before logs are written.
-
-Runtime shutdown is coordinated for `SIGINT`, `SIGTERM`, uncaught exceptions, and unhandled rejections. `SHUTDOWN_TIMEOUT_MS` controls the maximum graceful shutdown duration.
+- `GET /v1/audit-logs`
+- `POST /v1/demo/seed`
+- `POST /v1/demo/reset`
 
 ## Docker operations
 
-```bash
+```powershell
 pnpm docker:config
 pnpm docker:infra:up
 pnpm docker:migrate
@@ -282,53 +251,77 @@ pnpm docker:down
 pnpm docker:reset
 ```
 
-## Validate
+Local Docker binds API to `http://127.0.0.1:14600`, PostgreSQL to loopback port `15432`, and Redis to loopback port `16379`.
 
-```bash
-pnpm verify
-pnpm validate:http-connector
-pnpm validate:ai-decision
-pnpm validate:notifications
-pnpm validate:usage
-pnpm validate:plans
-pnpm validate:billing
-pnpm validate:billing-sessions
-powershell -ExecutionPolicy Bypass -File scripts/validate-operational-endpoints.ps1
-powershell -ExecutionPolicy Bypass -File scripts/validate-registration.ps1
-```
+## Image-based deployment
 
-The operational endpoint validation expects the API and Worker runtimes to be running locally. The registration validation expects the API runtime and PostgreSQL to be available locally.
+Commit SHA tagged images are published to GHCR for API, Worker and migrator targets. The deployment Compose file runs PostgreSQL, Redis, migrator, API, Worker and Caddy.
 
-## Run built services
+Deployment assets:
 
-```bash
-pnpm build
-pnpm start:api:built
-pnpm start:worker:built
-```
+- `docker-compose.deploy.yml`
+- `docker/Caddyfile`
+- `.env.deploy.example`
+- `.github/workflows/deployment-smoke.yml`
+- [Deployment Guide](docs/deployment.md)
+- [Clean-room Docker Validation](docs/clean-room-docker-validation.md)
 
-## Session-scoped demo workspaces
+## Validation
 
-Runlane can run a shared demo account without sharing mutable data between browsers. When `DEMO_MODE=true` and `DEMO_SESSION_ENABLED=true`, `POST /v1/auth/login` accepts an optional `demoSessionId`. The value is normalized, hashed, and resolved to a dedicated demo workspace before the JWT is issued. Every request after login continues through the existing workspace scope guard and uses the `workspaceId` from the token.
-
-The canonical demo seed workspace remains the source template for cloned workflows. Session workspaces receive their own workflow public IDs and isolated database rows, so reset and workflow operations in one browser do not affect another browser. Expired demo sessions are removed with their session workspaces through database cleanup during session resolution.
-
-Relevant environment variables:
-
-```env
-DEMO_SESSION_ENABLED=true
-DEMO_SESSION_TTL_HOURS=12
-DEMO_SESSION_STORAGE_KEY=runlane.demoSessionId
-DEMO_MAX_SESSIONS_PER_IP_PER_HOUR=20
-DEMO_CLEANUP_INTERVAL_HOURS=6
-```
-
-Local validation:
+Fast local validation:
 
 ```powershell
+pnpm format
+pnpm verify
+```
+
+`pnpm verify` checks formatting, lockfile registry safety, GitHub Actions configuration, deployment configuration, documentation artifacts, release readiness, runtime script compatibility, linting, Prisma schema validity, TypeScript type checking and build output.
+
+API-level validation requires API and Worker runtimes to be running:
+
+```powershell
+pnpm validate:integration
 pnpm validate:demo
 pnpm validate:demo-isolation
+pnpm validate:webhooks
+pnpm validate:automation
+pnpm validate:http-connector
+pnpm validate:usage
+pnpm validate:billing
+pnpm validate:billing-sessions
 ```
+
+Release-oriented validation:
+
+```powershell
+pnpm validate:release
+pnpm validate:clean-room
+```
+
+The clean-room validation script uses Docker and rebuilds the deployment path from a clean Compose namespace. It is intentionally not part of `pnpm verify`.
+
+## Documentation map
+
+- [Architecture](docs/architecture.md)
+- [Security](docs/security.md)
+- [API](docs/api.md)
+- [Deployment](docs/deployment.md)
+- [Validation](docs/validation.md)
+- [Release Checklist](docs/release-checklist.md)
+- [Clean-room Docker Validation](docs/clean-room-docker-validation.md)
+- [Case Study Index](docs/cases/index.md)
+
+## Release status
+
+Runlane Core is ready for final release when:
+
+- `pnpm verify` passes.
+- `pnpm validate:integration` passes against local API and Worker runtimes.
+- `pnpm validate:clean-room` passes when a full Docker validation is required.
+- CI verification passes.
+- Deployment image smoke passes against the published commit SHA images.
+- No secret values are committed.
+- `.env.deploy.example` is copied to a private deployment environment file and filled with real external credentials.
 
 ## Contact Us
 
