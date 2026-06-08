@@ -90,14 +90,15 @@
     "validate:demo-isolation": "powershell -ExecutionPolicy Bypass -File scripts/validate-demo-session-isolation.ps1",
     "validate:ci": "node scripts/validate-github-actions.mjs",
     "validate:deploy": "node scripts/validate-deploy-config.mjs",
-    "verify": "pnpm format:check && pnpm lockfile:registry:check && pnpm validate:ci && pnpm validate:deploy && pnpm validate:docs && pnpm lint && pnpm db:validate && pnpm typecheck && pnpm build",
+    "verify": "pnpm format:check && pnpm lockfile:registry:check && pnpm validate:ci && pnpm validate:deploy && pnpm validate:docs && pnpm validate:runtime-scripts && pnpm lint && pnpm db:validate && pnpm typecheck && pnpm build",
     "demo:seed": "powershell -ExecutionPolicy Bypass -File scripts/demo-seed-workspace.ps1",
     "demo:reset": "powershell -ExecutionPolicy Bypass -File scripts/demo-reset-workspace.ps1",
     "demo:lead-routing": "powershell -ExecutionPolicy Bypass -File scripts/demo-send-lead.ps1",
     "demo:automation-bridge": "powershell -ExecutionPolicy Bypass -File scripts/demo-automation-bridge.ps1",
     "demo:api-integration": "powershell -ExecutionPolicy Bypass -File scripts/demo-api-integration.ps1",
     "validate:integration": "powershell -ExecutionPolicy Bypass -File scripts/validate-integration-flow.ps1",
-    "validate:docs": "node scripts/validate-documentation-artifacts.mjs"
+    "validate:docs": "node scripts/validate-documentation-artifacts.mjs",
+    "validate:runtime-scripts": "node scripts/validate-runtime-scripts.mjs"
   },
   "dependencies": {
     "@nestjs/common": "11.1.24",

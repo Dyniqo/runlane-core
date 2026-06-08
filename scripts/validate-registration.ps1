@@ -34,7 +34,7 @@ $env:RUNLANE_REGISTRATION_WORKSPACE_ID = $response.workspace.id
 
 $nodeScriptPath = '.run/validate-registration.mjs'
 $nodeScript = @'
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../scripts/prisma-client-loader.mjs';
 
 const prisma = new PrismaClient();
 const email = process.env.RUNLANE_REGISTRATION_EMAIL;

@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto';
 import { loadEnvFile } from 'node:process';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from './prisma-client-loader.mjs';
 
 const ENVIRONMENT_FILES = ['.env.local', '.env'];
 const API_BASE_URL = process.env.RUNLANE_API_BASE_URL ?? 'http://localhost:4600/v1';

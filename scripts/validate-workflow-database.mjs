@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from './prisma-client-loader.mjs';
 
 const [email, workflowId, workflowPublicId] = process.argv.slice(2);
 
