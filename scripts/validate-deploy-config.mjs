@@ -50,7 +50,7 @@ if (failures.length === 0) {
 
   requireFragments('docker/Caddyfile', caddyfile, [
     'admin off',
-    'trusted_proxies private_ranges',
+    'trusted_proxies static private_ranges',
     '{$RUNLANE_PUBLIC_DOMAIN}',
     'request_body',
     'max_size {$RUNLANE_CADDY_MAX_REQUEST_BODY}',
@@ -90,8 +90,10 @@ if (failures.length === 0) {
     'packages: read',
     'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" config --quiet',
     'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" pull',
+    'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps caddy validate --config /etc/caddy/Caddyfile',
     'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up --abort-on-container-exit --exit-code-from migrator migrator',
     'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d api worker caddy',
+    'Caddy is not running cleanly. Status:',
     'http://127.0.0.1:18080/health/ready',
     'migrator exit code',
     'logs --no-color --tail=300 postgres redis migrator api worker caddy',
