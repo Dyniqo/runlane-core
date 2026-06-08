@@ -145,10 +145,6 @@ jobs:
       - name: Verify deployment stack
         shell: bash
         run: |
-          curl --fail --silent http://127.0.0.1:18080/health > /dev/null
-          curl --fail --silent http://127.0.0.1:18080/health/ready > /dev/null
-          curl --fail --silent http://127.0.0.1:18080/health/queue > /dev/null
-
           migrator_id="$(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps --all -q migrator)"
           test -n "$migrator_id"
           migrator_exit_code="$(docker inspect --format='{{.State.ExitCode}}' "$migrator_id")"
@@ -163,12 +159,38 @@ jobs:
             test "$state" = "true"
           done
 
-          for service in postgres redis api worker caddy; do
-            container_id="$(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps -q "$service")"
-            health="$(docker inspect --format='{{.State.Health.Status}}' "$container_id")"
-            echo "${service} health: ${health}"
-            test "$health" = "healthy"
+          for attempt in $(seq 1 36); do
+            pending=0
+
+            for service in postgres redis api worker caddy; do
+              container_id="$(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps -q "$service")"
+              health="$(docker inspect --format='{{.State.Health.Status}}' "$container_id")"
+              echo "${service} health: ${health}"
+
+              if [[ "$health" != "healthy" ]]; then
+                pending=1
+              fi
+            done
+
+            if [[ "$pending" = "0" ]]; then
+              echo "Deployment service health checks are ready."
+              break
+            fi
+
+            if [[ "$attempt" = "36" ]]; then
+              echo "Deployment service health checks did not become ready."
+              docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps --all
+              docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --no-color --tail=200 caddy || true
+              exit 1
+            fi
+
+            echo "Waiting for deployment service health checks: attempt ${attempt}/36"
+            sleep 5
           done
+
+          curl --fail --silent http://127.0.0.1:18080/health > /dev/null
+          curl --fail --silent http://127.0.0.1:18080/health/ready > /dev/null
+          curl --fail --silent http://127.0.0.1:18080/health/queue > /dev/null
 
           docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps --all
 

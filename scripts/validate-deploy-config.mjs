@@ -95,6 +95,10 @@ if (failures.length === 0) {
     'Caddy status:',
     'logs --no-color --tail=200 caddy',
     'migrator exit code',
+    'Waiting for deployment service health checks',
+    'Deployment service health checks are ready.',
+    'Deployment service health checks did not become ready.',
+    'curl --fail --silent http://127.0.0.1:18080/health > /dev/null',
     'down -v --remove-orphans',
   ]);
 
