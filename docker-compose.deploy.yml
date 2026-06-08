@@ -218,6 +218,13 @@ services:
   caddy:
     image: caddy:2.11.3-alpine
     restart: unless-stopped
+    command:
+      - caddy
+      - run
+      - --config
+      - /etc/caddy/Caddyfile
+      - --adapter
+      - caddyfile
     environment:
       RUNLANE_PUBLIC_DOMAIN: ${RUNLANE_PUBLIC_DOMAIN:?RUNLANE_PUBLIC_DOMAIN is required}
       RUNLANE_CADDY_MAX_REQUEST_BODY: ${RUNLANE_CADDY_MAX_REQUEST_BODY:-2MB}

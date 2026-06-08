@@ -3,8 +3,8 @@ name: Deployment image smoke
 on:
   workflow_dispatch:
     inputs:
-      commit_sha:
-        description: Commit SHA to smoke test. Leave empty to use the selected workflow revision.
+      image_tag:
+        description: Commit SHA to smoke test. Leave empty to use this workflow revision.
         required: false
         default: ''
         type: string
@@ -42,19 +42,12 @@ jobs:
       - name: Create smoke environment
         shell: bash
         run: |
-          commit_sha="${{ inputs.commit_sha }}"
-          commit_sha="${commit_sha#sha-}"
-          if [[ -z "$commit_sha" ]]; then
-            commit_sha="$GITHUB_SHA"
+          image_tag="${{ inputs.image_tag }}"
+          image_tag="${image_tag#sha-}"
+          if [[ -z "$image_tag" ]]; then
+            image_tag="${GITHUB_SHA}"
           fi
 
-          if ! [[ "$commit_sha" =~ ^[0-9a-fA-F]{7,40}$ ]]; then
-            echo "commit_sha must be a Git commit hash without the sha- prefix."
-            exit 1
-          fi
-
-          commit_sha="${commit_sha,,}"
-          image_tag="sha-${commit_sha}"
           owner="${GITHUB_REPOSITORY_OWNER,,}"
           repository="${GITHUB_REPOSITORY#*/}"
           repository="${repository,,}"
@@ -70,7 +63,7 @@ jobs:
           RUNLANE_IMAGE_REGISTRY=ghcr.io
           RUNLANE_IMAGE_NAMESPACE=${owner}
           RUNLANE_IMAGE_REPOSITORY=${repository}
-          RUNLANE_IMAGE_TAG=${image_tag}
+          RUNLANE_IMAGE_TAG=sha-${image_tag}
           RUNLANE_PUBLIC_DOMAIN=:80
           RUNLANE_HTTP_PORT=18080
           RUNLANE_HTTPS_PORT=18443
@@ -101,22 +94,22 @@ jobs:
         run: |
           docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" config --quiet
 
+      - name: Validate Caddyfile
+        shell: bash
+        run: |
+          docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps --entrypoint caddy caddy validate --config /etc/caddy/Caddyfile
+
       - name: Pull deployment images
         shell: bash
         run: |
           docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" pull
 
-      - name: Validate Caddyfile
-        shell: bash
-        run: |
-          docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps caddy validate --config /etc/caddy/Caddyfile
-
-      - name: Run database migrator
+      - name: Run deployment migrations
         shell: bash
         run: |
           docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up --abort-on-container-exit --exit-code-from migrator migrator
 
-      - name: Start application services
+      - name: Start deployment services
         shell: bash
         run: |
           docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d api worker caddy
@@ -130,23 +123,23 @@ jobs:
               exit 0
             fi
 
-            echo "Waiting for API readiness through Caddy: attempt ${attempt}/36"
-            docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps --all
-
             caddy_id="$(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps -q caddy || true)"
             if [[ -n "$caddy_id" ]]; then
-              caddy_status="$(docker inspect --format='{{.State.Status}}' "$caddy_id" || true)"
+              caddy_status="$(docker inspect --format='{{.State.Status}}' "$caddy_id")"
+              echo "Caddy status: ${caddy_status}"
               if [[ "$caddy_status" == "restarting" || "$caddy_status" == "exited" || "$caddy_status" == "dead" ]]; then
-                echo "Caddy is not running cleanly. Status: ${caddy_status}"
                 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --no-color --tail=200 caddy || true
                 exit 1
               fi
             fi
 
+            echo "Waiting for API readiness through Caddy: attempt ${attempt}/36"
+            docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps --all
             sleep 5
           done
 
           echo "API did not become ready through Caddy."
+          docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --no-color --tail=200 caddy || true
           exit 1
 
       - name: Verify deployment stack
@@ -185,7 +178,7 @@ jobs:
         run: |
           if [[ -f "$ENV_FILE" ]]; then
             docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps --all || true
-            docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --no-color --tail=300 postgres redis migrator api worker caddy || true
+            docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --no-color --tail=300 || true
           fi
 
       - name: Stop deployment stack

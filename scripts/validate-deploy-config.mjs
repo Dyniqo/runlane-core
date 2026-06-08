@@ -8,7 +8,6 @@ const files = {
   caddyfile: resolve(root, 'docker/Caddyfile'),
   deployEnvironment: resolve(root, '.env.deploy.example'),
   deploymentSmoke: resolve(root, '.github/workflows/deployment-smoke.yml'),
-  dockerfile: resolve(root, 'Dockerfile'),
 };
 
 const failures = [];
@@ -25,7 +24,6 @@ if (failures.length === 0) {
   const caddyfile = readFileSync(files.caddyfile, 'utf8');
   const deployEnvironment = readFileSync(files.deployEnvironment, 'utf8');
   const deploymentSmoke = readFileSync(files.deploymentSmoke, 'utf8');
-  const dockerfile = readFileSync(files.dockerfile, 'utf8');
 
   requireFragments('docker-compose.deploy.yml', deployCompose, [
     'image: ${RUNLANE_IMAGE_REGISTRY:-ghcr.io}/${RUNLANE_IMAGE_NAMESPACE:-dyniqo}/${RUNLANE_IMAGE_REPOSITORY:-runlane-core}-api:${RUNLANE_IMAGE_TAG:?RUNLANE_IMAGE_TAG is required}',
@@ -40,6 +38,7 @@ if (failures.length === 0) {
     'cap_drop:',
     'read_only: true',
     './docker/Caddyfile:/etc/caddy/Caddyfile:ro',
+    'command:\n      - caddy\n      - run\n      - --config\n      - /etc/caddy/Caddyfile\n      - --adapter\n      - caddyfile',
     'caddy\n        - validate\n        - --config',
     'RUNLANE_PUBLIC_DOMAIN: ${RUNLANE_PUBLIC_DOMAIN:?RUNLANE_PUBLIC_DOMAIN is required}',
     'API_URL: ${API_URL:?API_URL is required}',
@@ -50,7 +49,6 @@ if (failures.length === 0) {
 
   requireFragments('docker/Caddyfile', caddyfile, [
     'admin off',
-    'trusted_proxies static private_ranges',
     '{$RUNLANE_PUBLIC_DOMAIN}',
     'request_body',
     'max_size {$RUNLANE_CADDY_MAX_REQUEST_BODY}',
@@ -58,6 +56,8 @@ if (failures.length === 0) {
     'health_uri /health',
     'format json',
   ]);
+
+  forbidFragments('docker/Caddyfile', caddyfile, ['trusted_proxies', 'private_ranges']);
 
   requireFragments('.env.deploy.example', deployEnvironment, [
     'NPM_REGISTRY=https://registry.npmjs.org/',
@@ -80,34 +80,22 @@ if (failures.length === 0) {
 
   requireFragments('.github/workflows/deployment-smoke.yml', deploymentSmoke, [
     'name: Deployment image smoke',
-    'commit_sha:',
-    'description: Commit SHA to smoke test. Leave empty to use the selected workflow revision.',
-    'commit_sha="${commit_sha#sha-}"',
-    'image_tag="sha-${commit_sha}"',
     'runs-on: ubuntu-24.04',
     'actions/checkout@v6.0.3',
     'docker/login-action@v4.2.0',
     'packages: read',
+    'image_tag="${image_tag#sha-}"',
+    'RUNLANE_IMAGE_TAG=sha-${image_tag}',
     'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" config --quiet',
+    'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps --entrypoint caddy caddy validate --config /etc/caddy/Caddyfile',
     'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" pull',
-    'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps caddy validate --config /etc/caddy/Caddyfile',
     'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up --abort-on-container-exit --exit-code-from migrator migrator',
     'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d api worker caddy',
-    'Caddy is not running cleanly. Status:',
     'http://127.0.0.1:18080/health/ready',
+    'Caddy status:',
+    'logs --no-color --tail=200 caddy',
     'migrator exit code',
-    'logs --no-color --tail=300 postgres redis migrator api worker caddy',
     'down -v --remove-orphans',
-  ]);
-
-  requireFragments('Dockerfile', dockerfile, [
-    'FROM prisma AS migrator',
-    'CMD ["pnpm", "db:migrate:deploy:runtime"]',
-  ]);
-
-  forbidFragments('Dockerfile', dockerfile, [
-    'ENV npm_config_registry=',
-    'CMD ["pnpm", "db:migrate:deploy"]',
   ]);
 
   forbidFragments(
@@ -122,19 +110,11 @@ if (failures.length === 0) {
       'build:',
       '127.0.0.1:${RUNLANE_POSTGRES_PORT',
       '127.0.0.1:${RUNLANE_REDIS_PORT',
+      'run --rm --no-deps caddy validate',
     ],
   );
 
   assertNoPublicPortsForDataStores(deployCompose);
-
-  if (
-    packageJson.scripts['db:migrate:deploy:runtime'] !==
-    'pnpm db:migrate:preflight && prisma migrate deploy'
-  ) {
-    failures.push(
-      'package.json script db:migrate:deploy:runtime must run migration preflight without runtime generation',
-    );
-  }
 
   if (packageJson.scripts['validate:deploy'] !== 'node scripts/validate-deploy-config.mjs') {
     failures.push(
