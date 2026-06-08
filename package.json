@@ -60,7 +60,7 @@
     "validate:registration": "powershell -ExecutionPolicy Bypass -File scripts/validate-registration.ps1",
     "validate:runtime": "node scripts/validate-operational-endpoints.mjs",
     "validate:ci": "node scripts/validate-github-actions.mjs",
-    "verify": "pnpm format:check && pnpm validate:ci && pnpm lint && pnpm db:validate && pnpm typecheck && pnpm build",
+    "verify": "pnpm format:check && pnpm validate:ci && pnpm validate:deploy && pnpm lint && pnpm db:validate && pnpm typecheck && pnpm build",
     "validate:workspace": "powershell -ExecutionPolicy Bypass -File scripts/validate-workspace-scope.ps1",
     "validate:api-keys": "powershell -ExecutionPolicy Bypass -File scripts/validate-api-keys.ps1",
     "validate:security": "powershell -ExecutionPolicy Bypass -File scripts/validate-security-baseline.ps1",
@@ -87,7 +87,8 @@
     "validate:billing": "powershell -ExecutionPolicy Bypass -File scripts/validate-billing-webhook.ps1",
     "validate:billing-sessions": "powershell -ExecutionPolicy Bypass -File scripts/validate-billing-sessions.ps1",
     "validate:demo": "powershell -ExecutionPolicy Bypass -File scripts/validate-demo-safety.ps1",
-    "validate:demo-isolation": "powershell -ExecutionPolicy Bypass -File scripts/validate-demo-session-isolation.ps1"
+    "validate:demo-isolation": "powershell -ExecutionPolicy Bypass -File scripts/validate-demo-session-isolation.ps1",
+    "validate:deploy": "node scripts/validate-deploy-config.mjs"
   },
   "dependencies": {
     "@nestjs/common": "11.1.24",

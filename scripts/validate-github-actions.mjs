@@ -1,23 +1,28 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const root = process.cwd();
-const workflowPath = resolve(root, '.github/workflows/ci.yml');
+const ciWorkflowPath = resolve(root, '.github/workflows/ci.yml');
+const smokeWorkflowPath = resolve(root, '.github/workflows/deployment-smoke.yml');
 const packagePath = resolve(root, 'package.json');
 const dockerfilePath = resolve(root, 'Dockerfile');
+const npmrcPath = resolve(root, '.npmrc');
 
-const workflow = readFileSync(workflowPath, 'utf8');
+const workflow = readFileSync(ciWorkflowPath, 'utf8');
+const smokeWorkflow = existsSync(smokeWorkflowPath) ? readFileSync(smokeWorkflowPath, 'utf8') : '';
 const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'));
 const dockerfile = readFileSync(dockerfilePath, 'utf8');
+const npmrc = existsSync(npmrcPath) ? readFileSync(npmrcPath, 'utf8') : '';
 const failures = [];
 
-const requiredFragments = [
+const requiredWorkflowFragments = [
   'actions/checkout@v6.0.3',
   'pnpm/action-setup@v6.0.8',
   'actions/setup-node@v6.4.0',
   'docker/setup-buildx-action@v4.1.0',
   'docker/login-action@v4.2.0',
   'docker/build-push-action@v7.0.0',
+  'name: Build and publish container images',
   'packages: write',
   'ghcr.io',
   'sha-${{ github.sha }}',
@@ -28,20 +33,108 @@ const requiredFragments = [
   'target: migrator',
   'postgres:17.10-alpine3.23',
   'redis:8.6.4-alpine3.23',
+  'NPM_REGISTRY: https://registry.npmjs.org/',
+  'Configure package registry',
+  'pnpm config set registry "$NPM_REGISTRY"',
+  'npm config set registry "$NPM_REGISTRY"',
+  'test "$(pnpm config get registry)" = "$NPM_REGISTRY"',
+  'test "$(npm config get registry)" = "$NPM_REGISTRY"',
+  'test "$(pnpm config get fetch-retries)" = "5"',
+  'test "$(pnpm config get network-timeout)" = "300000"',
+  'pnpm fetch --frozen-lockfile',
+  'pnpm install --frozen-lockfile --prefer-offline',
 ];
 
-for (const fragment of requiredFragments) {
+for (const fragment of requiredWorkflowFragments) {
   if (!workflow.includes(fragment)) {
     failures.push(`Missing workflow fragment: ${fragment}`);
   }
 }
 
-const forbiddenFragments = ['@latest', ':latest', 'node-version: 24\n', 'ubuntu-latest'];
+const requiredNpmrcFragments = [
+  'registry=https://registry.npmjs.org/',
+  'fetch-retries=5',
+  'fetch-retry-factor=2',
+  'fetch-retry-mintimeout=10000',
+  'fetch-retry-maxtimeout=120000',
+  'network-timeout=300000',
+  'network-concurrency=8',
+];
 
-for (const fragment of forbiddenFragments) {
-  if (workflow.includes(fragment)) {
-    failures.push(`Forbidden workflow fragment: ${fragment}`);
+for (const fragment of requiredNpmrcFragments) {
+  if (!npmrc.includes(fragment)) {
+    failures.push(`Missing .npmrc fragment: ${fragment}`);
   }
+}
+
+const forbiddenGlobalFragments = [
+  '@latest',
+  ':latest',
+  'node-version: 24\n',
+  'ubuntu-latest',
+  'packages.applied-caas-gateway1.internal.api.openai.org',
+  'artifactory/api/npm/npm-public',
+  'name: Build and publish ${{ matrix.service }} image',
+  'NPM_CONFIG_REGISTRY:',
+  'npm_config_',
+];
+
+for (const fragment of forbiddenGlobalFragments) {
+  if (workflow.includes(fragment) || smokeWorkflow.includes(fragment) || npmrc.includes(fragment)) {
+    failures.push(`Forbidden workflow or registry fragment: ${fragment}`);
+  }
+}
+
+const forbiddenWorkflowEnvFragments = [
+  'NPM_FETCH_RETRIES:',
+  'NPM_FETCH_RETRY_FACTOR:',
+  'NPM_FETCH_RETRY_MINTIMEOUT:',
+  'NPM_FETCH_RETRY_MAXTIMEOUT:',
+  'NPM_NETWORK_TIMEOUT:',
+  'NPM_NETWORK_CONCURRENCY:',
+];
+
+for (const fragment of forbiddenWorkflowEnvFragments) {
+  if (workflow.includes(fragment) || smokeWorkflow.includes(fragment)) {
+    failures.push(`Forbidden workflow env fragment: ${fragment}`);
+  }
+}
+
+for (const line of workflow.split('\n')) {
+  const trimmedLine = line.trim();
+
+  if (trimmedLine.startsWith('name:') && trimmedLine.includes('${{ matrix.')) {
+    failures.push(`Workflow name fields must not contain matrix expressions: ${trimmedLine}`);
+  }
+}
+
+for (const block of readEnvBlocks(workflow)) {
+  const normalizedEnvKeys = new Map();
+
+  for (const key of block.keys) {
+    const normalizedKey = key.toLowerCase();
+    const existingKey = normalizedEnvKeys.get(normalizedKey);
+
+    if (existingKey) {
+      failures.push(`Workflow env key is duplicated case-insensitively: ${existingKey} and ${key}`);
+    }
+
+    normalizedEnvKeys.set(normalizedKey, key);
+  }
+}
+
+if (!workflow.includes('NPM_REGISTRY: https://registry.npmjs.org/')) {
+  failures.push('Workflow must define NPM_REGISTRY at top level');
+}
+
+if (/^\s+NPM_CONFIG_REGISTRY:/m.test(workflow)) {
+  failures.push('Workflow must not define NPM_CONFIG_REGISTRY; use NPM_REGISTRY and .npmrc');
+}
+
+if (/^\s+npm_config_/im.test(workflow)) {
+  failures.push(
+    'Workflow must not define npm_config_* env keys; use explicit registry configuration',
+  );
 }
 
 const dockerTargets = ['api', 'worker', 'migrator'];
@@ -66,6 +159,21 @@ if (!packageJson.scripts.verify.includes('pnpm validate:ci')) {
   failures.push('package.json verify script must include pnpm validate:ci');
 }
 
+if (smokeWorkflow) {
+  const requiredSmokeFragments = [
+    'docker/login-action@v4.2.0',
+    'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" config --quiet',
+    'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d',
+    'curl --fail --silent http://127.0.0.1:18080/health',
+  ];
+
+  for (const fragment of requiredSmokeFragments) {
+    if (!smokeWorkflow.includes(fragment)) {
+      failures.push(`Missing deployment smoke workflow fragment: ${fragment}`);
+    }
+  }
+}
+
 if (failures.length > 0) {
   console.error('GitHub Actions validation failed');
   for (const failure of failures) {
@@ -75,3 +183,44 @@ if (failures.length > 0) {
 }
 
 console.log('GitHub Actions validation completed');
+
+function readEnvBlocks(content) {
+  const lines = content.split('\n');
+  const blocks = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const match = /^(?<indent>\s*)env:\s*$/.exec(line);
+
+    if (!match?.groups) {
+      continue;
+    }
+
+    const baseIndent = match.groups.indent.length;
+    const keys = [];
+
+    for (let cursor = index + 1; cursor < lines.length; cursor += 1) {
+      const candidate = lines[cursor];
+
+      if (!candidate.trim()) {
+        continue;
+      }
+
+      const indent = candidate.length - candidate.trimStart().length;
+
+      if (indent <= baseIndent) {
+        break;
+      }
+
+      const keyMatch = /^\s+([A-Za-z0-9_]+):/.exec(candidate);
+
+      if (keyMatch?.[1]) {
+        keys.push(keyMatch[1]);
+      }
+    }
+
+    blocks.push({ keys });
+  }
+
+  return blocks;
+}

@@ -1,0 +1,257 @@
+name: ${RUNLANE_COMPOSE_PROJECT_NAME:-runlane-core-deploy}
+
+x-app-environment: &app-environment
+  RUNTIME_PROFILE: deploy
+  API_HOST: 0.0.0.0
+  API_PORT: 4600
+  WORKER_HOST: 0.0.0.0
+  WORKER_PORT: 4601
+  WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-4}
+  WORKER_HEARTBEAT_INTERVAL_MS: ${WORKER_HEARTBEAT_INTERVAL_MS:-10000}
+  WORKER_HEARTBEAT_TTL_SECONDS: ${WORKER_HEARTBEAT_TTL_SECONDS:-45}
+  EXECUTION_RETRY_MAX_ATTEMPTS: ${EXECUTION_RETRY_MAX_ATTEMPTS:-3}
+  EXECUTION_RETRY_BASE_DELAY_MS: ${EXECUTION_RETRY_BASE_DELAY_MS:-500}
+  EXECUTION_RETRY_MAX_DELAY_MS: ${EXECUTION_RETRY_MAX_DELAY_MS:-30000}
+  HTTP_CONNECTOR_TIMEOUT_MS: ${HTTP_CONNECTOR_TIMEOUT_MS:-10000}
+  HTTP_CONNECTOR_MAX_RESPONSE_BYTES: ${HTTP_CONNECTOR_MAX_RESPONSE_BYTES:-1048576}
+  HTTP_CONNECTOR_REDIRECT_LIMIT: ${HTTP_CONNECTOR_REDIRECT_LIMIT:-3}
+  HTTP_CONNECTOR_DEMO_URL_ALLOWLIST: ${HTTP_CONNECTOR_DEMO_URL_ALLOWLIST:-}
+  AI_PROVIDER: ${AI_PROVIDER:-openai_compatible}
+  AI_API_KEY: ${AI_API_KEY:-}
+  AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com/v1}
+  AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
+  AI_TIMEOUT_MS: ${AI_TIMEOUT_MS:-30000}
+  SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+  DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
+  NOTIFICATION_CONNECTOR_TIMEOUT_MS: ${NOTIFICATION_CONNECTOR_TIMEOUT_MS:-10000}
+  NOTIFICATION_CONNECTOR_MAX_PAYLOAD_BYTES: ${NOTIFICATION_CONNECTOR_MAX_PAYLOAD_BYTES:-32768}
+  NOTIFICATION_FAILURE_ALERTS_ENABLED: ${NOTIFICATION_FAILURE_ALERTS_ENABLED:-true}
+  STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+  STRIPE_WEBHOOK_TOLERANCE_SECONDS: ${STRIPE_WEBHOOK_TOLERANCE_SECONDS:-300}
+  STRIPE_API_KEY: ${STRIPE_API_KEY:-}
+  STRIPE_API_BASE_URL: ${STRIPE_API_BASE_URL:-https://api.stripe.com/v1}
+  STRIPE_REQUEST_TIMEOUT_MS: ${STRIPE_REQUEST_TIMEOUT_MS:-10000}
+  STRIPE_PRICE_STARTER_ID: ${STRIPE_PRICE_STARTER_ID:-}
+  STRIPE_PRICE_PRO_ID: ${STRIPE_PRICE_PRO_ID:-}
+  STRIPE_PRICE_AGENCY_ID: ${STRIPE_PRICE_AGENCY_ID:-}
+  STRIPE_CHECKOUT_SUCCESS_URL: ${STRIPE_CHECKOUT_SUCCESS_URL:?STRIPE_CHECKOUT_SUCCESS_URL is required}
+  STRIPE_CHECKOUT_CANCEL_URL: ${STRIPE_CHECKOUT_CANCEL_URL:?STRIPE_CHECKOUT_CANCEL_URL is required}
+  STRIPE_PORTAL_RETURN_URL: ${STRIPE_PORTAL_RETURN_URL:?STRIPE_PORTAL_RETURN_URL is required}
+  DEMO_MODE: ${DEMO_MODE:-false}
+  DEMO_SESSION_ENABLED: ${DEMO_SESSION_ENABLED:-false}
+  DEMO_SESSION_TTL_HOURS: ${DEMO_SESSION_TTL_HOURS:-12}
+  DEMO_SESSION_STORAGE_KEY: ${DEMO_SESSION_STORAGE_KEY:-runlane.demoSessionId}
+  DEMO_MAX_SESSIONS_PER_IP_PER_HOUR: ${DEMO_MAX_SESSIONS_PER_IP_PER_HOUR:-20}
+  DEMO_CLEANUP_INTERVAL_HOURS: ${DEMO_CLEANUP_INTERVAL_HOURS:-6}
+  DEMO_USER_EMAIL: ${DEMO_USER_EMAIL:-demo@example.com}
+  DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-}
+  DEMO_USER_NAME: ${DEMO_USER_NAME:-Runlane Demo Operator}
+  DEMO_WORKSPACE_NAME: ${DEMO_WORKSPACE_NAME:-Runlane Demo Workspace}
+  DEMO_API_KEY: ${DEMO_API_KEY:-rln_demoDemo001_demoDemoDemoDemoDemoDemoDemoDemoDemoDemo001}
+  DEMO_EXECUTION_LIMIT_PER_HOUR: ${DEMO_EXECUTION_LIMIT_PER_HOUR:-20}
+  DEMO_AI_CALL_LIMIT_PER_DAY: ${DEMO_AI_CALL_LIMIT_PER_DAY:-5}
+  PUBLIC_REGISTRATION_ENABLED: ${PUBLIC_REGISTRATION_ENABLED:-false}
+  API_URL: ${API_URL:?API_URL is required}
+  APP_URL: ${APP_URL:?APP_URL is required}
+  DATABASE_URL: postgresql://${POSTGRES_USER:-runlane}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-runlane}?schema=public
+  REDIS_URL: redis://redis:6379/0
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET is required}
+  JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}
+  ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
+  ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-900}
+  REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL:-2592000}
+  CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN is required}
+  RATE_LIMIT_TTL: ${RATE_LIMIT_TTL:-60}
+  RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-25}
+  MAX_PAYLOAD_SIZE: ${MAX_PAYLOAD_SIZE:-1048576}
+  WEBHOOK_SIGNING_SECRET: ${WEBHOOK_SIGNING_SECRET:?WEBHOOK_SIGNING_SECRET is required}
+  WEBHOOK_SIGNATURE_TOLERANCE_SECONDS: ${WEBHOOK_SIGNATURE_TOLERANCE_SECONDS:-300}
+  WEBHOOK_REPLAY_TTL_SECONDS: ${WEBHOOK_REPLAY_TTL_SECONDS:-600}
+  WEBHOOK_IDEMPOTENCY_TTL_SECONDS: ${WEBHOOK_IDEMPOTENCY_TTL_SECONDS:-86400}
+  API_DOCS_ENABLED: ${API_DOCS_ENABLED:-false}
+  API_DOCS_PATH: ${API_DOCS_PATH:-docs}
+  HEALTH_CHECK_TIMEOUT_MS: ${HEALTH_CHECK_TIMEOUT_MS:-3000}
+  REDIS_CONNECT_TIMEOUT_MS: ${REDIS_CONNECT_TIMEOUT_MS:-5000}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  SHUTDOWN_TIMEOUT_MS: ${SHUTDOWN_TIMEOUT_MS:-15000}
+
+x-app-security: &app-security
+  init: true
+  read_only: true
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  stop_grace_period: 20s
+  tmpfs:
+    - /tmp:size=64m,mode=1777
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '3'
+
+services:
+  postgres:
+    image: postgres:17.10-alpine3.23
+    restart: unless-stopped
+    shm_size: 128mb
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-runlane}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-runlane}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    logging: *default-logging
+    networks:
+      - runtime
+
+  redis:
+    image: redis:8.6.4-alpine3.23
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - 'yes'
+      - --appendfsync
+      - everysec
+      - --save
+      - '60'
+      - '1000'
+      - --maxmemory-policy
+      - noeviction
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    logging: *default-logging
+    networks:
+      - runtime
+
+  migrator:
+    <<: *app-security
+    image: ${RUNLANE_IMAGE_REGISTRY:-ghcr.io}/${RUNLANE_IMAGE_NAMESPACE:-dyniqo}/${RUNLANE_IMAGE_REPOSITORY:-runlane-core}-migrator:${RUNLANE_IMAGE_TAG:?RUNLANE_IMAGE_TAG is required}
+    restart: 'no'
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-runlane}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-runlane}?schema=public
+      HOME: /tmp
+      XDG_CACHE_HOME: /tmp/.cache
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging: *default-logging
+    networks:
+      - runtime
+
+  api:
+    <<: *app-security
+    image: ${RUNLANE_IMAGE_REGISTRY:-ghcr.io}/${RUNLANE_IMAGE_NAMESPACE:-dyniqo}/${RUNLANE_IMAGE_REPOSITORY:-runlane-core}-api:${RUNLANE_IMAGE_TAG:?RUNLANE_IMAGE_TAG is required}
+    restart: unless-stopped
+    environment:
+      <<: *app-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:4600/health/ready').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 20s
+    logging: *default-logging
+    networks:
+      - runtime
+
+  worker:
+    <<: *app-security
+    image: ${RUNLANE_IMAGE_REGISTRY:-ghcr.io}/${RUNLANE_IMAGE_NAMESPACE:-dyniqo}/${RUNLANE_IMAGE_REPOSITORY:-runlane-core}-worker:${RUNLANE_IMAGE_TAG:?RUNLANE_IMAGE_TAG is required}
+    restart: unless-stopped
+    environment:
+      <<: *app-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:4601/health/ready').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 20s
+    logging: *default-logging
+    networks:
+      - runtime
+
+  caddy:
+    image: caddy:2.11.3-alpine
+    restart: unless-stopped
+    environment:
+      RUNLANE_PUBLIC_DOMAIN: ${RUNLANE_PUBLIC_DOMAIN:?RUNLANE_PUBLIC_DOMAIN is required}
+      RUNLANE_CADDY_MAX_REQUEST_BODY: ${RUNLANE_CADDY_MAX_REQUEST_BODY:-2MB}
+    ports:
+      - '${RUNLANE_HTTP_PORT:-80}:80'
+      - '${RUNLANE_HTTPS_PORT:-443}:443'
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - caddy
+        - validate
+        - --config
+        - /etc/caddy/Caddyfile
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 20s
+    logging: *default-logging
+    networks:
+      - runtime
+
+volumes:
+  postgres-data:
+  redis-data:
+  caddy-data:
+  caddy-config:
+
+networks:
+  runtime:
+    driver: bridge

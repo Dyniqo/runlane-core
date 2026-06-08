@@ -21,8 +21,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: 24.16.0
-  PNPM_VERSION: 10.0.0
+  NODE_VERSION: '24.16.0'
+  PNPM_VERSION: '10.0.0'
   NPM_REGISTRY: https://registry.npmjs.org/
   PRISMA_ENGINES_MIRROR: https://binaries.prisma.sh
   DATABASE_URL: postgresql://runlane:runlane_ci_database@127.0.0.1:5432/runlane?schema=public
@@ -35,10 +35,11 @@ env:
   ENCRYPTION_KEY: runlane_ci_encryption_key_change_me_64_bytes_minimum_value
   WEBHOOK_SIGNING_SECRET: runlane_ci_webhook_signing_secret_change_me_64_bytes_minimum_value
   STRIPE_WEBHOOK_SECRET: runlane_ci_stripe_webhook_secret_change_me_64_bytes_minimum_value
-  STRIPE_API_KEY: 12341234123412341234123412341234
+  STRIPE_API_KEY: '12341234123412341234123412341234'
   CORS_ORIGIN: http://127.0.0.1:4600,http://localhost:4600
-  PUBLIC_REGISTRATION_ENABLED: true
-  DEMO_MODE: true
+  PUBLIC_REGISTRATION_ENABLED: 'true'
+  DEMO_MODE: 'true'
+  DEMO_SESSION_ENABLED: 'true'
   DEMO_USER_PASSWORD: RunlaneDemoPassword123!
 
 jobs:
@@ -88,8 +89,25 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
+      - name: Configure package registry
+        shell: bash
+        run: |
+          pnpm config set registry "$NPM_REGISTRY"
+          npm config set registry "$NPM_REGISTRY"
+          echo "pnpm registry: $(pnpm config get registry)"
+          echo "npm registry: $(npm config get registry)"
+          echo "pnpm fetch retries: $(pnpm config get fetch-retries)"
+          echo "pnpm network timeout: $(pnpm config get network-timeout)"
+          test "$(pnpm config get registry)" = "$NPM_REGISTRY"
+          test "$(npm config get registry)" = "$NPM_REGISTRY"
+          test "$(pnpm config get fetch-retries)" = "5"
+          test "$(pnpm config get network-timeout)" = "300000"
+
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        shell: bash
+        run: |
+          pnpm fetch --frozen-lockfile
+          pnpm install --frozen-lockfile --prefer-offline
 
       - name: Apply database migrations
         run: pnpm db:migrate:deploy
@@ -98,7 +116,7 @@ jobs:
         run: pnpm verify
 
   container-images:
-    name: Build and publish ${{ matrix.service }} image
+    name: Build and publish container images
     runs-on: ubuntu-24.04
     needs: verify
     timeout-minutes: 45

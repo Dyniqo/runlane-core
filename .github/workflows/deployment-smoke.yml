@@ -1,0 +1,168 @@
+name: Deployment image smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: Image tag to smoke test. Leave empty to use sha for this workflow revision.
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: runlane-deployment-smoke-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Smoke test image deployment stack
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    env:
+      COMPOSE_FILE: docker-compose.deploy.yml
+      ENV_FILE: .env.deploy.smoke
+      COMPOSE_PROJECT_NAME: runlane-smoke-${{ github.run_id }}-${{ github.run_attempt }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6.0.3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4.2.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create smoke environment
+        shell: bash
+        run: |
+          image_tag="${{ inputs.image_tag }}"
+          if [[ -z "$image_tag" ]]; then
+            image_tag="sha-${GITHUB_SHA}"
+          fi
+
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          repository="${GITHUB_REPOSITORY#*/}"
+          repository="${repository,,}"
+          postgres_password="$(openssl rand -hex 32)"
+          jwt_access_secret="$(openssl rand -hex 48)"
+          jwt_refresh_secret="$(openssl rand -hex 48)"
+          encryption_key="$(openssl rand -hex 48)"
+          webhook_secret="$(openssl rand -hex 48)"
+          stripe_webhook_secret="$(openssl rand -hex 32)"
+
+          cat > "$ENV_FILE" <<EOF_ENV
+          RUNLANE_COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}
+          RUNLANE_IMAGE_REGISTRY=ghcr.io
+          RUNLANE_IMAGE_NAMESPACE=${owner}
+          RUNLANE_IMAGE_REPOSITORY=${repository}
+          RUNLANE_IMAGE_TAG=${image_tag}
+          RUNLANE_PUBLIC_DOMAIN=:80
+          RUNLANE_HTTP_PORT=18080
+          RUNLANE_HTTPS_PORT=18443
+          RUNLANE_CADDY_MAX_REQUEST_BODY=2MB
+          POSTGRES_USER=runlane
+          POSTGRES_PASSWORD=${postgres_password}
+          POSTGRES_DB=runlane
+          API_URL=http://127.0.0.1:18080
+          APP_URL=http://127.0.0.1:18080
+          CORS_ORIGIN=http://127.0.0.1:18080
+          JWT_ACCESS_SECRET=${jwt_access_secret}
+          JWT_REFRESH_SECRET=${jwt_refresh_secret}
+          ENCRYPTION_KEY=${encryption_key}
+          WEBHOOK_SIGNING_SECRET=${webhook_secret}
+          STRIPE_WEBHOOK_SECRET=${stripe_webhook_secret}
+          STRIPE_CHECKOUT_SUCCESS_URL=http://127.0.0.1:18080/billing/success
+          STRIPE_CHECKOUT_CANCEL_URL=http://127.0.0.1:18080/billing/cancel
+          STRIPE_PORTAL_RETURN_URL=http://127.0.0.1:18080/billing
+          PUBLIC_REGISTRATION_ENABLED=false
+          DEMO_MODE=false
+          DEMO_SESSION_ENABLED=false
+          LOG_LEVEL=info
+          API_DOCS_ENABLED=false
+          EOF_ENV
+
+      - name: Validate deployment Compose
+        shell: bash
+        run: |
+          docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" config --quiet
+
+      - name: Pull deployment images
+        shell: bash
+        run: |
+          docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" pull
+
+      - name: Start deployment stack
+        shell: bash
+        run: |
+          docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d
+
+      - name: Wait for API readiness through Caddy
+        shell: bash
+        run: |
+          for attempt in $(seq 1 36); do
+            if curl --fail --silent http://127.0.0.1:18080/health/ready > /dev/null; then
+              echo "API is ready through Caddy."
+              exit 0
+            fi
+
+            echo "Waiting for API readiness through Caddy: attempt ${attempt}/36"
+            docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps --all
+            sleep 5
+          done
+
+          echo "API did not become ready through Caddy."
+          exit 1
+
+      - name: Verify deployment stack
+        shell: bash
+        run: |
+          curl --fail --silent http://127.0.0.1:18080/health > /dev/null
+          curl --fail --silent http://127.0.0.1:18080/health/ready > /dev/null
+          curl --fail --silent http://127.0.0.1:18080/health/queue > /dev/null
+
+          migrator_id="$(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps --all -q migrator)"
+          test -n "$migrator_id"
+          migrator_exit_code="$(docker inspect --format='{{.State.ExitCode}}' "$migrator_id")"
+          echo "migrator exit code: ${migrator_exit_code}"
+          test "$migrator_exit_code" = "0"
+
+          for service in postgres redis api worker caddy; do
+            container_id="$(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps -q "$service")"
+            test -n "$container_id"
+            state="$(docker inspect --format='{{.State.Running}}' "$container_id")"
+            echo "${service} running: ${state}"
+            test "$state" = "true"
+          done
+
+          for service in postgres redis api worker caddy; do
+            container_id="$(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps -q "$service")"
+            health="$(docker inspect --format='{{.State.Health.Status}}' "$container_id")"
+            echo "${service} health: ${health}"
+            test "$health" = "healthy"
+          done
+
+          docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps --all
+
+      - name: Show deployment logs on failure
+        if: failure()
+        shell: bash
+        run: |
+          if [[ -f "$ENV_FILE" ]]; then
+            docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps --all || true
+            docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --no-color --tail=300 || true
+          fi
+
+      - name: Stop deployment stack
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f "$ENV_FILE" ]]; then
+            docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" down -v --remove-orphans || true
+          fi
