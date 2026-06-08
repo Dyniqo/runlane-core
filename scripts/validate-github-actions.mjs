@@ -7,12 +7,14 @@ const smokeWorkflowPath = resolve(root, '.github/workflows/deployment-smoke.yml'
 const packagePath = resolve(root, 'package.json');
 const dockerfilePath = resolve(root, 'Dockerfile');
 const npmrcPath = resolve(root, '.npmrc');
+const lockfilePath = resolve(root, 'pnpm-lock.yaml');
 
 const workflow = readFileSync(ciWorkflowPath, 'utf8');
 const smokeWorkflow = existsSync(smokeWorkflowPath) ? readFileSync(smokeWorkflowPath, 'utf8') : '';
 const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'));
 const dockerfile = readFileSync(dockerfilePath, 'utf8');
 const npmrc = existsSync(npmrcPath) ? readFileSync(npmrcPath, 'utf8') : '';
+const lockfile = existsSync(lockfilePath) ? readFileSync(lockfilePath, 'utf8') : '';
 const failures = [];
 
 const requiredWorkflowFragments = [
@@ -41,6 +43,8 @@ const requiredWorkflowFragments = [
   'test "$(npm config get registry)" = "$NPM_REGISTRY"',
   'test "$(pnpm config get fetch-retries)" = "5"',
   'test "$(pnpm config get network-timeout)" = "300000"',
+  'Validate lockfile registry',
+  'node scripts/normalize-pnpm-lockfile-registry.mjs --check',
   'pnpm fetch --frozen-lockfile',
   'pnpm install --frozen-lockfile --prefer-offline',
 ];
@@ -67,25 +71,30 @@ for (const fragment of requiredNpmrcFragments) {
   }
 }
 
-const forbiddenGlobalFragments = [
+const forbiddenRegistryFragments = [
+  'packages.applied-caas-gateway1.internal.api.openai.org',
+  'artifactory/api/npm/npm-public',
+];
+
+for (const fragment of forbiddenRegistryFragments) {
+  if (
+    workflow.includes(fragment) ||
+    smokeWorkflow.includes(fragment) ||
+    npmrc.includes(fragment) ||
+    lockfile.includes(fragment)
+  ) {
+    failures.push(`Forbidden registry fragment: ${fragment}`);
+  }
+}
+
+const forbiddenWorkflowFragments = [
   '@latest',
   ':latest',
   'node-version: 24\n',
   'ubuntu-latest',
-  'packages.applied-caas-gateway1.internal.api.openai.org',
-  'artifactory/api/npm/npm-public',
   'name: Build and publish ${{ matrix.service }} image',
   'NPM_CONFIG_REGISTRY:',
   'npm_config_',
-];
-
-for (const fragment of forbiddenGlobalFragments) {
-  if (workflow.includes(fragment) || smokeWorkflow.includes(fragment) || npmrc.includes(fragment)) {
-    failures.push(`Forbidden workflow or registry fragment: ${fragment}`);
-  }
-}
-
-const forbiddenWorkflowEnvFragments = [
   'NPM_FETCH_RETRIES:',
   'NPM_FETCH_RETRY_FACTOR:',
   'NPM_FETCH_RETRY_MINTIMEOUT:',
@@ -94,9 +103,9 @@ const forbiddenWorkflowEnvFragments = [
   'NPM_NETWORK_CONCURRENCY:',
 ];
 
-for (const fragment of forbiddenWorkflowEnvFragments) {
+for (const fragment of forbiddenWorkflowFragments) {
   if (workflow.includes(fragment) || smokeWorkflow.includes(fragment)) {
-    failures.push(`Forbidden workflow env fragment: ${fragment}`);
+    failures.push(`Forbidden workflow fragment: ${fragment}`);
   }
 }
 
@@ -127,14 +136,8 @@ if (!workflow.includes('NPM_REGISTRY: https://registry.npmjs.org/')) {
   failures.push('Workflow must define NPM_REGISTRY at top level');
 }
 
-if (/^\s+NPM_CONFIG_REGISTRY:/m.test(workflow)) {
-  failures.push('Workflow must not define NPM_CONFIG_REGISTRY; use NPM_REGISTRY and .npmrc');
-}
-
-if (/^\s+npm_config_/im.test(workflow)) {
-  failures.push(
-    'Workflow must not define npm_config_* env keys; use explicit registry configuration',
-  );
+if (!lockfile.includes('https://registry.npmjs.org/')) {
+  failures.push('pnpm-lock.yaml must contain public npm tarball URLs');
 }
 
 const dockerTargets = ['api', 'worker', 'migrator'];
@@ -151,8 +154,26 @@ if (packageJson.scripts['prisma:studio'] !== 'prisma studio') {
   failures.push('package.json script prisma:studio must run prisma studio');
 }
 
+if (
+  packageJson.scripts['lockfile:registry'] !==
+  'node scripts/normalize-pnpm-lockfile-registry.mjs --write'
+) {
+  failures.push('package.json script lockfile:registry is missing or invalid');
+}
+
+if (
+  packageJson.scripts['lockfile:registry:check'] !==
+  'node scripts/normalize-pnpm-lockfile-registry.mjs --check'
+) {
+  failures.push('package.json script lockfile:registry:check is missing or invalid');
+}
+
 if (packageJson.scripts['validate:ci'] !== 'node scripts/validate-github-actions.mjs') {
   failures.push('package.json script validate:ci is missing or invalid');
+}
+
+if (!packageJson.scripts.verify.includes('pnpm lockfile:registry:check')) {
+  failures.push('package.json verify script must include pnpm lockfile:registry:check');
 }
 
 if (!packageJson.scripts.verify.includes('pnpm validate:ci')) {

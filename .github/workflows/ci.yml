@@ -103,6 +103,9 @@ jobs:
           test "$(pnpm config get fetch-retries)" = "5"
           test "$(pnpm config get network-timeout)" = "300000"
 
+      - name: Validate lockfile registry
+        run: node scripts/normalize-pnpm-lockfile-registry.mjs --check
+
       - name: Install dependencies
         shell: bash
         run: |
