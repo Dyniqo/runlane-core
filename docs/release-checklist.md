@@ -41,7 +41,7 @@ pnpm validate:billing-sessions
 
 ## Image deployment verification
 
-GitHub Actions verifies the repository, builds the API, Worker and migrator images, publishes commit SHA image tags, and runs the deployment image smoke workflow.
+GitHub Actions verifies the repository, builds the API, Worker, migrator and Web Console images, publishes commit SHA image tags, and runs the deployment image smoke workflow.
 
 The smoke workflow accepts a raw commit SHA and applies the `sha-` image tag prefix internally.
 

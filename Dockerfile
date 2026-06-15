@@ -38,6 +38,7 @@ ENV CI=true
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/package.json
 COPY apps/worker/package.json ./apps/worker/package.json
+COPY apps/web/package.json ./apps/web/package.json
 COPY packages/application/package.json ./packages/application/package.json
 COPY packages/config/package.json ./packages/config/package.json
 COPY packages/contracts/package.json ./packages/contracts/package.json
@@ -132,3 +133,12 @@ ENV XDG_CACHE_HOME=/tmp/.cache
 USER node
 
 CMD ["pnpm", "db:migrate:deploy:runtime"]
+
+FROM caddy:2.11.3-alpine AS web
+
+COPY docker/web.Caddyfile /etc/caddy/Caddyfile
+COPY --from=builder /app/apps/web/dist /usr/share/caddy
+
+EXPOSE 3000
+
+CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]

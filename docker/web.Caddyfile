@@ -1,0 +1,18 @@
+{
+	admin off
+}
+
+:3000 {
+	root * /usr/share/caddy
+	encode zstd gzip
+
+	header {
+		-Server
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		X-Frame-Options DENY
+	}
+
+	try_files {path} /index.html
+	file_server
+}

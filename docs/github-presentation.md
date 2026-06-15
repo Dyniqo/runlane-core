@@ -5,7 +5,7 @@ This document keeps the public repository metadata consistent with the release d
 ## Repository description
 
 ```txt
-Deployment-ready NestJS backend for workflow automation, webhooks, Redis/BullMQ workers, API integrations, Stripe billing and AI decision steps.
+NestJS workflow automation backend with Redis/BullMQ workers, API integrations, Stripe billing, AI decision steps and a Web Console.
 ```
 
 ## Homepage
@@ -42,7 +42,7 @@ ddd
 
 ## Pinned repository summary
 
-Runlane Core is a deployment-ready NestJS backend for workflow automation, webhook processing, API integrations, AI decision steps, Stripe billing synchronization, usage metering and queue-based execution.
+Runlane Core is a NestJS workflow automation platform for webhook processing, API integrations, AI decision steps, Stripe billing synchronization, usage metering, queue-based execution and browser-based operations.
 
 It demonstrates a complete backend vertical slice: workspace-scoped authentication, API keys, webhook security, automation bridge execution, Redis/BullMQ workers, retries, dead-letter handling, HTTP connector SSRF protection, AI decision steps, Stripe webhook synchronization, usage limits, audit logs, Docker deployment and automated validation.
 

@@ -11,16 +11,17 @@ pnpm format
 pnpm verify
 ```
 
-`pnpm verify` checks formatting, lockfile registry safety, GitHub Actions configuration, deployment configuration, documentation artifacts, release validation, runtime script compatibility, linting, Prisma schema validity, TypeScript type checking and build output.
+`pnpm verify` checks formatting, lockfile registry safety, GitHub Actions configuration, deployment configuration, documentation artifacts, release validation, runtime script compatibility, web console alignment, linting, Prisma schema validity, TypeScript type checking and build output.
 
 ## Local API validation
 
-Start the API and Worker first:
+Start the API and Worker first. Start the Web Console too when validating browser flows:
 
 ```powershell
 pnpm db:migrate:deploy
 pnpm start:api
 pnpm start:worker
+pnpm dev:web
 ```
 
 Run focused validations:
@@ -94,8 +95,8 @@ The clean-room command is separate from `pnpm verify` because it rebuilds the Do
 
 CI configuration validation prevents accidental use of internal registries, floating action tags, unsafe workflow names and unpinned image references.
 
-Deployment configuration validation prevents public datastore ports, floating image tags, missing Caddy security configuration and incomplete deployment environment examples.
+Deployment configuration validation prevents public datastore ports, floating image tags, missing Caddy security configuration, missing Web Console route fallback and incomplete deployment environment examples.
 
-Documentation artifact validation verifies that required docs, demo scripts and Postman folders are present and aligned with package scripts.
+Documentation artifact validation verifies that required docs, web console notes, demo scripts and Postman folders are present and aligned with package scripts.
 
 Release validation verifies that the README, release verification guide, clean-room validation guide, operational scenario index and release commands remain aligned.

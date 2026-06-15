@@ -135,6 +135,6 @@ Notification steps deliver Slack or Discord messages through provider-specific w
 
 ## Deployment model
 
-Local development can run API, Worker, PostgreSQL and Redis with source-based Compose. Image-based deployment uses published images for API, Worker and migrator targets, a private internal network for data stores, and Caddy as the public reverse proxy.
+Local development can run API, Worker, PostgreSQL and Redis with source-based Compose. Image-based deployment uses published images for API, Worker, migrator and Web Console targets, a private internal network for data stores, and Caddy as the public reverse proxy.
 
 GitHub Actions verifies the repository, validates the lockfile registry, validates deploy configuration, builds pinned Docker targets, publishes commit-SHA tagged images, and runs an image smoke workflow against the deploy Compose stack.

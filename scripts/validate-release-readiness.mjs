@@ -9,6 +9,7 @@ const requiredFiles = [
   'docs/release-checklist.md',
   'docs/clean-room-docker-validation.md',
   'docs/validation.md',
+  'docs/web-console.md',
   'docs/cases/index.md',
   'docs/cases/ai-lead-routing.md',
   'docs/cases/webhook-queue-worker.md',
@@ -154,6 +155,7 @@ if (failures.length === 0) {
     'docs/clean-room-docker-validation.md',
     'docs/cases/index.md',
     'docs/validation.md',
+  'docs/web-console.md',
     'docs/deployment.md',
   ]) {
     const content = read(file);
@@ -184,7 +186,7 @@ function buildForbiddenFragments() {
     ['AI', 'assisted'].join('-'),
     'student',
     ['deployment', 'ready'].join('-'),
-    ['production', 'ready'].join('-'),
+    [['pro', 'duction'].join(''), 'ready'].join('-'),
     ['port', 'folio'].join(''),
     ['coming', 'soon'].join(' '),
     ['not', 'deployed'].join(' '),

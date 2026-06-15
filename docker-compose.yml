@@ -5,10 +5,10 @@ x-build-args: &build-args
   PRISMA_ENGINES_MIRROR: ${PRISMA_ENGINES_MIRROR:-https://binaries.prisma.sh}
   HTTP_PROXY: ${HTTP_PROXY:-}
   HTTPS_PROXY: ${HTTPS_PROXY:-}
-  NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,host.docker.internal,postgres,redis,migrator,api,worker}
+  NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,host.docker.internal,postgres,redis,migrator,api,worker,web}
   http_proxy: ${HTTP_PROXY:-}
   https_proxy: ${HTTPS_PROXY:-}
-  no_proxy: ${NO_PROXY:-localhost,127.0.0.1,host.docker.internal,postgres,redis,migrator,api,worker}
+  no_proxy: ${NO_PROXY:-localhost,127.0.0.1,host.docker.internal,postgres,redis,migrator,api,worker,web}
 
 x-build: &app-build
   context: .
@@ -28,10 +28,10 @@ x-app-environment: &app-environment
   EXECUTION_RETRY_BASE_DELAY_MS: ${EXECUTION_RETRY_BASE_DELAY_MS:-500}
   EXECUTION_RETRY_MAX_DELAY_MS: ${EXECUTION_RETRY_MAX_DELAY_MS:-30000}
   API_URL: ${RUNLANE_PUBLIC_API_URL:-http://127.0.0.1:14600}
-  APP_URL: ${RUNLANE_PUBLIC_APP_URL:-http://127.0.0.1:14600}
+  APP_URL: ${RUNLANE_PUBLIC_APP_URL:-http://127.0.0.1:14610}
   DATABASE_URL: postgresql://${POSTGRES_USER:-runlane}:${POSTGRES_PASSWORD:-runlane_local_database}@postgres:5432/${POSTGRES_DB:-runlane}?schema=public
   REDIS_URL: redis://redis:6379/0
-  CORS_ORIGIN: ${CORS_ORIGIN:-http://127.0.0.1:14600,http://localhost:14600,http://localhost:4600,http://127.0.0.1:4600}
+  CORS_ORIGIN: ${CORS_ORIGIN:-http://127.0.0.1:14610,http://localhost:14610,http://localhost:4610,http://127.0.0.1:4610,http://127.0.0.1:14600,http://localhost:14600,http://localhost:4600,http://127.0.0.1:4600}
   RATE_LIMIT_TTL: ${RATE_LIMIT_TTL:-60}
   RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-25}
   MAX_PAYLOAD_SIZE: ${MAX_PAYLOAD_SIZE:-1048576}
@@ -192,6 +192,37 @@ services:
       timeout: 5s
       retries: 12
       start_period: 15s
+    logging: *default-logging
+    networks:
+      - runtime
+
+  web:
+    build:
+      <<: *app-build
+      target: web
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+      - /config:size=16m,mode=0755
+      - /data:size=16m,mode=0755
+    ports:
+      - '127.0.0.1:${RUNLANE_WEB_PORT:-14610}:3000'
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q --spider http://127.0.0.1:3000/
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
     logging: *default-logging
     networks:
       - runtime

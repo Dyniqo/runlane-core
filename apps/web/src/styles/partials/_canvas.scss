@@ -1,0 +1,1512 @@
+.cluster-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.bridge-contract-panel {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.bridge-contract-panel > div {
+  display: grid;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface-solid) 78%, transparent);
+  padding: 14px;
+}
+
+.bridge-contract-panel span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bridge-contract-panel strong {
+  color: var(--text-strong);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1180px) {
+  .bridge-contract-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .bridge-contract-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+.canvas-node {
+  overflow: visible;
+}
+
+.canvas-node-actions {
+  position: absolute;
+  right: 16px;
+  bottom: -18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid color-mix(in srgb, var(--line) 84%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-solid) 92%, transparent);
+  padding: 5px;
+  box-shadow: var(--shadow-sm);
+  z-index: 6;
+}
+
+.canvas-node-actions button {
+  min-height: 26px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 76%, transparent);
+  color: var(--text-strong);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  padding: 0 9px;
+}
+
+.canvas-node-actions button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 18%, var(--panel));
+  color: var(--text-strong);
+}
+
+.canvas-node-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.transition-editor,
+.advanced-config-editor {
+  display: grid;
+  gap: 11px;
+}
+
+.section-label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.advanced-config-editor textarea {
+  min-height: 184px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.field-error {
+  border: 1px solid color-mix(in srgb, var(--danger) 42%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.45;
+  padding: 9px 11px;
+}
+
+.run-detail .button.primary {
+  width: fit-content;
+}
+
+@media (max-width: 760px) {
+  .canvas-node-actions {
+    position: static;
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    margin-top: 8px;
+  }
+}
+
+.builder-page-composed {
+  gap: 18px;
+}
+
+.builder-hero-card-v2 {
+  min-height: 186px;
+  padding: clamp(22px, 2.3vw, 34px);
+  background:
+    radial-gradient(
+      circle at 8% 0%,
+      color-mix(in srgb, var(--gh-blue) 18%, transparent),
+      transparent 28rem
+    ),
+    radial-gradient(
+      circle at 92% 10%,
+      color-mix(in srgb, var(--gh-violet) 15%, transparent),
+      transparent 24rem
+    ),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--surface) 94%, transparent),
+      color-mix(in srgb, var(--surface-solid) 88%, transparent)
+    );
+}
+
+.builder-hero-card-v2 h1 {
+  max-width: 1020px;
+}
+
+.builder-hero-card-v2 p {
+  max-width: 900px;
+  font-size: clamp(15px, 1vw, 17px) !important;
+}
+
+.builder-command-layout {
+  display: grid !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  gap: 18px !important;
+  align-items: stretch !important;
+}
+
+.builder-workflow-console {
+  grid-column: 1 / -1 !important;
+  position: static !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  padding: clamp(18px, 1.6vw, 26px) !important;
+}
+
+.workflow-console-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 16px;
+}
+
+.flow-capacity-card {
+  display: grid;
+  gap: 10px;
+  border: 1px solid color-mix(in srgb, var(--line) 84%, transparent);
+  border-radius: 22px;
+  background:
+    radial-gradient(
+      circle at 92% 10%,
+      color-mix(in srgb, var(--gh-green) 12%, transparent),
+      transparent 12rem
+    ),
+    color-mix(in srgb, var(--surface-solid) 84%, transparent);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.flow-capacity-card > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.flow-capacity-card span,
+.flow-card-title span,
+.workflow-item-meta-v2 small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.flow-capacity-card strong {
+  color: var(--text-strong);
+  font-size: 26px;
+  line-height: 1;
+  letter-spacing: -0.055em;
+}
+
+.flow-capacity-card p,
+.flow-create-card p {
+  margin: 0;
+  color: color-mix(in srgb, var(--muted) 82%, var(--text-strong));
+  font-size: 13.5px !important;
+  font-weight: 760 !important;
+  line-height: 1.5 !important;
+}
+
+.workflow-console-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.85fr) minmax(420px, 1.15fr) minmax(420px, 1.35fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.flow-create-card,
+.selected-flow-card-v2,
+.workflow-library-card {
+  min-height: 294px;
+  display: grid;
+  align-content: start;
+  gap: 13px;
+  border: 1px solid color-mix(in srgb, var(--line) 86%, transparent);
+  border-radius: 24px;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--surface-solid) 90%, transparent),
+    color-mix(in srgb, var(--panel) 82%, transparent)
+  );
+  padding: 18px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    var(--shadow-sm);
+}
+
+.flow-card-title {
+  display: grid;
+  gap: 6px;
+}
+
+.flow-card-title strong {
+  color: var(--text-strong);
+  font-size: 20px;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.selected-flow-form-grid,
+.payload-form-grid-v2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.endpoint-preview-v2 {
+  min-height: 78px;
+  align-content: center;
+}
+
+.flow-action-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.flow-action-strip .button {
+  width: 100%;
+}
+
+.workflow-library-card {
+  overflow: hidden;
+}
+
+.workflow-list-v2 {
+  max-height: 220px;
+  overflow: auto;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
+}
+
+.workflow-item-v2 {
+  min-height: 76px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  border-radius: 18px;
+  padding: 13px 14px;
+}
+
+.workflow-item-v2 strong {
+  color: var(--text-strong);
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.workflow-item-v2 span {
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+.workflow-item-meta-v2 {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+
+.builder-canvas-card-v2 {
+  grid-column: span 8 !important;
+  min-height: clamp(760px, 76vh, 940px);
+  padding: 18px !important;
+}
+
+.builder-control-card-v2 {
+  grid-column: span 4 !important;
+  min-height: clamp(760px, 76vh, 940px);
+  max-height: clamp(760px, 76vh, 940px);
+  overflow: auto !important;
+  padding: 18px !important;
+}
+
+.builder-canvas-card-v2 .builder-grid.redesigned.final {
+  grid-template-rows: auto minmax(620px, 1fr) !important;
+  height: 100%;
+}
+
+.builder-canvas-card-v2 .node-dock.spacious.final {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.builder-canvas-card-v2 .dock-title {
+  margin: 0 !important;
+}
+
+.builder-canvas-card-v2 .dock-node-list {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.runner-card-v2,
+.payload-card-v2 {
+  border: 1px solid color-mix(in srgb, var(--line) 84%, transparent);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--surface-solid) 78%, transparent);
+  padding: 16px;
+}
+
+.runner-actions-v2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.payload-form-grid-v2 {
+  grid-template-columns: 1fr;
+}
+
+.builder-state-grid-v2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.empty-selected-flow-card {
+  place-items: center;
+}
+
+@media (max-width: 1500px) {
+  .workflow-console-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workflow-library-card {
+    grid-column: 1 / -1;
+  }
+
+  .workflow-list-v2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    max-height: 260px;
+  }
+
+  .builder-canvas-card-v2,
+  .builder-control-card-v2 {
+    grid-column: 1 / -1 !important;
+    min-height: auto;
+    max-height: none;
+  }
+
+  .builder-control-card-v2 {
+    display: grid;
+    grid-template-columns: minmax(360px, 1fr) minmax(320px, 0.72fr);
+    align-items: start;
+  }
+
+  .builder-control-card-v2 .builder-state-grid-v2 {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 980px) {
+  .workflow-console-header,
+  .workflow-console-grid,
+  .selected-flow-form-grid,
+  .builder-control-card-v2,
+  .builder-canvas-card-v2 .node-dock.spacious.final {
+    grid-template-columns: 1fr !important;
+  }
+
+  .workflow-list-v2,
+  .flow-action-strip,
+  .runner-actions-v2,
+  .builder-state-grid-v2 {
+    grid-template-columns: 1fr;
+  }
+
+  .builder-hero-card-v2 {
+    grid-template-columns: 1fr;
+  }
+
+  .builder-hero-actions {
+    justify-content: flex-start;
+  }
+}
+
+.builder-command-layout {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 18px !important;
+  align-items: stretch !important;
+}
+
+.workflow-console-header {
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 336px) !important;
+  align-items: stretch !important;
+}
+
+.workflow-console-header .panel-header {
+  height: 100%;
+  align-items: center;
+}
+
+.workflow-console-header .panel-actions {
+  align-items: center;
+  align-self: center;
+}
+
+.builder-workspace-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.46fr) minmax(530px, 0.8fr);
+  gap: 18px;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.builder-workspace-row > .card {
+  min-width: 0;
+}
+
+.builder-canvas-card-v2,
+.builder-control-card-v2 {
+  grid-column: auto !important;
+  min-height: clamp(920px, 74vh, 900px) !important;
+  height: clamp(920px, 74vh, 900px) !important;
+  max-height: clamp(920px, 74vh, 900px) !important;
+}
+
+.builder-canvas-card-v2 {
+  overflow: hidden !important;
+}
+
+.builder-control-card-v2 {
+  display: block !important;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.builder-control-card-v2 .inspector-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  display: block !important;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
+}
+
+.builder-control-card-v2 .inspector-card.editable,
+.builder-control-card-v2 .step-editor-form,
+.builder-control-card-v2 .transition-editor,
+.builder-control-card-v2 .advanced-config-editor {
+  display: block !important;
+}
+
+.builder-control-card-v2 .inspector-head,
+.builder-control-card-v2 .inspector-list,
+.builder-control-card-v2 .field,
+.builder-control-card-v2 .transition-editor,
+.builder-control-card-v2 .advanced-config-editor,
+.builder-control-card-v2 .inspector-actions {
+  margin-top: 14px;
+}
+
+.builder-control-card-v2 .inspector-head {
+  margin-top: 0;
+}
+
+.builder-control-card-v2 .inspector-list {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.builder-control-card-v2 .control-section,
+.builder-control-card-v2 .mini-grid {
+  flex: 0 0 auto;
+}
+
+.builder-canvas-card-v2 .builder-grid.redesigned.final {
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  gap: 14px !important;
+}
+
+.builder-canvas-card-v2 .node-dock.spacious.final {
+  display: block !important;
+  grid-template-columns: none !important;
+  grid-template-rows: none !important;
+  min-height: auto !important;
+}
+
+.builder-canvas-card-v2 .dock-node-list {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  margin-top: 12px;
+}
+
+.builder-canvas-card-v2 .canvas-board.final {
+  min-height: 0 !important;
+  height: 100% !important;
+}
+
+.runner-card-v2,
+.payload-card-v2 {
+  padding: 14px !important;
+}
+
+.runner-actions-v2 {
+  gap: 10px !important;
+}
+
+.integration-control-card .api-key-row {
+  grid-template-columns: minmax(0, 1fr) max-content !important;
+  gap: 12px !important;
+}
+
+.integration-control-card .api-key-row .row-actions,
+.bridge-actions,
+.panel-actions.bridge-actions {
+  display: inline-flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  min-width: max-content;
+}
+
+.integration-control-card .api-key-row .status-badge,
+.integration-control-card .api-key-row .button.sm {
+  flex: 0 0 auto;
+}
+
+.bridge-contract-panel {
+  align-items: start !important;
+  gap: 10px !important;
+}
+
+.bridge-contract-panel > div {
+  min-height: 70px !important;
+  align-content: center !important;
+  gap: 6px !important;
+  padding: 12px 14px !important;
+}
+
+.bridge-contract-panel strong {
+  line-height: 1.25 !important;
+}
+
+.circle-progress.sm {
+  position: relative !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 94px !important;
+  height: 94px !important;
+}
+
+.circle-progress.sm svg {
+  width: 94px !important;
+  height: 94px !important;
+}
+
+.circle-progress.sm > div {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+  text-align: center;
+}
+
+.circle-progress.sm strong {
+  display: block !important;
+  max-width: 62px !important;
+  color: var(--text-strong);
+  font-size: 17px !important;
+  line-height: 1 !important;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+}
+
+.top-actions .theme-toggle,
+.top-actions .button.sm {
+  min-width: 94px !important;
+  min-height: 38px !important;
+  height: 38px !important;
+  padding: 0 13px !important;
+  border-radius: 12px !important;
+}
+
+.top-actions .theme-toggle {
+  justify-content: center !important;
+}
+
+@media (max-width: 1380px) {
+  .builder-workspace-row {
+    grid-template-columns: 1fr;
+  }
+
+  .builder-canvas-card-v2,
+  .builder-control-card-v2 {
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  .builder-control-card-v2 {
+    overflow: visible !important;
+  }
+
+  .builder-control-card-v2 .inspector-card {
+    max-height: 680px;
+  }
+}
+
+@media (max-width: 980px) {
+  .workflow-console-header {
+    grid-template-columns: 1fr !important;
+  }
+
+  .builder-canvas-card-v2 .dock-node-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .integration-control-card .api-key-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .integration-control-card .api-key-row .row-actions,
+  .bridge-actions,
+  .panel-actions.bridge-actions {
+    justify-content: flex-start !important;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .builder-canvas-card-v2 .dock-node-list,
+  .builder-control-card-v2 .inspector-list {
+    grid-template-columns: 1fr !important;
+  }
+
+  .top-actions .theme-toggle,
+  .top-actions .button.sm {
+    min-width: 86px !important;
+  }
+}
+
+.compact-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  margin-top: 12px;
+  padding: 9px 10px;
+  border: 1px solid color-mix(in srgb, var(--line) 84%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-solid) 82%, transparent);
+}
+
+.compact-pager > span {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.compact-pager > div {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.compact-pager button {
+  min-height: 30px;
+  border: 1px solid color-mix(in srgb, var(--line) 84%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel) 74%, transparent);
+  color: var(--text-strong);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+  padding: 0 10px;
+}
+
+.compact-pager button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.compact-pager strong {
+  min-width: 42px;
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 950;
+  text-align: center;
+}
+
+.bridge-redesign-card,
+.endpoint-redesign-card,
+.capability-map-card {
+  overflow: hidden;
+}
+
+.bridge-redesign-card .panel-header,
+.endpoint-redesign-card .panel-header,
+.capability-map-card .panel-header {
+  align-items: center;
+  gap: 18px;
+}
+
+.bridge-redesign-card .panel-actions {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.bridge-redesign-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: nowrap;
+  width: max-content;
+}
+
+.bridge-redesign-actions .button {
+  flex: 0 0 auto;
+  min-width: 118px;
+}
+
+.bridge-redesign-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.88fr) minmax(0, 1.12fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.bridge-route-card,
+.bridge-stat-card,
+.endpoint-group-card,
+.capability-map-item {
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--surface-solid) 88%, transparent),
+      color-mix(in srgb, var(--surface-strong) 84%, transparent)
+    );
+  box-shadow: 0 18px 48px color-mix(in srgb, var(--shadow-color) 9%, transparent);
+}
+
+.bridge-route-card {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  min-height: 148px;
+  padding: 18px;
+  border-radius: 24px;
+}
+
+.bridge-route-card span,
+.bridge-stat-card span,
+.endpoint-group-card > strong,
+.endpoint-group-card div span,
+.capability-map-index {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.bridge-route-card strong {
+  color: var(--text-strong);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: clamp(14px, 1.2vw, 16px);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.bridge-route-card p {
+  max-width: 58ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.bridge-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.bridge-stat-card {
+  display: grid;
+  align-content: center;
+  gap: 7px;
+  min-height: 76px;
+  padding: 13px 14px;
+  border-radius: 18px;
+}
+
+.bridge-stat-card strong {
+  min-width: 0;
+  color: var(--text-strong);
+  font-size: 14px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.endpoint-redesign-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.endpoint-group-card {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 22px;
+}
+
+.endpoint-group-card > strong {
+  color: var(--gh-blue);
+}
+
+.endpoint-group-card div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding-top: 11px;
+  border-top: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
+}
+
+.endpoint-group-card div span {
+  color: var(--text-strong);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.endpoint-group-card div p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 760;
+  line-height: 1.45;
+}
+
+.capability-map-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.capability-map-item {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 14px;
+  min-width: 0;
+  padding: 16px;
+  border-radius: 24px;
+}
+
+.capability-map-index {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid color-mix(in srgb, var(--gh-blue) 24%, var(--line));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--gh-blue) 10%, transparent);
+  color: var(--gh-blue);
+  letter-spacing: -0.04em;
+}
+
+.capability-map-item > div:last-child {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.capability-map-item strong {
+  color: var(--text-strong);
+  font-size: 18px;
+  letter-spacing: -0.03em;
+}
+
+.capability-map-item p {
+  max-width: 60ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13.5px;
+  font-weight: 720;
+  line-height: 1.55;
+}
+
+.capability-map-item > div:last-child > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.capability-map-item span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 64%, transparent);
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 850;
+  padding: 0 10px;
+}
+
+.run-counter-grid.three-items > .info-pill:last-child {
+  grid-column: span 2;
+}
+
+.run-counter-grid .info-pill {
+  min-width: 0;
+}
+
+.circle-progress.sm {
+  isolation: isolate;
+}
+
+.circle-progress.sm > div {
+  z-index: 1;
+  transform: none !important;
+}
+
+.circle-progress.sm strong {
+  width: 100%;
+  text-align: center;
+}
+
+.audit-list.audit-scroll,
+.run-items.bounded-scroll.tall {
+  min-height: 0;
+}
+
+@media (max-width: 1280px) {
+  .endpoint-redesign-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bridge-redesign-grid,
+  .capability-map-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .bridge-redesign-card .panel-header,
+  .endpoint-redesign-card .panel-header,
+  .capability-map-card .panel-header {
+    align-items: start;
+  }
+
+  .bridge-redesign-actions {
+    width: 100%;
+  }
+
+  .bridge-redesign-actions .button {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .bridge-stat-grid,
+  .endpoint-redesign-grid,
+  .capability-map-grid,
+  .run-counter-grid.three-items {
+    grid-template-columns: 1fr;
+  }
+
+  .run-counter-grid.three-items > .info-pill:last-child {
+    grid-column: auto;
+  }
+
+  .compact-pager {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .compact-pager > div {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .compact-pager button {
+    flex: 1 1 0;
+  }
+
+  .capability-map-item {
+    grid-template-columns: 1fr;
+  }
+}
+
+.workflow-edge-layer {
+  pointer-events: none;
+  overflow: visible;
+}
+
+.workflow-edge-path {
+  fill: none;
+  stroke-width: 2.4px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 10px 14px rgba(15, 23, 42, 0.08));
+}
+
+.workflow-edge.success .workflow-edge-path {
+  stroke: color-mix(in srgb, var(--gh-green) 82%, var(--text-strong));
+}
+
+.workflow-edge.failure .workflow-edge-path {
+  stroke: color-mix(in srgb, var(--gh-red) 82%, var(--text-strong));
+  stroke-dasharray: 9 8;
+}
+
+.workflow-edge.branch .workflow-edge-path {
+  stroke: color-mix(in srgb, var(--gh-violet) 76%, var(--text-strong));
+}
+
+.workflow-edge.next .workflow-edge-path {
+  stroke: color-mix(in srgb, var(--muted) 64%, var(--text-strong));
+  stroke-dasharray: 5 8;
+}
+
+.workflow-edge.selected .workflow-edge-path {
+  stroke-width: 3.6px;
+  filter: drop-shadow(0 16px 22px rgba(37, 99, 235, 0.22));
+}
+
+.edge-arrow.success {
+  fill: color-mix(in srgb, var(--gh-green) 82%, var(--text-strong));
+}
+
+.edge-arrow.failure {
+  fill: color-mix(in srgb, var(--gh-red) 82%, var(--text-strong));
+}
+
+.edge-arrow.branch {
+  fill: color-mix(in srgb, var(--gh-violet) 76%, var(--text-strong));
+}
+
+.edge-arrow.next {
+  fill: color-mix(in srgb, var(--muted) 64%, var(--text-strong));
+}
+
+.workflow-edge-label rect {
+  fill: color-mix(in srgb, var(--surface-solid) 92%, transparent);
+  stroke: color-mix(in srgb, var(--line) 74%, transparent);
+  stroke-width: 1px;
+  filter: drop-shadow(0 12px 24px rgba(15, 23, 42, 0.12));
+}
+
+.workflow-edge-label text {
+  fill: var(--text-strong);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: -0.02em;
+}
+
+.canvas-node {
+  min-height: 132px;
+}
+
+.node-route-strip {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--line) 76%, transparent);
+}
+
+.node-route-strip span {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-strong) 74%, transparent);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 920;
+  line-height: 1;
+  padding: 0 9px;
+}
+
+.node-route-strip .entry {
+  background: color-mix(in srgb, var(--gh-blue) 14%, var(--surface-strong));
+  color: var(--gh-blue);
+}
+
+.route-editor {
+  border: 1px solid color-mix(in srgb, var(--line) 82%, transparent);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--surface-solid) 78%, transparent);
+  padding: 14px;
+}
+
+.route-editor-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.route-editor-heading strong {
+  display: block;
+  color: var(--text-strong);
+  font-size: 15px;
+  letter-spacing: -0.02em;
+  margin-top: 3px;
+}
+
+.route-target-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.branch-route-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.branch-route-empty {
+  border: 1px dashed color-mix(in srgb, var(--line) 88%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-strong) 60%, transparent);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.5;
+  padding: 12px;
+}
+
+.branch-route-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.7fr) minmax(180px, 1fr) max-content;
+  gap: 10px;
+  align-items: end;
+  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface-strong) 56%, transparent);
+  padding: 10px;
+}
+
+.branch-route-row .button {
+  min-height: var(--control-height);
+}
+
+@media (max-width: 980px) {
+  .route-target-grid,
+  .branch-route-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+button.flow-capacity-card {
+  width: 100%;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    transform 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+button.flow-capacity-card:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
+  box-shadow: var(--shadow-md);
+}
+
+.workflow-edge-port {
+  fill: color-mix(in srgb, var(--surface-solid) 88%, transparent);
+  stroke-width: 2.6px;
+  opacity: 0.86;
+  filter: drop-shadow(0 8px 14px rgba(15, 23, 42, 0.14));
+  transition:
+    opacity 0.18s ease,
+    r 0.18s ease;
+}
+
+.workflow-edge-port-source {
+  stroke: color-mix(in srgb, var(--text-strong) 44%, transparent);
+}
+
+.workflow-edge.success .workflow-edge-port {
+  stroke: color-mix(in srgb, var(--gh-green) 82%, var(--text-strong));
+}
+
+.workflow-edge.failure .workflow-edge-port {
+  stroke: color-mix(in srgb, var(--gh-red) 82%, var(--text-strong));
+}
+
+.workflow-edge.branch .workflow-edge-port {
+  stroke: color-mix(in srgb, var(--gh-violet) 76%, var(--text-strong));
+}
+
+.workflow-edge.next .workflow-edge-port {
+  stroke: color-mix(in srgb, var(--muted) 64%, var(--text-strong));
+}
+
+.workflow-edge.selected .workflow-edge-port {
+  opacity: 1;
+  stroke-width: 3px;
+}
+
+.workflow-edge.from-top .workflow-edge-path,
+.workflow-edge.from-bottom .workflow-edge-path {
+  stroke-width: 2.7px;
+}
+
+.workflow-edge.selected.from-top .workflow-edge-path,
+.workflow-edge.selected.from-bottom .workflow-edge-path {
+  stroke-width: 3.8px;
+}
+
+.builder-canvas-card-v2 .workflow-edge-path {
+  transition:
+    d 0.18s ease,
+    stroke-width 0.18s ease,
+    filter 0.18s ease;
+}
+
+.builder-canvas-card-v2 .canvas-board.final {
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+.selected-flow-card-v2 {
+  min-height: auto !important;
+}
+
+.workflow-edge-layer {
+  pointer-events: none;
+}
+
+.workflow-edge {
+  cursor: pointer;
+  pointer-events: all;
+}
+
+.workflow-edge-label,
+.workflow-edge-port {
+  pointer-events: all;
+}
+
+.workflow-edge:hover .workflow-edge-path,
+.workflow-edge:focus-visible .workflow-edge-path {
+  stroke-width: 3.4px;
+  filter: drop-shadow(0 18px 26px rgba(37, 99, 235, 0.18));
+}
+
+.workflow-edge:hover .workflow-edge-label rect,
+.workflow-edge:focus-visible .workflow-edge-label rect {
+  stroke: color-mix(in srgb, var(--accent) 34%, var(--line));
+  fill: color-mix(in srgb, var(--surface-solid) 98%, transparent);
+}
+
+.workflow-edge:focus-visible {
+  outline: none;
+}
+
+.canvas-node {
+  cursor: grab;
+  touch-action: none;
+  transition:
+    box-shadow 0.16s ease,
+    border-color 0.16s ease,
+    filter 0.16s ease;
+  will-change: transform;
+}
+
+.canvas-node:hover {
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--line));
+  filter: drop-shadow(0 14px 26px rgba(15, 23, 42, 0.1));
+}
+
+.canvas-node.dragging {
+  cursor: grabbing;
+  z-index: 14;
+  filter: drop-shadow(0 28px 42px rgba(15, 23, 42, 0.2));
+  transition: none;
+}
+
+.canvas-route-summary {
+  position: sticky;
+  left: 18px;
+  bottom: 18px;
+  z-index: 20;
+  display: grid;
+  gap: 6px;
+  width: min(360px, calc(100% - 36px));
+  margin-top: -148px;
+  margin-left: 18px;
+  margin-bottom: 18px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 14rem),
+    color-mix(in srgb, var(--surface-solid) 94%, transparent);
+  box-shadow: var(--shadow-lg);
+  padding: 16px 44px 16px 16px;
+  backdrop-filter: blur(18px);
+}
+
+.canvas-route-summary button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 82%, transparent);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.canvas-route-summary span {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.canvas-route-summary strong {
+  color: var(--text-strong);
+  font-size: 18px;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+.canvas-route-summary p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px !important;
+  font-weight: 760 !important;
+  line-height: 1.45 !important;
+}
+
+@media (max-width: 760px) {
+  .builder-canvas-card-v2 .edge-layer {
+    display: block;
+  }
+
+  .canvas-route-summary {
+    position: static;
+    width: auto;
+    margin: 12px;
+  }
+}
+
+.canvas-board.final {
+  cursor: grab;
+}
+
+.canvas-board.final.panning {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.canvas-board.final.panning .canvas-viewport,
+.canvas-board.final.panning .canvas-node,
+.canvas-board.final.panning .workflow-edge {
+  pointer-events: none;
+}
+
+.canvas-tools button[aria-label='Arrange workflow steps'] {
+  width: auto;
+  min-width: 44px;
+  padding: 0 12px;
+  font-size: 12px;
+  letter-spacing: -0.01em;
+}
+
+.workflow-edge {
+  pointer-events: none;
+}
+
+.workflow-edge-hitbox {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 24px;
+  pointer-events: stroke;
+  cursor: pointer;
+}
+
+.workflow-edge-label,
+.workflow-edge-port {
+  pointer-events: none;
+}
+
+.workflow-edge.related:not(.selected) .workflow-edge-path {
+  stroke-width: 3px;
+  filter: drop-shadow(0 12px 18px rgba(37, 99, 235, 0.12));
+}
+
+.workflow-edge.selected .workflow-edge-path {
+  stroke-width: 5px;
+  filter:
+    drop-shadow(0 0 0 rgba(0, 0, 0, 0))
+    drop-shadow(0 18px 28px rgba(37, 99, 235, 0.26));
+}
+
+.workflow-edge.selected .workflow-edge-label rect,
+.workflow-edge:hover .workflow-edge-label rect,
+.workflow-edge:focus-visible .workflow-edge-label rect {
+  stroke: color-mix(in srgb, var(--line) 78%, transparent);
+  fill: color-mix(in srgb, var(--surface-solid) 94%, transparent);
+}
+
+.canvas-route-summary {
+  display: none !important;
+}

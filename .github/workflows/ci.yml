@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       publish_images:
-        description: Publish API, worker and migrator images to GHCR
+        description: Publish API, worker, migrator and web images to GHCR
         required: true
         default: false
         type: boolean
@@ -29,14 +29,14 @@ env:
   REDIS_URL: redis://127.0.0.1:6379/0
   RUNTIME_PROFILE: local
   API_URL: http://127.0.0.1:4600
-  APP_URL: http://127.0.0.1:4600
+  APP_URL: http://127.0.0.1:4610
   JWT_ACCESS_SECRET: runlane_ci_access_secret_change_me_64_bytes_minimum_value
   JWT_REFRESH_SECRET: runlane_ci_refresh_secret_change_me_64_bytes_minimum_value
   ENCRYPTION_KEY: runlane_ci_encryption_key_change_me_64_bytes_minimum_value
   WEBHOOK_SIGNING_SECRET: runlane_ci_webhook_signing_secret_change_me_64_bytes_minimum_value
   STRIPE_WEBHOOK_SECRET: runlane_ci_stripe_webhook_secret_change_me_64_bytes_minimum_value
   STRIPE_API_KEY: '12341234123412341234123412341234'
-  CORS_ORIGIN: http://127.0.0.1:4600,http://localhost:4600
+  CORS_ORIGIN: http://127.0.0.1:4610,http://localhost:4610,http://127.0.0.1:4600,http://localhost:4600
   PUBLIC_REGISTRATION_ENABLED: 'true'
   DEMO_MODE: 'true'
   DEMO_SESSION_ENABLED: 'true'
@@ -145,6 +145,9 @@ jobs:
           - service: migrator
             target: migrator
             image: migrator
+          - service: web
+            target: web
+            image: web
 
     steps:
       - name: Checkout repository

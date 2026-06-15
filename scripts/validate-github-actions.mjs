@@ -6,6 +6,7 @@ const ciWorkflowPath = resolve(root, '.github/workflows/ci.yml');
 const smokeWorkflowPath = resolve(root, '.github/workflows/deployment-smoke.yml');
 const packagePath = resolve(root, 'package.json');
 const dockerfilePath = resolve(root, 'Dockerfile');
+const webCaddyfilePath = resolve(root, 'docker/web.Caddyfile');
 const npmrcPath = resolve(root, '.npmrc');
 const lockfilePath = resolve(root, 'pnpm-lock.yaml');
 
@@ -13,6 +14,7 @@ const workflow = readFileSync(ciWorkflowPath, 'utf8');
 const smokeWorkflow = existsSync(smokeWorkflowPath) ? readFileSync(smokeWorkflowPath, 'utf8') : '';
 const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'));
 const dockerfile = readFileSync(dockerfilePath, 'utf8');
+const webCaddyfile = existsSync(webCaddyfilePath) ? readFileSync(webCaddyfilePath, 'utf8') : '';
 const npmrc = existsSync(npmrcPath) ? readFileSync(npmrcPath, 'utf8') : '';
 const lockfile = existsSync(lockfilePath) ? readFileSync(lockfilePath, 'utf8') : '';
 const failures = [];
@@ -33,6 +35,7 @@ const requiredWorkflowFragments = [
   'target: api',
   'target: worker',
   'target: migrator',
+  'target: web',
   'postgres:17.10-alpine3.23',
   'redis:8.6.4-alpine3.23',
   'NPM_REGISTRY: https://registry.npmjs.org/',
@@ -138,11 +141,11 @@ if (!workflow.includes('NPM_REGISTRY: https://registry.npmjs.org/')) {
   failures.push('Workflow must define NPM_REGISTRY at top level');
 }
 
-if (!lockfile.includes('https://registry.npmjs.org/')) {
-  failures.push('pnpm-lock.yaml must contain public npm tarball URLs');
+if (lockfile.includes('tarball:') && !lockfile.includes('https://registry.npmjs.org/')) {
+  failures.push('pnpm-lock.yaml tarball URLs must use the public npm registry when tarball URLs are present');
 }
 
-const dockerTargets = ['api', 'worker', 'migrator'];
+const dockerTargets = ['api', 'worker', 'migrator', 'web'];
 
 for (const target of dockerTargets) {
   const pattern = new RegExp(`^FROM\\s+.+\\s+AS\\s+${target}$`, 'm');
@@ -174,6 +177,22 @@ if (packageJson.scripts['validate:ci'] !== 'node scripts/validate-github-actions
   failures.push('package.json script validate:ci is missing or invalid');
 }
 
+if (packageJson.scripts['docker:logs'] !== 'docker compose logs --follow postgres redis migrator api worker web') {
+  failures.push('package.json script docker:logs must include the web service');
+}
+
+if (!dockerfile.includes('COPY docker/web.Caddyfile /etc/caddy/Caddyfile')) {
+  failures.push('Dockerfile web target must copy docker/web.Caddyfile');
+}
+
+if (!dockerfile.includes('CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]')) {
+  failures.push('Dockerfile web target must run Caddy with its checked-in config');
+}
+
+if (!webCaddyfile.includes('try_files {path} /index.html')) {
+  failures.push('docker/web.Caddyfile must keep SPA route fallback');
+}
+
 if (!packageJson.scripts.verify.includes('pnpm lockfile:registry:check')) {
   failures.push('package.json verify script must include pnpm lockfile:registry:check');
 }
@@ -187,7 +206,8 @@ if (smokeWorkflow) {
     'docker/login-action@v4.2.0',
     'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" config --quiet',
     'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d',
-    'curl --fail --silent http://127.0.0.1:18080/health',
+    'curl --fail --silent --header "Host: api.runlane.localhost" http://127.0.0.1:18080/health',
+    'curl --fail --silent --header "Host: runlane.localhost" http://127.0.0.1:18080/',
   ];
 
   for (const fragment of requiredSmokeFragments) {

@@ -1,0 +1,850 @@
+@media (max-width: 1280px) {
+  :root {
+    --box-width: min(100%, calc(100vw - 24px));
+  }
+
+  .app-shell {
+    padding: 0 12px 18px;
+  }
+
+  .page-box {
+    gap: 14px;
+  }
+
+  .chrome-layer {
+    gap: 10px;
+    padding: 10px 0;
+  }
+
+  .top-navigation.polished.final {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+    padding: 14px !important;
+  }
+
+  .nav-center,
+  .top-actions,
+  .builder-hero-actions,
+  .hero-actions,
+  .panel-actions,
+  .panel-header__actions {
+    justify-content: flex-start;
+  }
+
+  .nav-center,
+  .health-strip,
+  .top-actions {
+    width: 100%;
+  }
+
+  .health-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .signal {
+    justify-content: center;
+    min-width: 0;
+    padding-inline: 10px;
+  }
+
+  .top-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .top-actions .theme-toggle,
+  .top-actions .button {
+    width: 100%;
+  }
+
+  .module-tabs.final {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .overview-hero-card.refined,
+  .usage-hero-card,
+  .usage-dashboard-hero,
+  .plans-hero,
+  .builder-hero-card,
+  .login-shell.final.operational,
+  .executions-page.expanded,
+  .integration-page.operations-grid,
+  .audit-page.expanded,
+  .builder-workspace-row,
+  .workflow-console-header,
+  .workflow-console-grid,
+  .bridge-redesign-grid,
+  .endpoint-redesign-grid,
+  .capability-map-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .overview-command-grid,
+  .usage-capacity-strip.radial,
+  .usage-metric-grid.elevated,
+  .plans-grid,
+  .capability-grid,
+  .endpoint-grid,
+  .bridge-stat-grid,
+  .run-counter-grid.three-items {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .overview-lower-grid.final .overview-tile-span,
+  .overview-lower-grid.final .journey-card,
+  .overview-lower-grid.final .workspace-state-card,
+  .overview-lower-grid.final .recent-activity-card,
+  .overview-lower-grid.final .operation-scope-card,
+  .overview-lower-grid.final .workspace-guard-card,
+  .overview-lower-grid.final .execution-rhythm-card {
+    grid-column: span 6 !important;
+  }
+
+  .builder-canvas-card-v2,
+  .builder-control-card-v2 {
+    min-height: auto !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  .builder-canvas-card-v2 .canvas-board.final {
+    min-height: clamp(640px, 72vh, 780px) !important;
+    height: auto !important;
+  }
+
+  .builder-control-card-v2,
+  .builder-control-card-v2 .inspector-card,
+  .integration-control-card,
+  .audit-card,
+  .run-items.bounded-scroll.tall,
+  .summary-grid.bounded-scroll.short,
+  .timeline-list.bounded-scroll.short {
+    max-height: none !important;
+  }
+}
+
+@media (max-width: 960px) {
+  :root {
+    --box-width: min(100%, calc(100vw - 20px));
+    --control-height: 44px;
+  }
+
+  .chrome-layer {
+    position: static;
+  }
+
+  .top-navigation.polished.final {
+    border-radius: 22px;
+  }
+
+  .brand-cluster span {
+    max-width: min(58vw, 420px);
+  }
+
+  .nav-center {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .service-pill {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .module-tabs.final {
+    position: sticky !important;
+    top: 8px !important;
+    z-index: 70;
+    display: flex !important;
+    gap: 8px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-padding-inline: 8px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .module-tabs.final::-webkit-scrollbar,
+  .record-list.bounded-scroll::-webkit-scrollbar,
+  .run-items.bounded-scroll::-webkit-scrollbar,
+  .timeline-list.bounded-scroll::-webkit-scrollbar,
+  .summary-grid.bounded-scroll::-webkit-scrollbar,
+  .workflow-list-v2::-webkit-scrollbar {
+    height: 0;
+    width: 0;
+  }
+
+  .module-tabs.final button {
+    flex: 0 0 142px;
+    min-width: 142px;
+    min-height: 58px;
+    scroll-snap-align: start;
+  }
+
+  .overview-command-grid,
+  .action-panel-grid,
+  .readiness-stack,
+  .usage-capacity-strip.radial,
+  .usage-metric-grid.elevated,
+  .plans-grid,
+  .capability-grid,
+  .plan-limit-grid,
+  .endpoint-grid,
+  .bridge-stat-grid,
+  .integration-support-grid,
+  .selected-flow-form-grid,
+  .payload-form-grid-v2,
+  .builder-state-grid-v2,
+  .two-col-form,
+  .credential-form-grid,
+  .runner-actions-v2,
+  .quick-stack.horizontal,
+  .mini-grid,
+  .summary-grid,
+  .run-counter-grid,
+  .run-counter-grid.three-items {
+    grid-template-columns: 1fr !important;
+  }
+
+  .overview-lower-grid.final,
+  .overview-lower-grid.final.balanced,
+  .workspace-snapshot-grid,
+  .snapshot-grid,
+  .journey-insight-grid,
+  .rhythm-grid,
+  .rhythm-grid.expanded {
+    grid-template-columns: 1fr !important;
+  }
+
+  .overview-lower-grid.final .overview-tile-span,
+  .overview-lower-grid.final .journey-card,
+  .overview-lower-grid.final .workspace-state-card,
+  .overview-lower-grid.final .recent-activity-card,
+  .overview-lower-grid.final .operation-scope-card,
+  .overview-lower-grid.final .workspace-guard-card,
+  .overview-lower-grid.final .execution-rhythm-card {
+    grid-column: 1 / -1 !important;
+  }
+
+  .overview-hero-card.refined,
+  .usage-hero-card,
+  .plans-hero,
+  .plans-compare-card,
+  .builder-hero-card,
+  .workflow-rail,
+  .canvas-card.final,
+  .control-card.final,
+  .login-showcase.operational,
+  .auth-card.operational,
+  .integration-page > .card,
+  .audit-card,
+  .usage-card.refined,
+  .overview-lower-grid.final .card {
+    padding: 20px !important;
+    border-radius: 24px !important;
+  }
+
+  .panel-header__row,
+  .flow-board-heading,
+  .showcase-preview-top,
+  .bridge-redesign-card .panel-header,
+  .endpoint-redesign-card .panel-header,
+  .capability-map-card .panel-header {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .panel-header__actions,
+  .panel-actions,
+  .bridge-redesign-actions,
+  .flow-action-strip,
+  .form-actions.final,
+  .hero-actions,
+  .builder-hero-actions,
+  .inspector-actions,
+  .row-actions {
+    width: 100%;
+  }
+
+  .panel-header__actions .button,
+  .panel-actions .button,
+  .bridge-redesign-actions .button,
+  .flow-action-strip .button,
+  .form-actions.final .button,
+  .hero-actions .button,
+  .builder-hero-actions .button,
+  .inspector-actions .button,
+  .record-row.action-row > .button,
+  .command-card .button,
+  .plan-showcase-card .button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .workflow-console-grid,
+  .builder-workspace-row {
+    gap: 14px !important;
+  }
+
+  .workflow-list-v2,
+  .record-list.bounded-scroll,
+  .audit-list.audit-scroll,
+  .run-items.bounded-scroll.tall,
+  .summary-grid.bounded-scroll.short,
+  .timeline-list.bounded-scroll.short {
+    max-height: none !important;
+    overflow: visible !important;
+    padding-right: 0;
+  }
+
+  .login-title-block h1,
+  .plans-hero h1,
+  .usage-hero-card h1,
+  .overview-hero-card h1,
+  .builder-hero-card h1 {
+    line-height: 0.98;
+  }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --box-width: min(100%, calc(100vw - 18px));
+  }
+
+  html {
+    overflow-x: hidden;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
+  .app-shell {
+    padding: 0 9px 16px;
+  }
+
+  .page-box {
+    gap: 12px;
+  }
+
+  .top-navigation.polished.final {
+    padding: 12px !important;
+    border-radius: 20px !important;
+  }
+
+  .brand-mark {
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+  }
+
+  .brand-cluster {
+    gap: 10px;
+  }
+
+  .brand-cluster strong {
+    font-size: 16px;
+  }
+
+  .brand-cluster span {
+    max-width: calc(100vw - 112px);
+    font-size: 12px;
+  }
+
+  .health-strip {
+    gap: 6px;
+  }
+
+  .signal {
+    min-height: 32px;
+    gap: 6px;
+    padding-inline: 8px;
+    font-size: 11.5px;
+  }
+
+  .service-pill {
+    min-height: 36px;
+    font-size: 12px;
+  }
+
+  .top-actions {
+    gap: 7px;
+  }
+
+  .top-actions .theme-toggle,
+  .top-actions .button.sm,
+  .login-theme-toggle {
+    min-height: 42px !important;
+    height: 42px !important;
+    border-radius: 14px !important;
+  }
+
+  .module-tabs.final {
+    margin-inline: -2px;
+    padding: 6px;
+    border-radius: 18px !important;
+  }
+
+  .module-tabs.final button {
+    flex-basis: 108px;
+    min-width: 108px;
+    min-height: 52px;
+    grid-template-columns: 28px 1fr;
+    column-gap: 8px;
+    padding: 8px 10px;
+    border-radius: 14px;
+  }
+
+  .module-tabs.final button i {
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
+  }
+
+  .module-tabs.final button strong {
+    font-size: 12.5px;
+  }
+
+  .module-tabs.final button span {
+    display: none;
+  }
+
+  .content-stage {
+    min-height: auto;
+  }
+
+  .card,
+  .overview-hero-card.refined,
+  .usage-hero-card,
+  .plans-hero,
+  .plans-compare-card,
+  .plan-showcase-card,
+  .builder-hero-card,
+  .workflow-rail,
+  .canvas-card.final,
+  .control-card.final,
+  .login-showcase.operational,
+  .auth-card.operational,
+  .integration-page > .card,
+  .audit-card,
+  .usage-card.refined,
+  .overview-lower-grid.final .card {
+    padding: 16px !important;
+    border-radius: 20px !important;
+  }
+
+  .panel-header {
+    margin-bottom: 14px;
+  }
+
+  .panel-header__title {
+    font-size: 20px;
+  }
+
+  .overview-hero-card.refined,
+  .usage-hero-card,
+  .plans-hero,
+  .login-showcase.operational,
+  .auth-card.operational {
+    min-height: auto;
+  }
+
+  .auth-card.operational {
+    order: -1;
+  }
+
+  .login-showcase.operational {
+    order: 1;
+  }
+
+  .overview-action-panel,
+  .usage-radial-board,
+  .plans-current-card,
+  .login-flow-board,
+  .auth-form.refined {
+    padding: 14px !important;
+    border-radius: 20px !important;
+  }
+
+  .login-title-block.refined {
+    margin-top: 16px;
+  }
+
+  .login-title-block h1,
+  .plans-hero h1,
+  .usage-hero-card h1,
+  .overview-hero-card h1,
+  .builder-hero-card h1 {
+    font-size: clamp(32px, 11vw, 46px) !important;
+    letter-spacing: -0.06em;
+  }
+
+  .login-capability-grid,
+  .flow-board-track,
+  .showcase-flow,
+  .showcase-grid,
+  .auth-note-grid,
+  .dock-node-list,
+  .builder-canvas-card-v2 .dock-node-list,
+  .builder-control-card-v2 .inspector-list,
+  .bridge-contract-panel,
+  .endpoint-redesign-grid,
+  .capability-map-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .flow-action-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .flow-action-strip .button {
+    width: 100%;
+  }
+
+  .record-row,
+  .record-row.action-row,
+  .audit-row,
+  .audit-row.expanded,
+  .run-item,
+  .workflow-item-v2,
+  .branch-route-row,
+  .control-detail,
+  .endpoint-group-card div {
+    grid-template-columns: 1fr !important;
+    align-items: start !important;
+  }
+
+  .record-row strong,
+  .record-row span,
+  .workflow-item strong,
+  .workflow-item span,
+  .run-item strong,
+  .run-item span,
+  .workflow-item-v2 strong,
+  .workflow-item-v2 span {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .workflow-item-meta-v2,
+  .row-actions {
+    justify-items: start;
+    justify-content: flex-start !important;
+  }
+
+  .row-actions,
+  .bridge-actions,
+  .panel-actions.bridge-actions {
+    display: grid !important;
+    grid-template-columns: 1fr;
+    min-width: 0 !important;
+    width: 100%;
+  }
+
+  .usage-radial-board,
+  .capacity-tile.radial,
+  .usage-metric.elevated {
+    grid-template-columns: 1fr !important;
+    justify-items: stretch;
+  }
+
+  .circle-progress.lg,
+  .circle-progress.md,
+  .circle-progress.sm {
+    justify-self: center;
+  }
+
+  .circle-progress.lg {
+    width: min(184px, 54vw) !important;
+    height: min(184px, 54vw) !important;
+  }
+
+  .capacity-tile.radial,
+  .usage-metric.elevated,
+  .plan-showcase-card,
+  .command-card.refined {
+    min-height: auto !important;
+  }
+
+  .plan-price b {
+    font-size: 40px;
+  }
+
+  .plan-limit-grid div,
+  .mini-stat,
+  .journey-insight,
+  .rhythm-item,
+  .snapshot-tile {
+    min-height: auto;
+  }
+
+  .builder-canvas-card-v2 .canvas-board.final,
+  .canvas-board.final {
+    min-height: 560px !important;
+    height: 64vh !important;
+    max-height: 680px;
+    border-radius: 20px !important;
+  }
+
+  .canvas-tools {
+    top: 10px;
+    left: 10px;
+    padding: 5px !important;
+  }
+
+  .canvas-tools button {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .canvas-tools span {
+    min-width: 42px !important;
+    font-size: 11px !important;
+  }
+
+  .edge-layer,
+  .workflow-edge-layer {
+    display: block !important;
+  }
+
+  .canvas-node {
+    width: 304px !important;
+    min-height: 118px !important;
+    grid-template-columns: 44px minmax(0, 1fr) auto !important;
+  }
+
+  .canvas-node .status-badge {
+    grid-column: auto;
+    justify-self: end;
+  }
+
+  .canvas-node-actions {
+    right: 10px;
+    bottom: -20px;
+    max-width: calc(100% - 20px);
+    overflow-x: auto;
+  }
+
+  .canvas-node-actions button {
+    flex: 0 0 auto;
+  }
+
+  .field input,
+  .field select,
+  .field textarea,
+  .button,
+  .theme-toggle,
+  .login-theme-toggle {
+    min-height: 44px;
+  }
+
+  .toast-viewport {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+  }
+
+  .toast-card {
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  :root {
+    --box-width: min(100%, calc(100vw - 16px));
+  }
+
+  .app-shell {
+    padding-inline: 8px;
+  }
+
+  .top-navigation.polished.final {
+    padding: 10px !important;
+  }
+
+  .top-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .top-actions .theme-toggle strong {
+    display: none;
+  }
+
+  .top-actions .theme-toggle,
+  .top-actions .button.sm {
+    min-width: 0 !important;
+  }
+
+  .health-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .signal {
+    justify-content: flex-start;
+  }
+
+  .module-tabs.final button {
+    flex-basis: 96px;
+    min-width: 96px;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .module-tabs.final button i {
+    grid-row: auto;
+  }
+
+  .card,
+  .overview-hero-card.refined,
+  .usage-hero-card,
+  .plans-hero,
+  .plans-compare-card,
+  .plan-showcase-card,
+  .builder-hero-card,
+  .workflow-rail,
+  .canvas-card.final,
+  .control-card.final,
+  .login-showcase.operational,
+  .auth-card.operational,
+  .integration-page > .card,
+  .audit-card,
+  .usage-card.refined,
+  .overview-lower-grid.final .card {
+    padding: 14px !important;
+    border-radius: 18px !important;
+  }
+
+  .overview-command-grid,
+  .flow-action-strip {
+    grid-template-columns: 1fr !important;
+  }
+
+  .login-title-block h1,
+  .plans-hero h1,
+  .usage-hero-card h1,
+  .overview-hero-card h1,
+  .builder-hero-card h1 {
+    font-size: clamp(30px, 12vw, 40px) !important;
+  }
+
+  .action-panel-top strong,
+  .plans-current-card strong,
+  .usage-radial-meta strong,
+  .capacity-tile strong,
+  .usage-metric strong,
+  .rhythm-meter strong {
+    font-size: clamp(24px, 8vw, 32px) !important;
+  }
+
+  .record-row,
+  .run-item,
+  .workflow-item-v2,
+  .audit-row,
+  .branch-route-row,
+  .endpoint-group-card div {
+    padding: 12px !important;
+    border-radius: 16px !important;
+  }
+
+  .builder-canvas-card-v2 .canvas-board.final,
+  .canvas-board.final {
+    min-height: 520px !important;
+    height: 62vh !important;
+  }
+
+  .canvas-node {
+    padding: 14px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  :root {
+    --box-width: min(100%, calc(100vw - 12px));
+  }
+
+  .app-shell {
+    padding-inline: 6px;
+  }
+
+  .brand-cluster span {
+    max-width: calc(100vw - 96px);
+  }
+
+  .module-tabs.final {
+    padding: 5px;
+  }
+
+  .module-tabs.final button {
+    flex-basis: 88px;
+    min-width: 88px;
+    padding-inline: 8px;
+  }
+
+  .module-tabs.final button strong {
+    font-size: 12px;
+  }
+
+  .panel-header__title {
+    font-size: 18px;
+  }
+
+  .login-title-block h1,
+  .plans-hero h1,
+  .usage-hero-card h1,
+  .overview-hero-card h1,
+  .builder-hero-card h1 {
+    font-size: clamp(28px, 12.5vw, 36px) !important;
+  }
+
+  .button,
+  .field input,
+  .field select,
+  .field textarea {
+    font-size: 14px;
+  }
+
+  .canvas-node-actions {
+    left: 10px;
+    right: auto;
+  }
+}
+
+@media (max-height: 620px) and (orientation: landscape) and (max-width: 960px) {
+  .module-tabs.final {
+    position: static !important;
+  }
+
+  .builder-canvas-card-v2 .canvas-board.final,
+  .canvas-board.final {
+    height: 520px !important;
+    min-height: 520px !important;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .button:hover:not(:disabled),
+  .canvas-node:hover,
+  .dock-node:hover,
+  .workflow-item:hover,
+  .command-card:hover,
+  .card:hover {
+    transform: none !important;
+    filter: none !important;
+  }
+
+  .module-tabs.final,
+  .canvas-board.final,
+  .record-list.bounded-scroll,
+  .workflow-list-v2,
+  .run-items.bounded-scroll,
+  .timeline-list.bounded-scroll,
+  .summary-grid.bounded-scroll {
+    scrollbar-width: none;
+  }
+}

@@ -1,6 +1,7 @@
 param(
     [string]$ProjectName = "runlane-clean-room-$([Guid]::NewGuid().ToString('N').Substring(0, 12))",
-    [string]$ApiUrl = 'http://127.0.0.1:14600'
+    [string]$ApiUrl = 'http://127.0.0.1:14600',
+    [string]$WebUrl = 'http://127.0.0.1:14610'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -22,7 +23,7 @@ function Show-Diagnostics {
     Write-Host '--- Docker Compose status ---'
     & docker compose -p $ProjectName ps
     Write-Host '--- Docker Compose logs ---'
-    & docker compose -p $ProjectName logs --tail 160 postgres redis migrator api worker
+    & docker compose -p $ProjectName logs --tail 160 postgres redis migrator api worker web
 }
 
 $cleanupRequired = $false
@@ -46,8 +47,8 @@ try {
     Write-Step 'Starting datastores and migrator'
     Invoke-Checked @('docker', 'compose', '-p', $ProjectName, 'up', '--detach', 'postgres', 'redis', 'migrator')
 
-    Write-Step 'Starting API and Worker'
-    Invoke-Checked @('docker', 'compose', '-p', $ProjectName, 'up', '--detach', 'api', 'worker')
+    Write-Step 'Starting API, Worker and Web Console'
+    Invoke-Checked @('docker', 'compose', '-p', $ProjectName, 'up', '--detach', 'api', 'worker', 'web')
 
     Write-Step 'Waiting for API readiness'
     $apiReady = $false
@@ -65,6 +66,9 @@ try {
         Show-Diagnostics
         throw 'API readiness check did not complete successfully'
     }
+
+    Write-Step 'Checking Web Console route fallback'
+    Invoke-RestMethod -Method Get -Uri "$WebUrl/builder" -TimeoutSec 5 | Out-Null
 
     Write-Step 'Checking Worker readiness from inside the Compose network'
     $workerCheck = "node -e \"fetch('http://worker:4601/health/ready').then((r)=>{if(!r.ok)process.exit(1);}).catch(()=>process.exit(1));\""

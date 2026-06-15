@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 
 $ApiBaseUrl = if ($env:RUNLANE_API_BASE_URL) { $env:RUNLANE_API_BASE_URL } else { 'http://localhost:4600' }
 $Timestamp = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
-$AllowedOrigin = 'http://localhost:4600'
+$AllowedOrigin = 'http://localhost:4610'
 $DeniedOrigin = 'https://blocked-origin.runlane.invalid'
 
 function Invoke-WebRequestSafe {

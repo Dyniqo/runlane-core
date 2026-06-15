@@ -17,7 +17,8 @@ pnpm validate:clean-room
 - PostgreSQL and Redis start in an isolated Compose namespace.
 - The migrator service applies Prisma migrations.
 - API and Worker services start with generated Prisma Client output inside the image.
-- Caddy validates its configuration and proxies health requests to the API service.
+- The Web Console image starts and serves client routes through the SPA fallback.
+- Caddy validates its configuration and proxies health requests to the API and Web Console services in the deployment stack.
 - The validation command removes containers, networks and volumes after completion.
 
 ## When to run it
@@ -27,9 +28,10 @@ Run this validation after changes to:
 - `Dockerfile`
 - `docker-compose.deploy.yml`
 - `docker/Caddyfile`
+- `docker/web.Caddyfile`
 - `.env.deploy.example`
 - Prisma migration behavior
-- API, Worker or migrator image entrypoints
+- API, Worker, migrator or Web Console image entrypoints
 
 ## Notes
 

@@ -12,9 +12,9 @@ body:
     validations:
       required: true
   - type: textarea
-    id: reproduction
+    id: steps
     attributes:
-      label: Reproduction
+      label: Steps to repeat
       description: Include exact commands, endpoint calls or workflow steps.
     validations:
       required: true

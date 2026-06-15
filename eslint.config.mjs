@@ -68,7 +68,7 @@ function restrictedImports(patterns, message, paths = []) {
 
 export default tseslint.config(
   {
-    ignores: ['dist', 'node_modules', 'coverage', '.run'],
+    ignores: ['dist', 'node_modules', 'coverage', '.run', 'apps/web/dist'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
@@ -141,4 +141,16 @@ export default tseslint.config(
       ),
     },
   },
+  {
+    files: ['apps/web/**/*.ts'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+      },
+    },
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
+
 );

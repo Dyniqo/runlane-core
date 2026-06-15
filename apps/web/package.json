@@ -1,0 +1,25 @@
+{
+  "name": "@runlane/web-console",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "dev": "vite --host 127.0.0.1 --port 4610",
+    "preview": "vite preview --host 127.0.0.1 --port 4610",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "6.0.2",
+    "vite": "8.0.16",
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.0",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "typescript": "6.0.3",
+    "sass": "1.101.0"
+  }
+}

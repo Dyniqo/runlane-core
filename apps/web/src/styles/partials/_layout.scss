@@ -1,0 +1,1163 @@
+
+.app-shell {
+  padding: 0 16px 18px;
+  background:
+    linear-gradient(120deg, color-mix(in srgb, var(--gh-blue) 5%, transparent), transparent 22rem),
+    linear-gradient(260deg, color-mix(in srgb, var(--gh-violet) 6%, transparent), transparent 26rem);
+}
+
+.page-box {
+  padding-top: 0;
+  gap: 18px;
+}
+
+.chrome-layer {
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  display: grid;
+  gap: 12px;
+  padding: 14px 0 12px;
+  isolation: isolate;
+}
+
+.chrome-layer::before {
+  content: '';
+  position: absolute;
+  inset: 0 -22px -10px;
+  z-index: -1;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg) 88%, transparent),
+    color-mix(in srgb, var(--bg) 62%, transparent)
+  );
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  box-shadow: 0 20px 54px color-mix(in srgb, var(--bg) 82%, transparent);
+}
+
+[data-theme='dark'] .chrome-layer::before {
+  background: linear-gradient(180deg, rgba(7, 16, 31, 0.92), rgba(7, 16, 31, 0.64));
+  box-shadow: 0 20px 64px rgba(0, 0, 0, 0.42);
+}
+
+.top-navigation,
+.top-navigation.polished,
+.module-tabs,
+.module-tabs.final {
+  position: relative;
+  top: auto;
+}
+
+.top-navigation.polished.final {
+  grid-template-columns: minmax(220px, 0.9fr) minmax(420px, 1.2fr) auto;
+  background: color-mix(in srgb, var(--surface-solid) 82%, transparent);
+  border-color: color-mix(in srgb, var(--line-strong) 72%, transparent);
+}
+
+.nav-center {
+  min-width: 0;
+  justify-content: center;
+}
+
+.top-actions {
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+}
+
+.theme-toggle {
+  min-width: 106px;
+  justify-content: center;
+}
+
+.module-tabs.final {
+  background: color-mix(in srgb, var(--surface-solid) 72%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  backdrop-filter: blur(18px) saturate(170%);
+}
+
+.content-stage {
+  min-height: calc(100vh - 184px);
+}
+
+.overview-page.final {
+  display: grid;
+  gap: 18px;
+}
+
+.overview-lower-grid.final {
+  display: grid;
+  grid-template-columns: minmax(420px, 1.35fr) repeat(3, minmax(240px, 0.82fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+.overview-lower-grid.final .card {
+  min-width: 0;
+}
+
+.workspace-state-card.final,
+.recent-activity-card.final,
+.operation-scope-card.final {
+  padding: 22px;
+  overflow: hidden;
+}
+
+.operation-scope-card.final {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  background:
+    radial-gradient(
+      circle at 88% 10%,
+      color-mix(in srgb, var(--gh-violet) 14%, transparent),
+      transparent 16rem
+    ),
+    var(--surface);
+}
+
+.scope-list {
+  display: grid;
+  gap: 10px;
+}
+
+.scope-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-solid) 82%, transparent);
+}
+
+.scope-item span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.scope-item strong {
+  color: var(--text-strong);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.scope-item.blue {
+  border-color: color-mix(in srgb, var(--gh-blue) 25%, var(--line));
+}
+.scope-item.green {
+  border-color: color-mix(in srgb, var(--gh-green) 25%, var(--line));
+}
+.scope-item.violet {
+  border-color: color-mix(in srgb, var(--gh-violet) 25%, var(--line));
+}
+.scope-item.amber {
+  border-color: color-mix(in srgb, var(--gh-amber) 25%, var(--line));
+}
+
+.overview-insight-grid {
+  display: none;
+}
+
+.builder-page.final {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  min-height: auto;
+}
+
+.builder-hero-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 24px;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      circle at 4% 0%,
+      color-mix(in srgb, var(--gh-blue) 11%, transparent),
+      transparent 24rem
+    ),
+    var(--surface);
+}
+
+.builder-hero-card h1 {
+  margin-top: 8px;
+  color: var(--text-strong);
+  font-size: clamp(28px, 2.7vw, 46px);
+  line-height: 1;
+  letter-spacing: -0.055em;
+}
+
+.builder-hero-card p {
+  max-width: 820px;
+  margin-top: 10px;
+  color: var(--muted);
+  line-height: 1.62;
+}
+
+.builder-hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.builder-main-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 310px) minmax(0, 1fr) minmax(310px, 360px);
+  gap: 16px;
+  align-items: start;
+}
+
+.canvas-card.final {
+  padding: 18px;
+  overflow: hidden;
+}
+
+.control-card.final {
+  padding: 20px;
+}
+
+.builder-grid.redesigned.final {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  min-height: auto;
+}
+
+.node-dock.spacious.final {
+  padding: 18px;
+  border-radius: 24px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--surface-solid) 86%, transparent),
+    color-mix(in srgb, var(--surface-strong) 92%, transparent)
+  );
+}
+
+.node-dock.spacious.final .dock-title {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.node-dock.spacious.final .dock-title span {
+  color: var(--gh-blue);
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.node-dock.spacious.final .dock-title strong {
+  color: var(--text-strong);
+  font-size: 20px;
+  letter-spacing: -0.035em;
+}
+
+.node-dock.spacious.final .dock-title p {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.dock-node-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.dock-node {
+  min-height: 118px;
+  align-content: start;
+  padding: 16px;
+  border-radius: 20px;
+}
+
+.dock-node p {
+  white-space: normal;
+}
+
+.canvas-board.final {
+  width: 100%;
+  min-width: 0;
+  min-height: clamp(620px, 64vh, 760px);
+  overflow: auto;
+  border-radius: 26px;
+}
+
+.canvas-node {
+  width: 300px;
+  min-height: 112px;
+  padding: 16px;
+}
+
+.edge-layer {
+  width: 1400px;
+  height: 920px;
+}
+
+.login-shell.final {
+  position: relative;
+  min-height: 100vh;
+  width: var(--box-width);
+  margin: 0 auto;
+  padding: 24px 0;
+  display: grid;
+  grid-template-columns: minmax(520px, 1.08fr) minmax(420px, 0.72fr);
+  gap: 20px;
+  align-items: stretch;
+}
+
+.login-shell.final::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(
+      circle at 22% 18%,
+      color-mix(in srgb, var(--gh-blue) 18%, transparent),
+      transparent 30rem
+    ),
+    radial-gradient(
+      circle at 82% 26%,
+      color-mix(in srgb, var(--gh-violet) 16%, transparent),
+      transparent 32rem
+    ),
+    radial-gradient(
+      circle at 44% 92%,
+      color-mix(in srgb, var(--gh-green) 12%, transparent),
+      transparent 34rem
+    ),
+    var(--bg);
+}
+
+.login-showcase,
+.auth-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 34px;
+  box-shadow: var(--shadow-lg);
+}
+
+.login-showcase {
+  min-height: 700px;
+  display: grid;
+  align-content: space-between;
+  gap: 28px;
+  padding: clamp(30px, 4vw, 58px);
+  background:
+    radial-gradient(
+      circle at 4% 8%,
+      color-mix(in srgb, var(--gh-blue) 20%, transparent),
+      transparent 28rem
+    ),
+    radial-gradient(
+      circle at 88% 18%,
+      color-mix(in srgb, var(--gh-violet) 18%, transparent),
+      transparent 30rem
+    ),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--surface) 96%, transparent),
+      color-mix(in srgb, var(--surface-strong) 86%, transparent)
+    );
+}
+
+.login-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.login-brand-row strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-strong);
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+
+.login-title-block {
+  display: grid;
+  gap: 18px;
+  max-width: 800px;
+}
+
+.login-title-block h1 {
+  color: var(--text-strong);
+  font-size: clamp(42px, 5.4vw, 78px);
+  line-height: 0.92;
+  letter-spacing: -0.078em;
+}
+
+.login-title-block p {
+  max-width: 660px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+.showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.showcase-grid div,
+.auth-note-grid div {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--surface-solid) 72%, transparent);
+}
+
+.showcase-grid i {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  font-style: normal;
+  color: #fff;
+  background: linear-gradient(135deg, var(--gh-blue), var(--gh-violet));
+}
+
+.showcase-grid strong,
+.auth-note-grid strong {
+  color: var(--text-strong);
+}
+
+.showcase-grid span,
+.auth-note-grid span {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.showcase-preview {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--gh-blue) 8%, transparent),
+    color-mix(in srgb, var(--surface-solid) 78%, transparent)
+  );
+}
+
+.showcase-preview-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.showcase-preview-top span {
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.showcase-preview-top strong {
+  color: var(--text-strong);
+  letter-spacing: -0.02em;
+}
+
+.showcase-flow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.showcase-node {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 52px;
+  padding: 14px 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface-solid);
+  color: var(--text-strong);
+  font-weight: 900;
+}
+
+.showcase-node i {
+  width: 11px;
+  height: 11px;
+  border-radius: 99px;
+  background: currentColor;
+  box-shadow: 0 0 0 6px color-mix(in srgb, currentColor 13%, transparent);
+}
+
+.showcase-node.blue {
+  color: var(--gh-blue);
+}
+.showcase-node.violet {
+  color: var(--gh-violet);
+}
+.showcase-node.green {
+  color: var(--gh-green);
+}
+.showcase-node.amber {
+  color: var(--gh-amber);
+}
+
+.auth-card {
+  align-self: center;
+  display: grid;
+  gap: 20px;
+  padding: clamp(24px, 3vw, 38px);
+  background: color-mix(in srgb, var(--surface) 95%, transparent);
+}
+
+.auth-card-head {
+  display: grid;
+  gap: 8px;
+}
+
+.auth-card-head h2 {
+  color: var(--text-strong);
+  font-size: clamp(28px, 3vw, 42px);
+  line-height: 1;
+  letter-spacing: -0.055em;
+}
+
+.auth-card-head p {
+  color: var(--muted);
+  line-height: 1.62;
+}
+
+.auth-form {
+  display: grid;
+  gap: 14px;
+}
+
+.form-actions.final {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.auth-note-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 1460px) {
+  .top-navigation.polished.final,
+  .builder-main-grid,
+  .overview-lower-grid.final,
+  .login-shell.final {
+    grid-template-columns: 1fr;
+  }
+
+  .nav-center,
+  .top-actions,
+  .builder-hero-actions {
+    justify-content: flex-start;
+  }
+
+  .workflow-rail,
+  .control-card.final {
+    width: 100%;
+  }
+
+  .canvas-board.final {
+    min-height: 680px;
+  }
+}
+
+@media (max-width: 960px) {
+  :root {
+    --box-width: min(100%, calc(100vw - 20px));
+  }
+
+  .app-shell {
+    padding-inline: 10px;
+  }
+
+  .chrome-layer {
+    padding-top: 10px;
+  }
+
+  .module-tabs.final {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .top-actions,
+  .health-strip,
+  .hero-actions,
+  .form-actions.final,
+  .showcase-grid,
+  .showcase-flow,
+  .auth-note-grid,
+  .builder-hero-card {
+    grid-template-columns: 1fr;
+  }
+
+  .top-actions,
+  .health-strip,
+  .hero-actions {
+    width: 100%;
+  }
+
+  .theme-toggle,
+  .top-actions .button,
+  .hero-actions .button,
+  .form-actions.final .button {
+    width: 100%;
+  }
+
+  .login-showcase,
+  .auth-card,
+  .builder-hero-card,
+  .workflow-rail,
+  .canvas-card.final,
+  .control-card.final,
+  .workspace-state-card.final,
+  .recent-activity-card.final,
+  .operation-scope-card.final {
+    border-radius: 24px;
+    padding: 18px;
+  }
+
+  .login-showcase {
+    min-height: auto;
+  }
+
+  .login-title-block h1 {
+    font-size: clamp(38px, 12vw, 56px);
+  }
+
+  .dock-node-list {
+    grid-template-columns: 1fr;
+  }
+
+  .canvas-board.final {
+    min-height: 620px;
+  }
+
+  .canvas-node {
+    width: 260px;
+    grid-template-columns: 44px 1fr;
+  }
+
+  .canvas-node .status-badge {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+.chrome-layer::before {
+  display: none;
+}
+
+.top-navigation,
+.top-navigation.polished,
+.top-navigation.polished.final,
+.module-tabs,
+.module-tabs.final {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.top-navigation.polished.final {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--surface-solid) 96%, transparent),
+    color-mix(in srgb, var(--surface-strong) 88%, transparent)
+  );
+  box-shadow: var(--shadow-md);
+}
+
+.module-tabs.final {
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.status-badge {
+  min-height: 30px;
+  line-height: 1;
+  align-items: center;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.status-badge.condition {
+  background: color-mix(in srgb, var(--gh-amber) 17%, transparent);
+  color: color-mix(in srgb, var(--gh-amber) 80%, #7c2d12);
+}
+
+[data-theme='dark'] .status-badge.condition {
+  color: #fbbf24;
+}
+
+.overview-lower-grid.final {
+  grid-template-columns: minmax(360px, 1.25fr) repeat(4, minmax(220px, 0.78fr));
+}
+
+.workspace-guard-card.final {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  padding: 22px;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      circle at 90% 8%,
+      color-mix(in srgb, var(--gh-green) 16%, transparent),
+      transparent 15rem
+    ),
+    linear-gradient(
+      150deg,
+      color-mix(in srgb, var(--surface) 95%, transparent),
+      color-mix(in srgb, var(--surface-strong) 88%, transparent)
+    );
+}
+
+.workspace-guard-card.final::after {
+  content: '';
+  position: absolute;
+  right: -48px;
+  bottom: -52px;
+  width: 150px;
+  height: 150px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gh-green) 12%, transparent);
+  pointer-events: none;
+}
+
+.guardrail-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.guardrail-item {
+  display: grid;
+  gap: 6px;
+  min-height: 74px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface-solid) 82%, transparent);
+}
+
+.guardrail-item span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.guardrail-item strong {
+  color: var(--text-strong);
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+
+.guardrail-item.blue {
+  border-color: color-mix(in srgb, var(--gh-blue) 26%, var(--line));
+}
+.guardrail-item.green {
+  border-color: color-mix(in srgb, var(--gh-green) 26%, var(--line));
+}
+.guardrail-item.violet {
+  border-color: color-mix(in srgb, var(--gh-violet) 26%, var(--line));
+}
+
+.builder-hero-card {
+  padding: 20px 22px;
+}
+
+.builder-hero-card h1 {
+  font-size: clamp(26px, 2.4vw, 40px);
+}
+
+.builder-hero-card p {
+  max-width: 640px;
+}
+
+.builder-main-grid {
+  grid-template-columns: minmax(250px, 300px) minmax(620px, 1fr) minmax(300px, 340px);
+  align-items: stretch;
+}
+
+.workflow-rail {
+  position: sticky;
+  top: 156px;
+  align-self: start;
+  max-height: calc(100vh - 176px);
+  overflow: auto;
+}
+
+.canvas-card.final {
+  display: grid;
+}
+
+.control-card.final {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.inspector-card {
+  min-height: 212px;
+}
+
+.builder-grid.redesigned.final {
+  grid-template-rows: auto minmax(600px, 1fr);
+  min-height: 100%;
+}
+
+.node-dock.spacious.final {
+  padding: 16px;
+}
+
+.node-dock.spacious.final .dock-title {
+  grid-template-columns: minmax(0, 1fr);
+  margin-bottom: 12px;
+}
+
+.node-dock.spacious.final .dock-title strong {
+  font-size: 18px;
+}
+
+.node-dock.spacious.final .dock-title p {
+  max-width: 720px;
+  font-size: 13px;
+}
+
+.dock-node-list {
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.dock-node,
+.node-dock.spacious.final .dock-node {
+  min-height: 102px;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  padding: 15px;
+}
+
+.dock-node > div {
+  min-width: 0;
+}
+
+.dock-node p {
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.dock-node.condition {
+  background:
+    radial-gradient(
+      circle at 92% 10%,
+      color-mix(in srgb, var(--gh-amber) 12%, transparent),
+      transparent 9rem
+    ),
+    var(--surface-solid);
+}
+
+.canvas-board.final {
+  min-height: clamp(640px, 68vh, 790px);
+  background-size:
+    auto,
+    30px 30px,
+    30px 30px,
+    auto;
+}
+
+.canvas-node {
+  width: 286px;
+  min-height: 102px;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  transform-origin: top left;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    filter 0.18s ease;
+}
+
+.canvas-node:hover,
+.dock-node:hover,
+.workflow-item:hover,
+.command-card:hover,
+.card:hover {
+  filter: brightness(1.02);
+}
+
+.canvas-node .status-badge {
+  min-width: 88px;
+  max-width: 104px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  justify-self: end;
+}
+
+.canvas-node.condition .status-badge {
+  background: color-mix(in srgb, var(--gh-amber) 19%, transparent);
+  color: color-mix(in srgb, var(--gh-amber) 78%, #78350f);
+}
+
+.login-shell.final.operational {
+  grid-template-columns: minmax(540px, 1.05fr) minmax(410px, 0.74fr);
+  gap: 22px;
+}
+
+.login-showcase.operational {
+  min-height: 690px;
+  align-content: start;
+  gap: 24px;
+  background:
+    radial-gradient(
+      circle at 7% 9%,
+      color-mix(in srgb, var(--gh-blue) 26%, transparent),
+      transparent 26rem
+    ),
+    radial-gradient(
+      circle at 92% 14%,
+      color-mix(in srgb, var(--gh-violet) 22%, transparent),
+      transparent 28rem
+    ),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--surface) 95%, transparent),
+      color-mix(in srgb, var(--surface-strong) 86%, transparent)
+    );
+}
+
+.login-theme-toggle {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-solid) 88%, transparent);
+  color: var(--text-strong);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+
+.login-theme-toggle span {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--gh-blue), var(--gh-violet));
+  color: #fff;
+}
+
+.login-theme-toggle strong {
+  font-size: 13px;
+}
+
+.login-brand-row.refined {
+  padding-right: 142px;
+}
+
+.login-title-block.refined {
+  margin-top: 28px;
+}
+
+.login-title-block.refined h1 {
+  max-width: 830px;
+}
+
+.login-capability-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.capability-card {
+  position: relative;
+  display: grid;
+  gap: 9px;
+  min-height: 154px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--surface-solid) 78%, transparent);
+}
+
+.capability-card::after {
+  content: '';
+  position: absolute;
+  right: -34px;
+  top: -34px;
+  width: 98px;
+  height: 98px;
+  border-radius: 999px;
+  opacity: 0.55;
+  background: currentColor;
+}
+
+.capability-card i {
+  width: 34px;
+  height: 34px;
+  border-radius: 14px;
+  background: currentColor;
+  box-shadow: 0 0 0 7px color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.capability-card strong {
+  color: var(--text-strong);
+  font-size: 16px;
+}
+
+.capability-card span {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.capability-card.blue {
+  color: var(--gh-blue);
+}
+.capability-card.violet {
+  color: var(--gh-violet);
+}
+.capability-card.green {
+  color: var(--gh-green);
+}
+
+.login-flow-board {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--gh-blue) 8%, transparent), transparent 22rem),
+    color-mix(in srgb, var(--surface-solid) 78%, transparent);
+}
+
+.flow-board-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.flow-board-heading span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.flow-board-heading strong {
+  color: var(--text-strong);
+  letter-spacing: -0.02em;
+}
+
+.flow-board-track {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.showcase-node span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.showcase-node small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.auth-card.operational {
+  align-self: center;
+  background:
+    radial-gradient(
+      circle at 92% 6%,
+      color-mix(in srgb, var(--gh-blue) 10%, transparent),
+      transparent 14rem
+    ),
+    var(--surface);
+}
+
+.auth-form.refined {
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 26px;
+  background: color-mix(in srgb, var(--surface-solid) 76%, transparent);
+}
+
+.auth-assurance-list {
+  display: grid;
+  gap: 10px;
+}
+
+.auth-assurance-list div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-solid) 72%, transparent);
+}
+
+.auth-assurance-list i {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gh-green) 14%, transparent);
+  color: var(--gh-green);
+  font-style: normal;
+  font-weight: 950;
+}
+
+.auth-assurance-list span {
+  color: var(--text-strong);
+  font-weight: 850;
+}
+
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

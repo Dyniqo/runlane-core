@@ -8,6 +8,8 @@ const files = {
   caddyfile: resolve(root, 'docker/Caddyfile'),
   deployEnvironment: resolve(root, '.env.deploy.example'),
   deploymentSmoke: resolve(root, '.github/workflows/deployment-smoke.yml'),
+  dockerfile: resolve(root, 'Dockerfile'),
+  webCaddyfile: resolve(root, 'docker/web.Caddyfile'),
 };
 
 const failures = [];
@@ -24,11 +26,14 @@ if (failures.length === 0) {
   const caddyfile = readFileSync(files.caddyfile, 'utf8');
   const deployEnvironment = readFileSync(files.deployEnvironment, 'utf8');
   const deploymentSmoke = readFileSync(files.deploymentSmoke, 'utf8');
+  const dockerfile = readFileSync(files.dockerfile, 'utf8');
+  const webCaddyfile = readFileSync(files.webCaddyfile, 'utf8');
 
   requireFragments('docker-compose.deploy.yml', deployCompose, [
     'image: ${RUNLANE_IMAGE_REGISTRY:-ghcr.io}/${RUNLANE_IMAGE_NAMESPACE:-dyniqo}/${RUNLANE_IMAGE_REPOSITORY:-runlane-core}-api:${RUNLANE_IMAGE_TAG:?RUNLANE_IMAGE_TAG is required}',
     'image: ${RUNLANE_IMAGE_REGISTRY:-ghcr.io}/${RUNLANE_IMAGE_NAMESPACE:-dyniqo}/${RUNLANE_IMAGE_REPOSITORY:-runlane-core}-worker:${RUNLANE_IMAGE_TAG:?RUNLANE_IMAGE_TAG is required}',
     'image: ${RUNLANE_IMAGE_REGISTRY:-ghcr.io}/${RUNLANE_IMAGE_NAMESPACE:-dyniqo}/${RUNLANE_IMAGE_REPOSITORY:-runlane-core}-migrator:${RUNLANE_IMAGE_TAG:?RUNLANE_IMAGE_TAG is required}',
+    'image: ${RUNLANE_IMAGE_REGISTRY:-ghcr.io}/${RUNLANE_IMAGE_NAMESPACE:-dyniqo}/${RUNLANE_IMAGE_REPOSITORY:-runlane-core}-web:${RUNLANE_IMAGE_TAG:?RUNLANE_IMAGE_TAG is required}',
     'image: caddy:2.11.3-alpine',
     'postgres:17.10-alpine3.23',
     'redis:8.6.4-alpine3.23',
@@ -40,18 +45,40 @@ if (failures.length === 0) {
     './docker/Caddyfile:/etc/caddy/Caddyfile:ro',
     'command:\n      - caddy\n      - run\n      - --config\n      - /etc/caddy/Caddyfile\n      - --adapter\n      - caddyfile',
     'caddy\n        - validate\n        - --config',
-    'RUNLANE_PUBLIC_DOMAIN: ${RUNLANE_PUBLIC_DOMAIN:?RUNLANE_PUBLIC_DOMAIN is required}',
+    'RUNLANE_WEB_DOMAIN: ${RUNLANE_WEB_DOMAIN:?RUNLANE_WEB_DOMAIN is required}',
+    'RUNLANE_API_DOMAIN: ${RUNLANE_API_DOMAIN:?RUNLANE_API_DOMAIN is required}',
+    '- /config:size=16m,mode=0755',
+    '- /data:size=16m,mode=0755',
     'API_URL: ${API_URL:?API_URL is required}',
     'APP_URL: ${APP_URL:?APP_URL is required}',
     'JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET is required}',
     'WEBHOOK_SIGNING_SECRET: ${WEBHOOK_SIGNING_SECRET:?WEBHOOK_SIGNING_SECRET is required}',
   ]);
 
+  requireFragments('Dockerfile', dockerfile, [
+    'FROM caddy:2.11.3-alpine AS web',
+    'COPY docker/web.Caddyfile /etc/caddy/Caddyfile',
+    'COPY --from=builder /app/apps/web/dist /usr/share/caddy',
+    'EXPOSE 3000',
+    'CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]',
+  ]);
+
+  requireFragments('docker/web.Caddyfile', webCaddyfile, [
+    'admin off',
+    ':3000',
+    'root * /usr/share/caddy',
+    'try_files {path} /index.html',
+    'file_server',
+    'X-Content-Type-Options nosniff',
+  ]);
+
   requireFragments('docker/Caddyfile', caddyfile, [
     'admin off',
-    '{$RUNLANE_PUBLIC_DOMAIN}',
+    '{$RUNLANE_WEB_DOMAIN}',
+    '{$RUNLANE_API_DOMAIN}',
     'request_body',
     'max_size {$RUNLANE_CADDY_MAX_REQUEST_BODY}',
+    'reverse_proxy web:3000',
     'reverse_proxy api:4600',
     'health_uri /health',
     'format json',
@@ -64,12 +91,13 @@ if (failures.length === 0) {
     'PRISMA_ENGINES_MIRROR=https://binaries.prisma.sh',
     'HTTP_PROXY=',
     'HTTPS_PROXY=',
-    'NO_PROXY=localhost,127.0.0.1,postgres,redis,migrator,api,worker,caddy',
+    'NO_PROXY=localhost,127.0.0.1,postgres,redis,migrator,api,worker,web,caddy',
     'RUNLANE_IMAGE_REGISTRY=ghcr.io',
     'RUNLANE_IMAGE_NAMESPACE=dyniqo',
     'RUNLANE_IMAGE_REPOSITORY=runlane-core',
     'RUNLANE_IMAGE_TAG=sha-0000000000000000000000000000000000000000',
-    'RUNLANE_PUBLIC_DOMAIN=api.runlane.dyniqo.dev',
+    'RUNLANE_WEB_DOMAIN=runlane.dyniqo.dev',
+    'RUNLANE_API_DOMAIN=api.runlane.dyniqo.dev',
     'RUNLANE_HTTP_PORT=80',
     'RUNLANE_HTTPS_PORT=443',
     'POSTGRES_PASSWORD=runlane_deploy_database_password_change_me_64_bytes_minimum_value',
@@ -95,7 +123,7 @@ if (failures.length === 0) {
     'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps --entrypoint caddy caddy validate --config /etc/caddy/Caddyfile',
     'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" pull',
     'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up --abort-on-container-exit --exit-code-from migrator migrator',
-    'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d api worker caddy',
+    'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d api worker web caddy',
     'http://127.0.0.1:18080/health/ready',
     'Caddy status:',
     'logs --no-color --tail=200 caddy',
@@ -103,7 +131,8 @@ if (failures.length === 0) {
     'Waiting for deployment service health checks',
     'Deployment service health checks are ready.',
     'Deployment service health checks did not become ready.',
-    'curl --fail --silent http://127.0.0.1:18080/health > /dev/null',
+    'curl --fail --silent --header "Host: api.runlane.localhost" http://127.0.0.1:18080/health > /dev/null',
+    'curl --fail --silent --header "Host: runlane.localhost" http://127.0.0.1:18080/ > /dev/null',
     'down -v --remove-orphans',
   ]);
 
@@ -120,6 +149,7 @@ if (failures.length === 0) {
       '127.0.0.1:${RUNLANE_POSTGRES_PORT',
       '127.0.0.1:${RUNLANE_REDIS_PORT',
       'run --rm --no-deps caddy validate',
+      '["caddy", "file-server"',
     ],
   );
 

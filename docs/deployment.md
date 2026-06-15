@@ -1,6 +1,6 @@
 # Runlane Core Deployment
 
-Runlane Core includes two container paths: source-based local Compose and image-based deployment Compose.
+Runlane Core includes two container paths: source-based local Compose and image-based deployment Compose. Both paths include the Web Console image served by Caddy.
 
 ## Service domains
 
@@ -24,9 +24,10 @@ pnpm verify
 pnpm db:migrate:deploy
 pnpm start:api
 pnpm start:worker
+pnpm dev:web
 ```
 
-The API listens on `http://localhost:4600`. The Worker listens on `http://localhost:4601` for operational health endpoints.
+The API listens on `http://localhost:4600`. The Worker listens on `http://localhost:4601` for operational health endpoints. The Web Console listens on `http://localhost:4610` when it is started with `pnpm dev:web`.
 
 ## Image publishing path
 
@@ -38,6 +39,7 @@ Published image names follow this shape:
 ghcr.io/<namespace>/runlane-core-api:sha-<commit-sha>
 ghcr.io/<namespace>/runlane-core-worker:sha-<commit-sha>
 ghcr.io/<namespace>/runlane-core-migrator:sha-<commit-sha>
+ghcr.io/<namespace>/runlane-core-web:sha-<commit-sha>
 ```
 
 ## Deployment files
@@ -81,12 +83,12 @@ docker compose --env-file .env.deploy -f docker-compose.deploy.yml ps
 Inspect logs:
 
 ```bash
-docker compose --env-file .env.deploy -f docker-compose.deploy.yml logs -f migrator api worker caddy
+docker compose --env-file .env.deploy -f docker-compose.deploy.yml logs -f migrator api worker web caddy
 ```
 
 ## Caddy entry point
 
-Caddy is the public entry point. It validates its configuration before starting, enforces request body limits, applies security headers, compresses responses and reverse proxies to the API service on the internal Docker network.
+Caddy is the public entry point. It validates its configuration before starting, enforces request body limits, applies security headers, compresses responses and reverse proxies to the API and Web Console services on the internal Docker network.
 
 PostgreSQL and Redis remain internal services and do not expose public ports in the deployment Compose file.
 
@@ -108,7 +110,8 @@ https://api.runlane.dyniqo.dev/docs
 Important deployment values:
 
 ```txt
-RUNLANE_PUBLIC_DOMAIN=api.runlane.dyniqo.dev
+RUNLANE_WEB_DOMAIN=runlane.dyniqo.dev
+RUNLANE_API_DOMAIN=api.runlane.dyniqo.dev
 RUNLANE_HTTP_PORT=80
 RUNLANE_HTTPS_PORT=443
 API_URL=https://api.runlane.dyniqo.dev

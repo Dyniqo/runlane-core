@@ -1,8 +1,8 @@
 # Runlane Core
 
-Runlane Core is a NestJS backend for workflow automation, webhook processing, API integrations, AI decision steps, Stripe billing synchronization, usage metering and queue-based execution.
+Runlane Core is a workflow automation system with a NestJS API, independent Worker runtime and Web Console for operating webhook intake, API integrations, AI decision steps, Stripe billing synchronization, usage metering and queue-based execution.
 
-It is built as a pnpm monorepo with independent API and Worker runtimes, shared domain/application/infrastructure packages, PostgreSQL persistence, Redis/BullMQ queues, Docker-based operations, image-based deployment and automated validation artifacts.
+It is built as a pnpm monorepo with independent API, Worker and Web Console workspaces, shared domain/application/infrastructure packages, PostgreSQL persistence, Redis/BullMQ queues, Docker-based operations, image-based deployment and automated validation artifacts.
 
 ## Core capabilities
 
@@ -22,6 +22,7 @@ Runlane Core includes a complete backend vertical slice:
 - Audit logs, structured runtime logs, request IDs and readiness endpoints
 - Session-scoped demo workspaces with isolated mutable state
 - Local and image-based deployment flows with CI and smoke validation
+- Web Console for workflow design, execution inspection, API keys, secrets, usage, billing, audit logs and demo operations
 
 ## Service endpoints
 
@@ -39,6 +40,7 @@ The repository uses a modular DDD monolith with a separate Worker runtime and qu
 ```txt
 apps/api          HTTP API, controllers, guards, OpenAPI and runtime wiring
 apps/worker       BullMQ processing, workflow execution and connector execution
+apps/web          Web Console, visual workflow designer and operational workspace views
 packages/domain   Entities, value objects and business rules
 packages/application  Use cases, ports and orchestration boundaries
 packages/infrastructure  Prisma, Redis, BullMQ, Stripe, AI, HTTP, crypto and logger adapters
@@ -126,6 +128,31 @@ The repository includes operational scenario documentation for the main flows:
 
 Use [Operational Scenario Index](docs/cases/index.md) as the entry point for the complete scenario map.
 
+
+## Web Console
+
+The Web Console is served from `apps/web` and covers the main workspace operations:
+
+- Demo and account login
+- Workspace overview with API, queue and worker health
+- Visual workflow designer with draggable step blocks and JSON definition editing
+- Workflow webhook URLs, test payloads and recent executions
+- Execution trace timeline with step input, output, error and retry actions
+- API key creation, one-time key display and revocation
+- Workflow secrets with masked values
+- Usage, billing, audit logs, settings and documentation links
+
+Local commands:
+
+```powershell
+pnpm dev:web
+pnpm build:web
+pnpm preview:web
+pnpm typecheck:web
+```
+
+The local web server listens on `http://localhost:4610` and calls the API at `http://localhost:4600` by default. On the configured service host the public application origin is `https://runlane.dyniqo.dev` and the API origin is `https://api.runlane.dyniqo.dev`.
+
 ## Requirements
 
 - Node.js 24.16.0
@@ -186,9 +213,10 @@ pnpm docker:infra:up
 pnpm db:migrate:deploy
 pnpm start:api
 pnpm start:worker
+pnpm dev:web
 ```
 
-The API listens on `http://localhost:4600`. The Worker listens on `http://localhost:4601` for operational endpoints.
+The API listens on `http://localhost:4600`. The Worker listens on `http://localhost:4601` for operational endpoints. The Web Console listens on `http://localhost:4610`.
 
 ## API and operational endpoints
 
@@ -260,16 +288,17 @@ pnpm docker:down
 pnpm docker:reset
 ```
 
-Local Docker binds API to `http://127.0.0.1:14600`, PostgreSQL to loopback port `15432`, and Redis to loopback port `16379`.
+Local Docker binds the API to `http://127.0.0.1:14600`, the Web Console to `http://127.0.0.1:14610`, PostgreSQL to loopback port `15432`, and Redis to loopback port `16379`.
 
 ## Image-based deployment
 
-Commit SHA tagged images are published to GHCR for API, Worker and migrator targets. The deployment Compose file runs PostgreSQL, Redis, migrator, API, Worker and Caddy.
+Commit SHA tagged images are published to GHCR for API, Worker, migrator and Web Console targets. The deployment Compose file runs PostgreSQL, Redis, migrator, API, Worker, Web Console and Caddy.
 
 Deployment files:
 
 - `docker-compose.deploy.yml`
 - `docker/Caddyfile`
+- `docker/web.Caddyfile`
 - `.env.deploy.example`
 - `.github/workflows/deployment-smoke.yml`
 - [Deployment Guide](docs/deployment.md)
