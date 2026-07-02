@@ -128,7 +128,6 @@ The repository includes operational scenario documentation for the main flows:
 
 Use [Operational Scenario Index](docs/cases/index.md) as the entry point for the complete scenario map.
 
-
 ## Web Console
 
 The Web Console is served from `apps/web` and covers the main workspace operations:

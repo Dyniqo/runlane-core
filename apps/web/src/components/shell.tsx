@@ -87,7 +87,12 @@ function TopNavigation({ state, theme, onTheme, onSignOut }: TopNavigationProps)
       </div>
 
       <div className="top-actions">
-        <button className="theme-toggle" type="button" aria-label="Switch color theme" onClick={onTheme}>
+        <button
+          className="theme-toggle"
+          type="button"
+          aria-label="Switch color theme"
+          onClick={onTheme}
+        >
           <span>{theme === 'dark' ? '☀' : '☾'}</span>
           <strong>{theme === 'dark' ? 'Light' : 'Dark'}</strong>
         </button>

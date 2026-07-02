@@ -144,7 +144,8 @@ const LOCAL_DEFAULTS = {
   ENCRYPTION_KEY: 'runlane_local_encryption_key_change_me_64_bytes_minimum_value',
   ACCESS_TOKEN_TTL: 900,
   REFRESH_TOKEN_TTL: 2592000,
-  CORS_ORIGIN: 'http://localhost:4610,http://127.0.0.1:4610,http://localhost:4600,http://127.0.0.1:4600',
+  CORS_ORIGIN:
+    'http://localhost:4610,http://127.0.0.1:4610,http://localhost:4600,http://127.0.0.1:4600',
   RATE_LIMIT_TTL: 60,
   RATE_LIMIT_MAX: 25,
   MAX_PAYLOAD_SIZE: 1048576,

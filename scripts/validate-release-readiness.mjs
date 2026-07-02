@@ -155,7 +155,7 @@ if (failures.length === 0) {
     'docs/clean-room-docker-validation.md',
     'docs/cases/index.md',
     'docs/validation.md',
-  'docs/web-console.md',
+    'docs/web-console.md',
     'docs/deployment.md',
   ]) {
     const content = read(file);

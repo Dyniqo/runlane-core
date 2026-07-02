@@ -312,9 +312,7 @@ export function IntegrationsView({
                   ? `/v1/automation/execute/${workflow.publicId}`
                   : 'Publish the selected workflow')}
             </strong>
-            <p>
-              API-key protected execution route with idempotency and queue-backed processing.
-            </p>
+            <p>API-key protected execution route with idempotency and queue-backed processing.</p>
           </div>
           <div className="bridge-stat-grid">
             <BridgeStat label="Workflow" value={workflow?.publicId || '—'} />
@@ -378,7 +376,13 @@ export function IntegrationsView({
   );
 }
 
-function BridgeStat({ label, value }: { readonly label: string; readonly value: string }): ReactElement {
+function BridgeStat({
+  label,
+  value,
+}: {
+  readonly label: string;
+  readonly value: string;
+}): ReactElement {
   return (
     <div className="bridge-stat-card">
       <span>{label}</span>

@@ -64,7 +64,15 @@ export type Workflow = {
   readonly updatedAt: string;
 };
 
-export type ExecutionStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'retrying' | 'dead_letter' | 'cancelled' | string;
+export type ExecutionStatus =
+  | 'queued'
+  | 'running'
+  | 'succeeded'
+  | 'failed'
+  | 'retrying'
+  | 'dead_letter'
+  | 'cancelled'
+  | string;
 
 export type Execution = {
   readonly id: string;
@@ -176,7 +184,14 @@ export type Toast = {
   readonly message: string;
 };
 
-export type AppTab = 'home' | 'workflows' | 'executions' | 'integrations' | 'usage' | 'plans' | 'audit';
+export type AppTab =
+  | 'home'
+  | 'workflows'
+  | 'executions'
+  | 'integrations'
+  | 'usage'
+  | 'plans'
+  | 'audit';
 
 export type AppState = {
   readonly apiBaseUrl: string;

@@ -64,7 +64,8 @@ jobs:
           RUNLANE_IMAGE_NAMESPACE=${owner}
           RUNLANE_IMAGE_REPOSITORY=${repository}
           RUNLANE_IMAGE_TAG=sha-${image_tag}
-          RUNLANE_PUBLIC_DOMAIN=:80
+          RUNLANE_WEB_DOMAIN=http://runlane.localhost
+          RUNLANE_API_DOMAIN=http://api.runlane.localhost
           RUNLANE_HTTP_PORT=18080
           RUNLANE_HTTPS_PORT=18443
           RUNLANE_CADDY_MAX_REQUEST_BODY=2MB
@@ -112,13 +113,13 @@ jobs:
       - name: Start deployment services
         shell: bash
         run: |
-          docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d api worker caddy
+          docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d api worker web caddy
 
       - name: Wait for API readiness through Caddy
         shell: bash
         run: |
           for attempt in $(seq 1 36); do
-            if curl --fail --silent http://127.0.0.1:18080/health/ready > /dev/null; then
+            if curl --fail --silent --header "Host: api.runlane.localhost" http://127.0.0.1:18080/health/ready > /dev/null; then
               echo "API is ready through Caddy."
               exit 0
             fi
@@ -188,9 +189,10 @@ jobs:
             sleep 5
           done
 
-          curl --fail --silent http://127.0.0.1:18080/health > /dev/null
-          curl --fail --silent http://127.0.0.1:18080/health/ready > /dev/null
-          curl --fail --silent http://127.0.0.1:18080/health/queue > /dev/null
+          curl --fail --silent --header "Host: api.runlane.localhost" http://127.0.0.1:18080/health > /dev/null
+          curl --fail --silent --header "Host: api.runlane.localhost" http://127.0.0.1:18080/health/ready > /dev/null
+          curl --fail --silent --header "Host: api.runlane.localhost" http://127.0.0.1:18080/health/queue > /dev/null
+          curl --fail --silent --header "Host: runlane.localhost" http://127.0.0.1:18080/ > /dev/null
 
           docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps --all
 

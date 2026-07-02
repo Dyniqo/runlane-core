@@ -37,7 +37,9 @@ export function writeTheme(theme: ThemeMode): void {
 export function readDemoSessionId(): string {
   const saved = localStorage.getItem(demoSessionKey);
   if (saved && saved.length >= 8) return saved;
-  const created = crypto.randomUUID ? crypto.randomUUID() : `demo-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const created = crypto.randomUUID
+    ? crypto.randomUUID()
+    : `demo-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   localStorage.setItem(demoSessionKey, created);
   return created;
 }

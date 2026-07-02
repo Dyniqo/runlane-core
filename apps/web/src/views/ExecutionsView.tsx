@@ -2,7 +2,15 @@ import { useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 import type { AppState, Execution, ExecutionStep } from '../types';
 import { formatDate, formatDuration, summarizeRecord, titleCase } from '../lib/format';
-import { Button, Card, CompactPager, EmptyState, InfoPill, PanelHeader, StatusBadge } from '../components/ui';
+import {
+  Button,
+  Card,
+  CompactPager,
+  EmptyState,
+  InfoPill,
+  PanelHeader,
+  StatusBadge,
+} from '../components/ui';
 
 export function ExecutionsView({
   state,
@@ -147,7 +155,9 @@ function ExecutionDetail({
         <div>
           <span className="eyebrow">Execution trace</span>
           <h2>{titleCase(execution.status)}</h2>
-          <p>Run summary with worker timing, retry controls, and the latest persisted step state.</p>
+          <p>
+            Run summary with worker timing, retry controls, and the latest persisted step state.
+          </p>
         </div>
         <StatusBadge value={execution.status} />
       </div>

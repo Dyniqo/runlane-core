@@ -67,7 +67,12 @@ export function LoginView({
   return (
     <main className="login-shell final operational">
       <section className="login-showcase operational">
-        <button className="login-theme-toggle" type="button" aria-label="Switch color theme" onClick={onTheme}>
+        <button
+          className="login-theme-toggle"
+          type="button"
+          aria-label="Switch color theme"
+          onClick={onTheme}
+        >
           <span>{theme === 'dark' ? '☀' : '☾'}</span>
           <strong>{theme === 'dark' ? 'Light' : 'Dark'}</strong>
         </button>
@@ -84,11 +89,12 @@ export function LoginView({
 
         <div className="login-title-block refined">
           <h1>
-            <span className="gradient-word">Build the flow.</span> Run the check. Inspect the outcome.
+            <span className="gradient-word">Build the flow.</span> Run the check. Inspect the
+            outcome.
           </h1>
           <p>
-            Operate workflows through a guided interface with readable cards, controlled actions, and a visual
-            canvas built for workspace teams.
+            Operate workflows through a guided interface with readable cards, controlled actions,
+            and a visual canvas built for workspace teams.
           </p>
         </div>
 
@@ -124,10 +130,18 @@ export function LoginView({
         </div>
 
         <div className="auth-mode-switch" role="tablist" aria-label="Authentication mode">
-          <button type="button" className={mode === 'sign-in' ? 'active' : ''} onClick={() => setMode('sign-in')}>
+          <button
+            type="button"
+            className={mode === 'sign-in' ? 'active' : ''}
+            onClick={() => setMode('sign-in')}
+          >
             Sign in
           </button>
-          <button type="button" className={isRegister ? 'active' : ''} onClick={() => setMode('register')}>
+          <button
+            type="button"
+            className={isRegister ? 'active' : ''}
+            onClick={() => setMode('register')}
+          >
             Create workspace
           </button>
         </div>
@@ -139,8 +153,18 @@ export function LoginView({
             void submit();
           }}
         >
-          {isRegister ? <TextField label="Name" value={name} onChange={(event) => setName(event.target.value)} /> : null}
-          <TextField label="Email" value={email} onChange={(event) => setEmail(event.target.value)} />
+          {isRegister ? (
+            <TextField
+              label="Name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
+          ) : null}
+          <TextField
+            label="Email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
           <TextField
             label="Password"
             type="password"

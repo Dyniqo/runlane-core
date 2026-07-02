@@ -109,12 +109,16 @@ for (const route of ['overview', 'builder', 'runs', 'integrations', 'usage', 'pl
   }
 }
 
-const manifest = JSON.parse(readFileSync(join(root, 'apps/web/public/manifest.webmanifest'), 'utf8'));
+const manifest = JSON.parse(
+  readFileSync(join(root, 'apps/web/public/manifest.webmanifest'), 'utf8'),
+);
 if (manifest.name !== 'Runlane Console' || manifest.short_name !== 'Runlane') {
   errors.push('manifest web app name is not aligned with the console');
 }
 
-const iconSet = new Set((manifest.icons ?? []).map((icon) => `${icon.src}|${icon.sizes}|${icon.type}`));
+const iconSet = new Set(
+  (manifest.icons ?? []).map((icon) => `${icon.src}|${icon.sizes}|${icon.type}`),
+);
 for (const icon of [
   '/icons/icon-192.png|192x192|image/png',
   '/icons/icon-512.png|512x512|image/png',
@@ -124,7 +128,16 @@ for (const icon of [
   }
 }
 
-for (const file of requiredFiles.filter((file) => file.endsWith('.ts') || file.endsWith('.tsx') || file.endsWith('.scss') || file.endsWith('.html') || file.endsWith('.json') || file.endsWith('.webmanifest') || file.endsWith('.svg'))) {
+for (const file of requiredFiles.filter(
+  (file) =>
+    file.endsWith('.ts') ||
+    file.endsWith('.tsx') ||
+    file.endsWith('.scss') ||
+    file.endsWith('.html') ||
+    file.endsWith('.json') ||
+    file.endsWith('.webmanifest') ||
+    file.endsWith('.svg'),
+)) {
   const text = readFileSync(join(root, file), 'utf8');
   for (const fragment of forbiddenFragments()) {
     if (text.includes(fragment)) {

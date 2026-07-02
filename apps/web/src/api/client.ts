@@ -34,7 +34,10 @@ export function isAuthenticationError(error: unknown): boolean {
 }
 
 export function readApiBaseUrl(): string {
-  const envValue = import.meta.env.VITE_RUNLANE_API_URL;
+  const meta = import.meta as ImportMeta & {
+    readonly env?: { readonly VITE_RUNLANE_API_URL?: unknown };
+  };
+  const envValue = meta.env?.VITE_RUNLANE_API_URL;
   return typeof envValue === 'string' && envValue.length > 0
     ? envValue.replace(/\/$/, '')
     : 'http://127.0.0.1:4600';
@@ -452,11 +455,14 @@ export class ApiClient {
     if (options.body) headers['Content-Type'] = 'application/json';
     if (options.apiKeyToken) headers['X-Runlane-Api-Key'] = options.apiKeyToken;
     if (options.auth !== false && this.token) headers.Authorization = `Bearer ${this.token}`;
-    const response = await fetch(`${this.baseUrl}${path}`, {
+    const requestInit: RequestInit = {
       method: options.method ?? 'GET',
       headers,
-      body: options.body ? JSON.stringify(options.body) : undefined,
-    });
+    };
+    if (options.body) {
+      requestInit.body = JSON.stringify(options.body);
+    }
+    const response = await fetch(`${this.baseUrl}${path}`, requestInit);
     const text = await response.text();
     const data = parseJson(text);
     if (!response.ok) {
@@ -561,14 +567,14 @@ function toWorkflowStep(value: unknown): WorkflowStep | null {
   const item = readObject(value);
   const key = readString(item.key, '');
   if (key.length === 0) return null;
-  return {
+  const step: WorkflowStep = {
     key,
     name: readString(item.name, key),
     type: readString(item.type, 'condition'),
     config: readObject(item.config),
-    timeoutMs: typeof item.timeoutMs === 'number' ? item.timeoutMs : undefined,
     transitions: readObject(item.transitions),
   };
+  return typeof item.timeoutMs === 'number' ? { ...step, timeoutMs: item.timeoutMs } : step;
 }
 
 function toExecution(value: unknown): Execution | null {
@@ -628,10 +634,13 @@ function toSecret(value: unknown): WorkflowSecret | null {
   const item = readObject(value);
   const key = readString(item.key, '');
   if (key.length === 0) return null;
+  const secret: WorkflowSecret = { key };
+  const createdAt = readNullableString(item.createdAt);
+  const updatedAt = readNullableString(item.updatedAt);
   return {
-    key,
-    createdAt: readNullableString(item.createdAt) ?? undefined,
-    updatedAt: readNullableString(item.updatedAt) ?? undefined,
+    ...secret,
+    ...(createdAt ? { createdAt } : {}),
+    ...(updatedAt ? { updatedAt } : {}),
   };
 }
 
@@ -639,12 +648,17 @@ function toCredential(value: unknown): ConnectorCredential | null {
   const item = readObject(value);
   const name = readString(item.name, '');
   if (name.length === 0) return null;
-  return {
+  const credential: ConnectorCredential = {
     name,
     type: readString(item.type, 'http'),
     metadata: readObject(item.metadata),
-    createdAt: readNullableString(item.createdAt) ?? undefined,
-    updatedAt: readNullableString(item.updatedAt) ?? undefined,
+  };
+  const createdAt = readNullableString(item.createdAt);
+  const updatedAt = readNullableString(item.updatedAt);
+  return {
+    ...credential,
+    ...(createdAt ? { createdAt } : {}),
+    ...(updatedAt ? { updatedAt } : {}),
   };
 }
 

@@ -142,7 +142,9 @@ if (!workflow.includes('NPM_REGISTRY: https://registry.npmjs.org/')) {
 }
 
 if (lockfile.includes('tarball:') && !lockfile.includes('https://registry.npmjs.org/')) {
-  failures.push('pnpm-lock.yaml tarball URLs must use the public npm registry when tarball URLs are present');
+  failures.push(
+    'pnpm-lock.yaml tarball URLs must use the public npm registry when tarball URLs are present',
+  );
 }
 
 const dockerTargets = ['api', 'worker', 'migrator', 'web'];
@@ -177,7 +179,10 @@ if (packageJson.scripts['validate:ci'] !== 'node scripts/validate-github-actions
   failures.push('package.json script validate:ci is missing or invalid');
 }
 
-if (packageJson.scripts['docker:logs'] !== 'docker compose logs --follow postgres redis migrator api worker web') {
+if (
+  packageJson.scripts['docker:logs'] !==
+  'docker compose logs --follow postgres redis migrator api worker web'
+) {
   failures.push('package.json script docker:logs must include the web service');
 }
 
@@ -185,7 +190,11 @@ if (!dockerfile.includes('COPY docker/web.Caddyfile /etc/caddy/Caddyfile')) {
   failures.push('Dockerfile web target must copy docker/web.Caddyfile');
 }
 
-if (!dockerfile.includes('CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]')) {
+if (
+  !dockerfile.includes(
+    'CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]',
+  )
+) {
   failures.push('Dockerfile web target must run Caddy with its checked-in config');
 }
 

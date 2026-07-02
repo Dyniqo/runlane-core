@@ -94,7 +94,10 @@ export function WorkflowCanvas({
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [isPanning, setIsPanning] = useState(false);
-  const layout = useMemo(() => normalizeLayout({ ...createPositions(steps), ...positions }, steps), [positions, steps]);
+  const layout = useMemo(
+    () => normalizeLayout({ ...createPositions(steps), ...positions }, steps),
+    [positions, steps],
+  );
   const edges = useMemo(() => buildWorkflowEdges(steps), [steps]);
   const routeMetrics = useMemo(() => summarizeRouteMetrics(edges), [edges]);
   const canvasExtent = useMemo(() => buildCanvasExtent(layout, steps), [layout, steps]);
@@ -135,7 +138,9 @@ export function WorkflowCanvas({
     setSelectedEdgeId(null);
     const board = boardRef.current;
     if (!board || steps.length === 0) return;
-    window.requestAnimationFrame(() => centerCanvasView(board, nextPositions, steps, zoom, buildCanvasExtent(nextPositions, steps)));
+    window.requestAnimationFrame(() =>
+      centerCanvasView(board, nextPositions, steps, zoom, buildCanvasExtent(nextPositions, steps)),
+    );
   }, [stepKeySignature, workflow?.id]);
 
   function dragPaletteNode(event: DragEvent<HTMLDivElement>, node: PaletteNode): void {
@@ -192,7 +197,9 @@ export function WorkflowCanvas({
     setSelectedEdgeId(null);
     const board = boardRef.current;
     if (!board) return;
-    window.requestAnimationFrame(() => centerCanvasView(board, nextPositions, steps, zoom, nextExtent));
+    window.requestAnimationFrame(() =>
+      centerCanvasView(board, nextPositions, steps, zoom, nextExtent),
+    );
   }
 
   function startCanvasPan(event: PointerEvent<HTMLDivElement>): void {
@@ -233,7 +240,8 @@ export function WorkflowCanvas({
     const bounds = event.currentTarget.getBoundingClientRect();
     const position = clampCanvasPosition(
       {
-        x: (event.clientX - bounds.left + event.currentTarget.scrollLeft) / zoom - nodeBox.width / 2,
+        x:
+          (event.clientX - bounds.left + event.currentTarget.scrollLeft) / zoom - nodeBox.width / 2,
         y: (event.clientY - bounds.top + event.currentTarget.scrollTop) / zoom - nodeBox.height / 2,
       },
       canvasExtent,
@@ -348,12 +356,24 @@ export function WorkflowCanvas({
                 const geometry = buildEdgeGeometry(sourcePosition, targetPosition, edge.offset);
                 const labelWidth = Math.max(70, Math.min(190, edge.label.length * 7 + 28));
                 const isEdgeSelected = selectedEdgeId === edge.id;
-                const isEdgeRelated = selectedKey === edge.sourceKey || selectedKey === edge.targetKey;
+                const isEdgeRelated =
+                  selectedKey === edge.sourceKey || selectedKey === edge.targetKey;
+                const edgeClassName = [
+                  'workflow-edge',
+                  edge.kind,
+                  edge.explicit ? 'explicit' : 'implicit',
+                  isEdgeSelected ? 'selected' : '',
+                  isEdgeRelated ? 'related' : '',
+                  `from-${geometry.sourceSide}`,
+                  `to-${geometry.targetSide}`,
+                ]
+                  .filter(Boolean)
+                  .join(' ');
                 return (
                   <g
                     key={edge.id}
                     role="button"
-                    className={`workflow-edge ${edge.kind} ${edge.explicit ? 'explicit' : 'implicit'} ${isEdgeSelected ? 'selected' : ''} ${isEdgeRelated ? 'related' : ''} from-${geometry.sourceSide} to-${geometry.targetSide}`}
+                    className={edgeClassName}
                     onClick={(event) => {
                       event.stopPropagation();
                       setSelectedEdgeId(edge.id);
@@ -366,7 +386,10 @@ export function WorkflowCanvas({
                       onSelect(edge.sourceKey);
                     }}
                   >
-                    <title>{`${edge.label}: ${stepName(steps, edge.sourceKey)} to ${stepName(steps, edge.targetKey)}`}</title>
+                    <title>{`${edge.label}: ${stepName(steps, edge.sourceKey)} to ${stepName(
+                      steps,
+                      edge.targetKey,
+                    )}`}</title>
                     <path className="workflow-edge-hitbox" d={geometry.path} />
                     <path
                       className="workflow-edge-path"
@@ -387,7 +410,9 @@ export function WorkflowCanvas({
                     />
                     <g
                       className="workflow-edge-label"
-                      transform={`translate(${geometry.label.x - labelWidth / 2}, ${geometry.label.y - 14})`}
+                      transform={`translate(${geometry.label.x - labelWidth / 2}, ${
+                        geometry.label.y - 14
+                      })`}
                     >
                       <rect width={labelWidth} height="28" rx="14" />
                       <text x={labelWidth / 2} y="18" textAnchor="middle">
@@ -409,9 +434,13 @@ export function WorkflowCanvas({
                   setSelectedEdgeId(null);
                   onSelect(step.key);
                 }}
-                className={`canvas-node ${step.type} ${selectedKey === step.key ? 'selected' : ''} ${draggingKey === step.key ? 'dragging' : ''}`}
+                className={`canvas-node ${step.type} ${selectedKey === step.key ? 'selected' : ''} ${
+                  draggingKey === step.key ? 'dragging' : ''
+                }`}
                 style={{
-                  transform: `translate(${layout[step.key]?.x ?? 32}px, ${layout[step.key]?.y ?? 32}px)`,
+                  transform: `translate(${layout[step.key]?.x ?? 32}px, ${
+                    layout[step.key]?.y ?? 32
+                  }px)`,
                 }}
               >
                 <div className="node-icon">{iconFor(step.type)}</div>
@@ -428,7 +457,11 @@ export function WorkflowCanvas({
                   <span>{`${routeMetrics[step.key]?.outgoing ?? 0} out`}</span>
                 </div>
                 {selectedKey === step.key ? (
-                  <div className="canvas-node-actions" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => event.stopPropagation()}>
+                  <div
+                    className="canvas-node-actions"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     <button type="button" onClick={() => onSelect(step.key)}>
                       Edit
                     </button>
@@ -1159,7 +1192,9 @@ function buildEdgeGeometry(source: NodePosition, target: NodePosition, offset: n
   const label = cubicPoint(start, controlA, controlB, end, 0.5);
 
   return {
-    path: `M ${start.x} ${start.y} C ${controlA.x} ${controlA.y}, ${controlB.x} ${controlB.y}, ${end.x} ${end.y}`,
+    path: `M ${start.x} ${start.y} C ${controlA.x} ${controlA.y}, ${controlB.x} ${
+      controlB.y
+    }, ${end.x} ${end.y}`,
     label,
     start,
     end,
@@ -1414,7 +1449,10 @@ function centerCanvasView(
   });
 }
 
-function layoutBounds(layout: NodeMap, steps: readonly WorkflowStep[]): {
+function layoutBounds(
+  layout: NodeMap,
+  steps: readonly WorkflowStep[],
+): {
   readonly left: number;
   readonly right: number;
   readonly top: number;
@@ -1446,13 +1484,6 @@ function isInteractiveTarget(target: EventTarget): boolean {
 
 function stepName(steps: readonly WorkflowStep[], key: string): string {
   return steps.find((step) => step.key === key)?.name ?? key;
-}
-
-function edgeKindLabel(edge: WorkflowEdge): string {
-  if (edge.kind === 'success') return 'Success route';
-  if (edge.kind === 'failure') return 'Failure route';
-  if (edge.kind === 'branch') return 'Branch route';
-  return 'Saved order';
 }
 
 function isPresent<T>(value: T | null | undefined): value is T {

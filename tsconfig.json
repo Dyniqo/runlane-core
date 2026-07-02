@@ -38,6 +38,6 @@
     "types": ["node"],
     "useUnknownInCatchVariables": true
   },
-  "include": ["apps/**/*.ts", "packages/**/*.ts"],
-  "exclude": ["node_modules", "dist", "coverage"]
+  "include": ["apps/api/**/*.ts", "apps/worker/**/*.ts", "packages/**/*.ts"],
+  "exclude": ["node_modules", "dist", "coverage", "apps/web"]
 }
