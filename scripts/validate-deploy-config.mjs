@@ -49,6 +49,7 @@ if (failures.length === 0) {
     'RUNLANE_API_DOMAIN: ${RUNLANE_API_DOMAIN:?RUNLANE_API_DOMAIN is required}',
     '- /config:size=16m,mode=0755',
     '- /data:size=16m,mode=0755',
+    'test -s /usr/share/caddy/index.html && caddy validate --config /etc/caddy/Caddyfile',
     'API_URL: ${API_URL:?API_URL is required}',
     'APP_URL: ${APP_URL:?APP_URL is required}',
     'JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET is required}',
@@ -82,6 +83,10 @@ if (failures.length === 0) {
     'reverse_proxy api:4600',
     'health_uri /health',
     'format json',
+  ]);
+
+  forbidFragments('docker-compose.deploy.yml', deployCompose, [
+    'wget -q --spider http://127.0.0.1:3000/',
   ]);
 
   forbidFragments('docker/Caddyfile', caddyfile, ['trusted_proxies', 'private_ranges']);
@@ -132,6 +137,7 @@ if (failures.length === 0) {
     'Deployment service health checks are ready.',
     'Deployment service health checks did not become ready.',
     'curl --fail --silent --header "Host: api.runlane.localhost" http://127.0.0.1:18080/health > /dev/null',
+    'for service in postgres redis api worker web caddy; do',
     'curl --fail --silent --header "Host: runlane.localhost" http://127.0.0.1:18080/ > /dev/null',
     'down -v --remove-orphans',
   ]);

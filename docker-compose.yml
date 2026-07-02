@@ -218,7 +218,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - wget -q --spider http://127.0.0.1:3000/
+        - test -s /usr/share/caddy/index.html && caddy validate --config /etc/caddy/Caddyfile
       interval: 10s
       timeout: 5s
       retries: 12

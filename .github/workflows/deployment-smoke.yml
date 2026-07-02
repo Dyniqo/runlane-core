@@ -152,7 +152,7 @@ jobs:
           echo "migrator exit code: ${migrator_exit_code}"
           test "$migrator_exit_code" = "0"
 
-          for service in postgres redis api worker caddy; do
+          for service in postgres redis api worker web caddy; do
             container_id="$(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps -q "$service")"
             test -n "$container_id"
             state="$(docker inspect --format='{{.State.Running}}' "$container_id")"
@@ -163,7 +163,7 @@ jobs:
           for attempt in $(seq 1 36); do
             pending=0
 
-            for service in postgres redis api worker caddy; do
+            for service in postgres redis api worker web caddy; do
               container_id="$(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps -q "$service")"
               health="$(docker inspect --format='{{.State.Health.Status}}' "$container_id")"
               echo "${service} health: ${health}"
