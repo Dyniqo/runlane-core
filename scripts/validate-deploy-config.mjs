@@ -39,6 +39,7 @@ if (failures.length === 0) {
     'redis:8.6.4-alpine3.23',
     'condition: service_completed_successfully',
     'condition: service_healthy',
+    'condition: service_started',
     'no-new-privileges:true',
     'cap_drop:',
     'read_only: true',
@@ -49,7 +50,6 @@ if (failures.length === 0) {
     'RUNLANE_API_DOMAIN: ${RUNLANE_API_DOMAIN:?RUNLANE_API_DOMAIN is required}',
     '- /config:size=16m,mode=0755',
     '- /data:size=16m,mode=0755',
-    'test -s /usr/share/caddy/index.html && caddy validate --config /etc/caddy/Caddyfile',
     'API_URL: ${API_URL:?API_URL is required}',
     'APP_URL: ${APP_URL:?APP_URL is required}',
     'JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET is required}',
@@ -83,10 +83,6 @@ if (failures.length === 0) {
     'reverse_proxy api:4600',
     'health_uri /health',
     'format json',
-  ]);
-
-  forbidFragments('docker-compose.deploy.yml', deployCompose, [
-    'wget -q --spider http://127.0.0.1:3000/',
   ]);
 
   forbidFragments('docker/Caddyfile', caddyfile, ['trusted_proxies', 'private_ranges']);
@@ -133,11 +129,15 @@ if (failures.length === 0) {
     'Caddy status:',
     'logs --no-color --tail=200 caddy',
     'migrator exit code',
+    'Web console is ready through Caddy.',
+    'Waiting for web readiness through Caddy',
+    'Web console did not become ready through Caddy.',
+    'for service in postgres redis api worker web caddy',
+    'for service in postgres redis api worker caddy',
     'Waiting for deployment service health checks',
     'Deployment service health checks are ready.',
     'Deployment service health checks did not become ready.',
     'curl --fail --silent --header "Host: api.runlane.localhost" http://127.0.0.1:18080/health > /dev/null',
-    'for service in postgres redis api worker web caddy; do',
     'curl --fail --silent --header "Host: runlane.localhost" http://127.0.0.1:18080/ > /dev/null',
     'down -v --remove-orphans',
   ]);
@@ -155,6 +155,7 @@ if (failures.length === 0) {
       '127.0.0.1:${RUNLANE_POSTGRES_PORT',
       '127.0.0.1:${RUNLANE_REDIS_PORT',
       'run --rm --no-deps caddy validate',
+      'wget -q --spider http://127.0.0.1:3000/',
       '["caddy", "file-server"',
     ],
   );

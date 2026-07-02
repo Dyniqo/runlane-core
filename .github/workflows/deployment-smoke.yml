@@ -143,6 +143,34 @@ jobs:
           docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --no-color --tail=200 caddy || true
           exit 1
 
+      - name: Wait for web readiness through Caddy
+        shell: bash
+        run: |
+          for attempt in $(seq 1 36); do
+            if curl --fail --silent --header "Host: runlane.localhost" http://127.0.0.1:18080/ > /dev/null; then
+              echo "Web console is ready through Caddy."
+              exit 0
+            fi
+
+            web_id="$(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps -q web || true)"
+            if [[ -n "$web_id" ]]; then
+              web_status="$(docker inspect --format='{{.State.Status}}' "$web_id")"
+              echo "Web status: ${web_status}"
+              if [[ "$web_status" == "restarting" || "$web_status" == "exited" || "$web_status" == "dead" ]]; then
+                docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --no-color --tail=200 web || true
+                exit 1
+              fi
+            fi
+
+            echo "Waiting for web readiness through Caddy: attempt ${attempt}/36"
+            docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps --all
+            sleep 5
+          done
+
+          echo "Web console did not become ready through Caddy."
+          docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --no-color --tail=200 web caddy || true
+          exit 1
+
       - name: Verify deployment stack
         shell: bash
         run: |
@@ -163,7 +191,7 @@ jobs:
           for attempt in $(seq 1 36); do
             pending=0
 
-            for service in postgres redis api worker web caddy; do
+            for service in postgres redis api worker caddy; do
               container_id="$(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps -q "$service")"
               health="$(docker inspect --format='{{.State.Health.Status}}' "$container_id")"
               echo "${service} health: ${health}"
