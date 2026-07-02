@@ -115,6 +115,49 @@ jobs:
         run: |
           docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d api worker web caddy
 
+      - name: Wait for deployment service health checks
+        shell: bash
+        run: |
+          for attempt in $(seq 1 36); do
+            pending=0
+
+            for service in postgres redis api worker web caddy; do
+              container_id="$(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps -q "$service")"
+              if [[ -z "$container_id" ]]; then
+                echo "${service} container is missing"
+                pending=1
+                continue
+              fi
+
+              state="$(docker inspect --format='{{.State.Status}}' "$container_id")"
+              health="$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$container_id")"
+              echo "${service} status: ${state}; health: ${health}"
+
+              if [[ "$state" == "restarting" || "$state" == "exited" || "$state" == "dead" ]]; then
+                docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --no-color --tail=200 "$service" || true
+                exit 1
+              fi
+
+              if [[ "$health" != "healthy" ]]; then
+                pending=1
+              fi
+            done
+
+            if [[ "$pending" = "0" ]]; then
+              echo "Deployment service health checks are ready."
+              exit 0
+            fi
+
+            echo "Waiting for deployment service health checks: attempt ${attempt}/36"
+            docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps --all
+            sleep 5
+          done
+
+          echo "Deployment service health checks did not become ready."
+          docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps --all
+          docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --no-color --tail=200 api worker web caddy || true
+          exit 1
+
       - name: Wait for API readiness through Caddy
         shell: bash
         run: |
@@ -186,35 +229,6 @@ jobs:
             state="$(docker inspect --format='{{.State.Running}}' "$container_id")"
             echo "${service} running: ${state}"
             test "$state" = "true"
-          done
-
-          for attempt in $(seq 1 36); do
-            pending=0
-
-            for service in postgres redis api worker caddy; do
-              container_id="$(docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps -q "$service")"
-              health="$(docker inspect --format='{{.State.Health.Status}}' "$container_id")"
-              echo "${service} health: ${health}"
-
-              if [[ "$health" != "healthy" ]]; then
-                pending=1
-              fi
-            done
-
-            if [[ "$pending" = "0" ]]; then
-              echo "Deployment service health checks are ready."
-              break
-            fi
-
-            if [[ "$attempt" = "36" ]]; then
-              echo "Deployment service health checks did not become ready."
-              docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps --all
-              docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" logs --no-color --tail=200 caddy || true
-              exit 1
-            fi
-
-            echo "Waiting for deployment service health checks: attempt ${attempt}/36"
-            sleep 5
           done
 
           curl --fail --silent --header "Host: api.runlane.localhost" http://127.0.0.1:18080/health > /dev/null

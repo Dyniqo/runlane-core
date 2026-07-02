@@ -9,7 +9,7 @@ const files = {
   deployEnvironment: resolve(root, '.env.deploy.example'),
   deploymentSmoke: resolve(root, '.github/workflows/deployment-smoke.yml'),
   dockerfile: resolve(root, 'Dockerfile'),
-  webCaddyfile: resolve(root, 'docker/web.Caddyfile'),
+  webServer: resolve(root, 'docker/web-server.mjs'),
 };
 
 const failures = [];
@@ -27,7 +27,7 @@ if (failures.length === 0) {
   const deployEnvironment = readFileSync(files.deployEnvironment, 'utf8');
   const deploymentSmoke = readFileSync(files.deploymentSmoke, 'utf8');
   const dockerfile = readFileSync(files.dockerfile, 'utf8');
-  const webCaddyfile = readFileSync(files.webCaddyfile, 'utf8');
+  const webServer = readFileSync(files.webServer, 'utf8');
 
   requireFragments('docker-compose.deploy.yml', deployCompose, [
     'image: ${RUNLANE_IMAGE_REGISTRY:-ghcr.io}/${RUNLANE_IMAGE_NAMESPACE:-dyniqo}/${RUNLANE_IMAGE_REPOSITORY:-runlane-core}-api:${RUNLANE_IMAGE_TAG:?RUNLANE_IMAGE_TAG is required}',
@@ -39,7 +39,6 @@ if (failures.length === 0) {
     'redis:8.6.4-alpine3.23',
     'condition: service_completed_successfully',
     'condition: service_healthy',
-    'condition: service_started',
     'no-new-privileges:true',
     'cap_drop:',
     'read_only: true',
@@ -50,6 +49,7 @@ if (failures.length === 0) {
     'RUNLANE_API_DOMAIN: ${RUNLANE_API_DOMAIN:?RUNLANE_API_DOMAIN is required}',
     '- /config:size=16m,mode=0755',
     '- /data:size=16m,mode=0755',
+    "fetch('http://127.0.0.1:3000/')",
     'API_URL: ${API_URL:?API_URL is required}',
     'APP_URL: ${APP_URL:?APP_URL is required}',
     'JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?JWT_ACCESS_SECRET is required}',
@@ -57,20 +57,24 @@ if (failures.length === 0) {
   ]);
 
   requireFragments('Dockerfile', dockerfile, [
-    'FROM caddy:2.11.3-alpine AS web',
-    'COPY docker/web.Caddyfile /etc/caddy/Caddyfile',
-    'COPY --from=builder /app/apps/web/dist /usr/share/caddy',
+    'FROM ${NODE_IMAGE} AS web',
+    'COPY --from=builder --chown=node:node /app/apps/web/dist ./public',
+    'COPY --chown=node:node docker/web-server.mjs ./server.mjs',
+    'ENV WEB_HOST=0.0.0.0',
+    'ENV WEB_PORT=3000',
+    'USER node',
     'EXPOSE 3000',
-    'CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]',
+    'CMD ["node", "server.mjs"]',
   ]);
 
-  requireFragments('docker/web.Caddyfile', webCaddyfile, [
-    'admin off',
-    ':3000',
-    'root * /usr/share/caddy',
-    'try_files {path} /index.html',
-    'file_server',
-    'X-Content-Type-Options nosniff',
+  requireFragments('docker/web-server.mjs', webServer, [
+    'createServer',
+    'try {',
+    "join(root, 'index.html')",
+    'X-Content-Type-Options',
+    'X-Frame-Options',
+    'Cache-Control',
+    'WEB_PORT',
   ]);
 
   requireFragments('docker/Caddyfile', caddyfile, [
@@ -125,15 +129,12 @@ if (failures.length === 0) {
     'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" pull',
     'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up --abort-on-container-exit --exit-code-from migrator migrator',
     'docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d api worker web caddy',
+    'for service in postgres redis api worker web caddy; do',
     'http://127.0.0.1:18080/health/ready',
     'Caddy status:',
-    'logs --no-color --tail=200 caddy',
+    'Web status:',
+    'logs --no-color --tail=200 web caddy',
     'migrator exit code',
-    'Web console is ready through Caddy.',
-    'Waiting for web readiness through Caddy',
-    'Web console did not become ready through Caddy.',
-    'for service in postgres redis api worker web caddy',
-    'for service in postgres redis api worker caddy',
     'Waiting for deployment service health checks',
     'Deployment service health checks are ready.',
     'Deployment service health checks did not become ready.',
@@ -144,7 +145,7 @@ if (failures.length === 0) {
 
   forbidFragments(
     'deployment files',
-    deployCompose + caddyfile + deployEnvironment + deploymentSmoke,
+    deployCompose + caddyfile + deployEnvironment + deploymentSmoke + dockerfile,
     [
       `@${'late'}${'st'}`,
       `:${'late'}${'st'}`,
@@ -155,8 +156,9 @@ if (failures.length === 0) {
       '127.0.0.1:${RUNLANE_POSTGRES_PORT',
       '127.0.0.1:${RUNLANE_REDIS_PORT',
       'run --rm --no-deps caddy validate',
-      'wget -q --spider http://127.0.0.1:3000/',
       '["caddy", "file-server"',
+      'FROM caddy:2.11.3-alpine AS web',
+      'CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]',
     ],
   );
 

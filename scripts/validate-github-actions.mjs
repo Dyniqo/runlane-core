@@ -6,7 +6,7 @@ const ciWorkflowPath = resolve(root, '.github/workflows/ci.yml');
 const smokeWorkflowPath = resolve(root, '.github/workflows/deployment-smoke.yml');
 const packagePath = resolve(root, 'package.json');
 const dockerfilePath = resolve(root, 'Dockerfile');
-const webCaddyfilePath = resolve(root, 'docker/web.Caddyfile');
+const webServerPath = resolve(root, 'docker/web-server.mjs');
 const npmrcPath = resolve(root, '.npmrc');
 const lockfilePath = resolve(root, 'pnpm-lock.yaml');
 
@@ -14,7 +14,7 @@ const workflow = readFileSync(ciWorkflowPath, 'utf8');
 const smokeWorkflow = existsSync(smokeWorkflowPath) ? readFileSync(smokeWorkflowPath, 'utf8') : '';
 const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'));
 const dockerfile = readFileSync(dockerfilePath, 'utf8');
-const webCaddyfile = existsSync(webCaddyfilePath) ? readFileSync(webCaddyfilePath, 'utf8') : '';
+const webServer = existsSync(webServerPath) ? readFileSync(webServerPath, 'utf8') : '';
 const npmrc = existsSync(npmrcPath) ? readFileSync(npmrcPath, 'utf8') : '';
 const lockfile = existsSync(lockfilePath) ? readFileSync(lockfilePath, 'utf8') : '';
 const failures = [];
@@ -186,20 +186,20 @@ if (
   failures.push('package.json script docker:logs must include the web service');
 }
 
-if (!dockerfile.includes('COPY docker/web.Caddyfile /etc/caddy/Caddyfile')) {
-  failures.push('Dockerfile web target must copy docker/web.Caddyfile');
+if (!dockerfile.includes('COPY --chown=node:node docker/web-server.mjs ./server.mjs')) {
+  failures.push('Dockerfile web target must copy docker/web-server.mjs');
 }
 
-if (
-  !dockerfile.includes(
-    'CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]',
-  )
-) {
-  failures.push('Dockerfile web target must run Caddy with its checked-in config');
+if (!dockerfile.includes('CMD ["node", "server.mjs"]')) {
+  failures.push('Dockerfile web target must run the static Node server');
 }
 
-if (!webCaddyfile.includes('try_files {path} /index.html')) {
-  failures.push('docker/web.Caddyfile must keep SPA route fallback');
+if (!webServer.includes("join(root, 'index.html')")) {
+  failures.push('docker/web-server.mjs must keep SPA route fallback');
+}
+
+if (!webServer.includes('X-Content-Type-Options')) {
+  failures.push('docker/web-server.mjs must keep static response security headers');
 }
 
 if (!packageJson.scripts.verify.includes('pnpm lockfile:registry:check')) {

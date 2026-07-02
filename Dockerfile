@@ -134,11 +134,18 @@ USER node
 
 CMD ["pnpm", "db:migrate:deploy:runtime"]
 
-FROM caddy:2.11.3-alpine AS web
+FROM ${NODE_IMAGE} AS web
 
-COPY docker/web.Caddyfile /etc/caddy/Caddyfile
-COPY --from=builder /app/apps/web/dist /usr/share/caddy
+WORKDIR /app
+
+COPY --from=builder --chown=node:node /app/apps/web/dist ./public
+COPY --chown=node:node docker/web-server.mjs ./server.mjs
+
+ENV WEB_HOST=0.0.0.0
+ENV WEB_PORT=3000
+
+USER node
 
 EXPOSE 3000
 
-CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
+CMD ["node", "server.mjs"]
