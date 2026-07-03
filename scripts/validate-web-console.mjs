@@ -173,13 +173,33 @@ const demoWorkflowsSource = readFileSync(
 for (const fragment of [
   'consolePayload: buildLeadRoutingPayload()',
   'consolePayload: buildWebhookQueueWorkerPayload()',
-  'consolePayload: buildSubscriptionSyncPayload()',
   'consolePayload: buildApiEnrichmentPayload()',
+  'consolePayload: buildRetryFailureDrillPayload()',
+  'consolePayload: buildSubscriptionSyncPayload()',
   'consolePayload: buildAiDecisionRoutingPayload()',
 ]) {
   if (!demoWorkflowsSource.includes(fragment)) {
     errors.push(`demo workflow console payload is missing fragment: ${fragment}`);
   }
+}
+
+for (const fragment of [
+  'Lead intake and routing workflow',
+  'Reliable webhook queue worker',
+  'API enrichment and handoff workflow',
+  'Controlled retry and failure workflow',
+  'Subscription sync contract workflow',
+  'AI routing contract workflow',
+  'retryFailureDrill',
+  'buildRetryFailureDrillWorkflowDefinition',
+]) {
+  if (!demoWorkflowsSource.includes(fragment)) {
+    errors.push(`demo workflow ordering is missing fragment: ${fragment}`);
+  }
+}
+
+if (demoWorkflowsSource.includes("type: 'ai_decision'")) {
+  errors.push('public demo workflows must not require an AI provider key');
 }
 
 if (/20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/.test(demoWorkflowsSource)) {
