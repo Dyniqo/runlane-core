@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(fileURLToPath(new URL('./public', import.meta.url)));
 const host = process.env.WEB_HOST || '0.0.0.0';
 const port = Number.parseInt(process.env.WEB_PORT || '3000', 10);
+const apiUrl = readApiUrl();
 
 const contentTypes = new Map([
   ['.css', 'text/css; charset=utf-8'],
@@ -26,6 +27,11 @@ const contentTypes = new Map([
 const server = createServer((request, response) => {
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     sendText(response, 405, 'Method Not Allowed');
+    return;
+  }
+
+  if (isRuntimeConfigRequest(request.url || '/')) {
+    sendRuntimeConfig(response, request.method);
     return;
   }
 
@@ -86,6 +92,38 @@ function resolveRequestPath(rawUrl) {
 
 function readableFile(path) {
   return Boolean(path && existsSync(path) && statSync(path).isFile());
+}
+
+function isRuntimeConfigRequest(rawUrl) {
+  try {
+    return new URL(rawUrl, 'http://127.0.0.1').pathname === '/runtime-config.js';
+  } catch {
+    return false;
+  }
+}
+
+function sendRuntimeConfig(response, method) {
+  const body = `globalThis.__RUNLANE_CONFIG__ = Object.freeze(${JSON.stringify({ runlaneApiUrl: apiUrl })});\n`;
+  response.writeHead(200, {
+    'Cache-Control': 'no-store',
+    'Content-Length': Buffer.byteLength(body),
+    'Content-Type': 'text/javascript; charset=utf-8',
+    'Referrer-Policy': 'no-referrer',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+  });
+
+  if (method === 'HEAD') {
+    response.end();
+    return;
+  }
+
+  response.end(body);
+}
+
+function readApiUrl() {
+  const value = process.env.RUNLANE_API_URL || process.env.API_URL || '';
+  return value.trim().replace(/\/+$/, '');
 }
 
 function cacheControl(path) {

@@ -218,6 +218,8 @@ services:
   web:
     image: ${RUNLANE_IMAGE_REGISTRY:-ghcr.io}/${RUNLANE_IMAGE_NAMESPACE:-dyniqo}/${RUNLANE_IMAGE_REPOSITORY:-runlane-core}-web:${RUNLANE_IMAGE_TAG:?RUNLANE_IMAGE_TAG is required}
     restart: unless-stopped
+    environment:
+      RUNLANE_API_URL: ${API_URL:?API_URL is required}
     read_only: true
     security_opt:
       - no-new-privileges:true

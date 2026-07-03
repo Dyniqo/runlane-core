@@ -33,14 +33,44 @@ export function isAuthenticationError(error: unknown): boolean {
   return error instanceof ApiRequestError && (error.status === 401 || error.status === 403);
 }
 
+type RuntimeConfig = { readonly runlaneApiUrl?: unknown };
+
+declare global {
+  interface Window {
+    readonly __RUNLANE_CONFIG__?: RuntimeConfig;
+  }
+}
+
+const localApiHostnames = new Set(['localhost', '127.0.0.1', '[::1]', '::1']);
+
 export function readApiBaseUrl(): string {
   const meta = import.meta as ImportMeta & {
     readonly env?: { readonly VITE_RUNLANE_API_URL?: unknown };
   };
-  const envValue = meta.env?.VITE_RUNLANE_API_URL;
-  return typeof envValue === 'string' && envValue.length > 0
-    ? envValue.replace(/\/$/, '')
-    : 'http://127.0.0.1:4600';
+
+  const configuredUrl =
+    normalizeApiBaseUrl(meta.env?.VITE_RUNLANE_API_URL) ??
+    normalizeApiBaseUrl(readRuntimeConfig()?.runlaneApiUrl);
+  if (configuredUrl) return configuredUrl;
+
+  if (typeof window !== 'undefined') {
+    const { hostname, protocol } = window.location;
+    if ((protocol === 'https:' || protocol === 'http:') && !localApiHostnames.has(hostname)) {
+      return window.location.origin.replace(/\/$/, '');
+    }
+  }
+
+  return 'http://127.0.0.1:4600';
+}
+
+function readRuntimeConfig(): RuntimeConfig | undefined {
+  return typeof window !== 'undefined' ? window.__RUNLANE_CONFIG__ : undefined;
+}
+
+function normalizeApiBaseUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim().replace(/\/+$/, '');
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 export function isUuid(value: string): boolean {

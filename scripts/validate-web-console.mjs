@@ -88,6 +88,7 @@ for (const fragment of [
   '<link rel="icon" sizes="any" href="/favicon.ico" />',
   '<link rel="apple-touch-icon" href="/apple-touch-icon.png" />',
   '<link rel="manifest" href="/manifest.webmanifest" />',
+  '<script src="/runtime-config.js"></script>',
   '<script type="module" src="/src/main.tsx"></script>',
 ]) {
   if (!indexHtml.includes(fragment)) {
@@ -96,9 +97,21 @@ for (const fragment of [
 }
 
 const apiClient = readFileSync(join(root, 'apps/web/src/api/client.ts'), 'utf8');
-for (const fragment of ['VITE_RUNLANE_API_URL', "'http://127.0.0.1:4600'"]) {
+for (const fragment of [
+  'VITE_RUNLANE_API_URL',
+  '__RUNLANE_CONFIG__',
+  'window.location.origin',
+  "'http://127.0.0.1:4600'",
+]) {
   if (!apiClient.includes(fragment)) {
     errors.push(`apps/web API client is missing fragment: ${fragment}`);
+  }
+}
+
+const webServer = readFileSync(join(root, 'docker/web-server.mjs'), 'utf8');
+for (const fragment of ['runtime-config.js', 'RUNLANE_API_URL', 'API_URL']) {
+  if (!webServer.includes(fragment)) {
+    errors.push(`docker/web-server.mjs is missing fragment: ${fragment}`);
   }
 }
 
