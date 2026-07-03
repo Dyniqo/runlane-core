@@ -107,6 +107,14 @@ $Preflight = Invoke-WebRequestSafe -Method Options -Uri "$ApiBaseUrl/v1/auth/reg
 Assert-Equal -Actual ([int] $Preflight.StatusCode) -Expected 204 -Message 'CORS preflight should be accepted for the configured origin.'
 Assert-Equal -Actual (Get-HeaderValue -Response $Preflight -Name 'Access-Control-Allow-Origin') -Expected $AllowedOrigin -Message 'CORS allowed origin mismatch.'
 
+$AutomationPreflight = Invoke-WebRequestSafe -Method Options -Uri "$ApiBaseUrl/v1/automation/execute/wf_security_probe" -Headers @{
+  Origin = $AllowedOrigin
+  'Access-Control-Request-Method' = 'POST'
+  'Access-Control-Request-Headers' = 'content-type,x-runlane-api-key,x-runlane-source,x-runlane-idempotency-key'
+}
+Assert-Equal -Actual ([int] $AutomationPreflight.StatusCode) -Expected 204 -Message 'Automation bridge CORS preflight should allow Runlane headers.'
+Assert-Equal -Actual (Get-HeaderValue -Response $AutomationPreflight -Name 'Access-Control-Allow-Origin') -Expected $AllowedOrigin -Message 'Automation bridge CORS allowed origin mismatch.'
+
 $Denied = Invoke-WebRequestSafe -Method Get -Uri "$ApiBaseUrl/health" -Headers @{ Origin = $DeniedOrigin }
 Assert-Equal -Actual ([int] $Denied.StatusCode) -Expected 200 -Message 'Health endpoint should not fail for a disallowed Origin header.'
 Assert-Equal -Actual (Get-HeaderValue -Response $Denied -Name 'Access-Control-Allow-Origin') -Expected $null -Message 'Disallowed CORS origin should not be echoed.'
