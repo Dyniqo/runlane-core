@@ -19,7 +19,11 @@ import type {
 } from '../../ports';
 import type { UseCase } from '../use-case';
 import { buildAuthenticationResponse } from './auth-response';
-import { missingWorkspaceMembership, rejectInvalidCredentials } from './authentication-errors';
+import {
+  demoSessionRequired,
+  missingWorkspaceMembership,
+  rejectInvalidCredentials,
+} from './authentication-errors';
 
 export interface LoginUserOptions {
   readonly demoModeEnabled: boolean;
@@ -136,11 +140,15 @@ export class LoginUserUseCase implements UseCase<LoginUserInput, AuthenticationR
     readonly userAgent: string | null;
     readonly now: Date;
   }) {
-    if (!this.shouldResolveDemoSession(input.email, input.demoSessionId)) {
+    if (!this.shouldUseDemoSessionIsolation(input.email)) {
       return this.workspaces.findPrimaryWorkspaceForUser(input.userId);
     }
 
-    const demoSessionId = normalizeDemoSessionId(input.demoSessionId ?? '');
+    if (!input.demoSessionId) {
+      throw demoSessionRequired();
+    }
+
+    const demoSessionId = normalizeDemoSessionId(input.demoSessionId);
     const expiresAt = new Date(
       input.now.getTime() + this.options.demoSessionTtlHours * 60 * 60 * 1000,
     );
@@ -157,8 +165,8 @@ export class LoginUserUseCase implements UseCase<LoginUserInput, AuthenticationR
     });
   }
 
-  private shouldResolveDemoSession(email: string, demoSessionId: string | null): boolean {
-    if (!this.options.demoModeEnabled || !this.options.demoSessionEnabled || !demoSessionId) {
+  private shouldUseDemoSessionIsolation(email: string): boolean {
+    if (!this.options.demoModeEnabled || !this.options.demoSessionEnabled) {
       return false;
     }
 

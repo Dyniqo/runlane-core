@@ -27,6 +27,14 @@ export function missingWorkspaceMembership(): DomainError {
   });
 }
 
+export function demoSessionRequired(): DomainError {
+  return new DomainError({
+    code: 'DEMO_SESSION_REQUIRED',
+    category: 'validation',
+    message: 'A browser-scoped demo session is required for the demo account',
+  });
+}
+
 export function rejectInvalidCredentials(): never {
   throw invalidCredentials();
 }

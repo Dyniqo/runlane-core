@@ -216,7 +216,11 @@ export function App(): ReactElement {
 
   async function login(email: string, password: string): Promise<void> {
     await guarded(async () => {
-      const session = await api.login(email, password);
+      const session = await api.login(
+        email,
+        password,
+        shouldUseBrowserScopedDemoSession(email) ? readDemoSessionId() : undefined,
+      );
       writeSession(session);
       setState((current) => ({ ...current, session, activeTab: readActiveTabFromPath() }));
       await loadWorkspace(api, setState);
@@ -778,4 +782,8 @@ function scrollToPageStart(): void {
 
 function readActiveTabFromPath(): AppTab {
   return routeTabs[window.location.pathname] ?? 'home';
+}
+
+function shouldUseBrowserScopedDemoSession(email: string): boolean {
+  return email.trim().toLowerCase() === 'demo@runlane.local';
 }
