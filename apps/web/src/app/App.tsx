@@ -314,7 +314,7 @@ export function App(): ReactElement {
 
   async function validateWorkflow(workflow: Workflow): Promise<void> {
     await guarded(async () => {
-      const mode = await api.testWorkflow(workflow, leadPayload(state));
+      const mode = await api.testWorkflow(workflow, consolePayloadForWorkflow(workflow, state));
       pushToast(setState, 'success', 'Workflow contract ready', `Validation mode: ${mode}.`);
     });
   }
@@ -323,7 +323,11 @@ export function App(): ReactElement {
     await guarded(async () => {
       const prepared = await prepareRunnableWorkflow(api, workflow);
       const token = state.latestApiKeyToken ?? (await api.createApiKey('Console execution key'));
-      const result = await api.executeAutomation(prepared, token, leadPayload(state));
+      const result = await api.executeAutomation(
+        prepared,
+        token,
+        consolePayloadForWorkflow(prepared, state),
+      );
       await waitForQueueSnapshot();
       const [executions, usage, auditLogs, steps] = await Promise.all([
         api.listExecutions(),
@@ -738,13 +742,182 @@ function pushToast(
   setState((current) => ({ ...current, toast: { id: `${Date.now()}`, tone, title, message } }));
 }
 
-function leadPayload(state: AppState): JsonRecord {
+function consolePayloadForWorkflow(workflow: Workflow, state: AppState): JsonRecord {
+  const issuedAt = new Date().toISOString();
+  const requestId = `console-${Date.now()}`;
+  const payload = mergeJsonRecords(
+    buildConsolePayloadProfile(state, issuedAt, requestId),
+    readConfiguredConsolePayload(workflow.definition.trigger.config),
+  );
+
+  for (const path of collectPayloadTemplatePaths(workflow.definition)) {
+    ensurePayloadPath(payload, path, defaultConsolePayloadValue(path, state, issuedAt, requestId));
+  }
+
+  refreshConsoleRuntimeFields(payload, issuedAt, requestId, state);
+
+  return payload;
+}
+
+function buildConsolePayloadProfile(
+  state: AppState,
+  issuedAt: string,
+  requestId: string,
+): JsonRecord {
+  const urgency = state.payloadScore >= 80 ? 'high' : 'standard';
   return {
     name: state.payloadName,
     email: state.payloadEmail,
     score: state.payloadScore,
     source: 'console',
+    company: 'Northstar Digital',
+    companyDomain: 'northstar.example',
+    title: `${state.payloadName} requested workflow automation`,
+    urgency: urgency,
+    notes:
+      'Inbound automation request from the console with webhook, queue, integration and routing context.',
+    receivedAt: issuedAt,
+    requestId: requestId,
+    event: 'lead.created',
+    externalId: `lead-${state.payloadScore}-${Date.now()}`,
+    id: `evt_${requestId.replace(/[^a-zA-Z0-9]/g, '_')}`,
+    type: 'customer.subscription.updated',
+    data: {
+      object: {
+        customer: 'cus_runlane_demo',
+        id: 'sub_runlane_demo',
+        status: 'active',
+      },
+    },
   };
+}
+
+function refreshConsoleRuntimeFields(
+  payload: JsonRecord,
+  issuedAt: string,
+  requestId: string,
+  state: AppState,
+): void {
+  payload.receivedAt = issuedAt;
+  payload.requestId = requestId;
+  payload.externalId = `lead-${state.payloadScore}-${Date.now()}`;
+
+  if (payload.type === 'customer.subscription.updated') {
+    payload.id = `evt_${requestId.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  }
+}
+
+function readConfiguredConsolePayload(config: JsonRecord): JsonRecord {
+  const consolePayload = config.consolePayload;
+  if (isJsonRecord(consolePayload)) return cloneJsonRecord(consolePayload);
+
+  const samplePayload = config.samplePayload;
+  if (isJsonRecord(samplePayload)) return cloneJsonRecord(samplePayload);
+
+  return {};
+}
+
+function collectPayloadTemplatePaths(definition: WorkflowDefinition): readonly string[] {
+  const paths = new Set<string>();
+  const templatePattern = /{{\s*payload\.([a-zA-Z0-9_.-]+)\s*}}/g;
+  const serializedDefinition = JSON.stringify(definition);
+  let match = templatePattern.exec(serializedDefinition);
+
+  while (match) {
+    const path = match[1]?.trim();
+    if (path) paths.add(path);
+    match = templatePattern.exec(serializedDefinition);
+  }
+
+  return [...paths];
+}
+
+function ensurePayloadPath(payload: JsonRecord, path: string, value: unknown): void {
+  const parts = path.split('.').filter(Boolean);
+  if (parts.length === 0) return;
+
+  let current: JsonRecord = payload;
+  for (const part of parts.slice(0, -1)) {
+    const next = current[part];
+    if (!isJsonRecord(next)) {
+      const created: JsonRecord = {};
+      current[part] = created;
+      current = created;
+    } else {
+      current = next;
+    }
+  }
+
+  const last = parts.at(-1);
+  if (!last || current[last] !== undefined) return;
+  current[last] = value;
+}
+
+function defaultConsolePayloadValue(
+  path: string,
+  state: AppState,
+  issuedAt: string,
+  requestId: string,
+): unknown {
+  const last = path.split('.').filter(Boolean).at(-1) ?? path;
+  const urgency = state.payloadScore >= 80 ? 'high' : 'standard';
+  const values: Record<string, unknown> = {
+    name: state.payloadName,
+    email: state.payloadEmail,
+    score: state.payloadScore,
+    source: 'console',
+    company: 'Northstar Digital',
+    companyDomain: 'northstar.example',
+    title: `${state.payloadName} requested workflow automation`,
+    urgency: urgency,
+    notes: 'Prepared console payload for a safe public demo execution.',
+    receivedAt: issuedAt,
+    requestId: requestId,
+    event: 'lead.created',
+    externalId: `lead-${state.payloadScore}-${Date.now()}`,
+    id:
+      path === 'data.object.id'
+        ? 'sub_runlane_demo'
+        : `evt_${requestId.replace(/[^a-zA-Z0-9]/g, '_')}`,
+    type: 'customer.subscription.updated',
+    customer: 'cus_runlane_demo',
+    status: 'active',
+  };
+
+  return values[last] ?? `console-${last}`;
+}
+
+function mergeJsonRecords(base: JsonRecord, override: JsonRecord): JsonRecord {
+  const merged = cloneJsonRecord(base);
+
+  for (const [key, value] of Object.entries(override)) {
+    const current = merged[key];
+    if (isJsonRecord(current) && isJsonRecord(value)) {
+      merged[key] = mergeJsonRecords(current, value);
+    } else {
+      merged[key] = cloneJsonValue(value);
+    }
+  }
+
+  return merged;
+}
+
+function cloneJsonRecord(record: JsonRecord): JsonRecord {
+  return cloneJsonValue(record) as JsonRecord;
+}
+
+function cloneJsonValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(cloneJsonValue);
+  if (isJsonRecord(value)) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, cloneJsonValue(item)]),
+    );
+  }
+  return value;
+}
+
+function isJsonRecord(value: unknown): value is JsonRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 async function prepareRunnableWorkflow(api: ApiClient, workflow: Workflow): Promise<Workflow> {

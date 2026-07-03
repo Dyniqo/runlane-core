@@ -42,7 +42,9 @@ function buildLeadRoutingWorkflowDefinition(): JsonObject {
     schemaVersion: 1,
     trigger: {
       type: 'automation',
-      config: {},
+      config: {
+        consolePayload: buildLeadRoutingPayload(),
+      },
     },
     entryStepKey: 'validate_payload',
     steps: [
@@ -217,7 +219,9 @@ function buildWebhookQueueWorkerDefinition(): JsonObject {
     schemaVersion: 1,
     trigger: {
       type: 'webhook',
-      config: {},
+      config: {
+        consolePayload: buildWebhookQueueWorkerPayload(),
+      },
     },
     entryStepKey: 'accept_webhook',
     steps: [
@@ -323,7 +327,9 @@ function buildSubscriptionSyncWorkflowDefinition(): JsonObject {
     schemaVersion: 1,
     trigger: {
       type: 'webhook',
-      config: {},
+      config: {
+        consolePayload: buildSubscriptionSyncPayload(),
+      },
     },
     entryStepKey: 'classify_billing_event',
     steps: [
@@ -447,7 +453,9 @@ function buildApiEnrichmentWorkflowDefinition(): JsonObject {
     schemaVersion: 1,
     trigger: {
       type: 'automation',
-      config: {},
+      config: {
+        consolePayload: buildApiEnrichmentPayload(),
+      },
     },
     entryStepKey: 'prepare_enrichment_request',
     steps: [
@@ -553,7 +561,9 @@ function buildAiDecisionRoutingWorkflowDefinition(): JsonObject {
     schemaVersion: 1,
     trigger: {
       type: 'automation',
-      config: {},
+      config: {
+        consolePayload: buildAiDecisionRoutingPayload(),
+      },
     },
     entryStepKey: 'score_request',
     steps: [
@@ -667,5 +677,71 @@ function buildAiDecisionRoutingWorkflowDefinition(): JsonObject {
         },
       },
     ],
+  };
+}
+
+function buildLeadRoutingPayload(): JsonObject {
+  return {
+    name: 'Ava Morgan',
+    email: 'ava.morgan@northstar.example',
+    score: 86,
+    source: 'console',
+    company: 'Northstar Digital',
+    companyDomain: 'northstar.example',
+    title: 'Lifecycle automation request',
+    urgency: 'high',
+    notes: 'Inbound lead asks for webhook-based routing, queue retries and CRM handoff.',
+  };
+}
+
+function buildWebhookQueueWorkerPayload(): JsonObject {
+  return {
+    event: 'lead.created',
+    externalId: 'crm-lead-1042',
+    source: 'console',
+    name: 'Ava Morgan',
+    email: 'ava.morgan@northstar.example',
+    company: 'Northstar Digital',
+  };
+}
+
+function buildSubscriptionSyncPayload(): JsonObject {
+  return {
+    type: 'customer.subscription.updated',
+    source: 'stripe',
+    data: {
+      object: {
+        customer: 'cus_runlane_demo',
+        id: 'sub_runlane_demo',
+        status: 'active',
+      },
+    },
+  };
+}
+
+function buildApiEnrichmentPayload(): JsonObject {
+  return {
+    name: 'Ava Morgan',
+    email: 'ava.morgan@northstar.example',
+    source: 'console',
+    company: 'Northstar Digital',
+    companyDomain: 'northstar.example',
+    title: 'Account enrichment request',
+    urgency: 'standard',
+    notes: 'Console run requests enrichment before routing the payload to a business system.',
+  };
+}
+
+function buildAiDecisionRoutingPayload(): JsonObject {
+  return {
+    name: 'Ava Morgan',
+    email: 'ava.morgan@northstar.example',
+    score: 91,
+    source: 'console',
+    company: 'Northstar Digital',
+    companyDomain: 'northstar.example',
+    title: 'AI workflow routing request',
+    urgency: 'high',
+    notes: 'The customer needs webhook intake, queue-backed execution and priority routing.',
   };
 }

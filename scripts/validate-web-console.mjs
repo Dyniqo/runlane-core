@@ -13,6 +13,7 @@ const requiredFiles = [
   'apps/web/src/app/App.tsx',
   'apps/web/src/api/client.ts',
   'apps/web/src/styles/app.scss',
+  'apps/web/src/lib/format.ts',
   'apps/web/public/favicon.svg',
   'apps/web/public/favicon.ico',
   'apps/web/public/apple-touch-icon.png',
@@ -119,6 +120,82 @@ const appSource = readFileSync(join(root, 'apps/web/src/app/App.tsx'), 'utf8');
 for (const route of ['overview', 'builder', 'runs', 'integrations', 'usage', 'plans', 'audit']) {
   if (!appSource.includes(`/${route}`)) {
     errors.push(`apps/web route is missing: /${route}`);
+  }
+}
+
+for (const fragment of [
+  'consolePayloadForWorkflow',
+  'readConfiguredConsolePayload',
+  'collectPayloadTemplatePaths',
+  'ensurePayloadPath',
+  'buildConsolePayloadProfile',
+  'refreshConsoleRuntimeFields',
+]) {
+  if (!appSource.includes(fragment)) {
+    errors.push(`apps/web console runtime payload support is missing fragment: ${fragment}`);
+  }
+}
+
+for (const field of [
+  'name',
+  'email',
+  'score',
+  'source',
+  'company',
+  'companyDomain',
+  'title',
+  'urgency',
+  'notes',
+  'receivedAt',
+  'requestId',
+  'event',
+  'externalId',
+  'type',
+  'customer',
+  'status',
+]) {
+  if (!appSource.includes(`${field}:`)) {
+    errors.push(`apps/web console payload is missing field: ${field}`);
+  }
+}
+
+const formatSource = readFileSync(join(root, 'apps/web/src/lib/format.ts'), 'utf8');
+for (const fragment of ['record.payload', 'flattenReadableFields', 'companyDomain', 'requestId']) {
+  if (!formatSource.includes(fragment)) {
+    errors.push(`apps/web run summary formatting is missing fragment: ${fragment}`);
+  }
+}
+
+const demoWorkflowsSource = readFileSync(
+  join(root, 'packages/application/src/use-cases/demo/demo-workflows.ts'),
+  'utf8',
+);
+for (const fragment of [
+  'consolePayload: buildLeadRoutingPayload()',
+  'consolePayload: buildWebhookQueueWorkerPayload()',
+  'consolePayload: buildSubscriptionSyncPayload()',
+  'consolePayload: buildApiEnrichmentPayload()',
+  'consolePayload: buildAiDecisionRoutingPayload()',
+]) {
+  if (!demoWorkflowsSource.includes(fragment)) {
+    errors.push(`demo workflow console payload is missing fragment: ${fragment}`);
+  }
+}
+
+if (/20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/.test(demoWorkflowsSource)) {
+  errors.push('demo workflow console payload must not contain fixed timestamps');
+}
+
+for (const fragment of [
+  'console-lead-routing-001',
+  'console-webhook-worker-001',
+  'console-subscription-sync-001',
+  'console-api-enrichment-001',
+  'console-ai-routing-001',
+  'evt_runlane_subscription_updated',
+]) {
+  if (demoWorkflowsSource.includes(fragment)) {
+    errors.push(`demo workflow console payload contains fixed runtime value: ${fragment}`);
   }
 }
 
