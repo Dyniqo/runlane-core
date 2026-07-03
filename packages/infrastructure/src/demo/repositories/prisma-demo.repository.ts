@@ -21,6 +21,7 @@ const DEMO_AUDIT_ENTITY_TYPE = 'demo';
 const DEMO_SESSION_PUBLIC_ID_HEX_LENGTH = 32;
 const DEMO_SESSION_PUBLIC_ID_INDEX_HEX_LENGTH = 2;
 const SESSION_RATE_WINDOW_MS = 60 * 60 * 1000;
+const DEMO_BILLING_PERIOD_MS = 30 * 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class PrismaDemoRepository implements DemoRepositoryPort {
@@ -192,7 +193,10 @@ export class PrismaDemoRepository implements DemoRepositoryPort {
         ownerId: input.ownerId,
         isDemo: true,
         demoSessionId: input.sessionKeyHash,
-        plan: 'FREE',
+        plan: seed.workspace.plan,
+        billingStatus: seed.workspace.billingStatus,
+        billingCurrentPeriodStart: seed.workspace.billingCurrentPeriodStart,
+        billingCurrentPeriodEnd: seed.workspace.billingCurrentPeriodEnd,
         members: {
           create: {
             userId: input.ownerId,
@@ -364,12 +368,12 @@ export class PrismaDemoRepository implements DemoRepositoryPort {
       where: { id: input.workspaceId },
       data: {
         name: input.workspaceName,
-        plan: 'FREE',
-        billingStatus: 'NONE',
+        plan: seed.workspace.plan,
+        billingStatus: seed.workspace.billingStatus,
         stripeCustomerId: null,
         stripeSubscriptionId: null,
-        billingCurrentPeriodStart: null,
-        billingCurrentPeriodEnd: null,
+        billingCurrentPeriodStart: seed.workspace.billingCurrentPeriodStart,
+        billingCurrentPeriodEnd: seed.workspace.billingCurrentPeriodEnd,
       },
       select: {
         id: true,
@@ -452,12 +456,12 @@ export class PrismaDemoRepository implements DemoRepositoryPort {
             ownerId,
             isDemo: true,
             demoSessionId: null,
-            plan: 'FREE',
-            billingStatus: 'NONE',
+            plan: 'PRO',
+            billingStatus: 'ACTIVE',
             stripeCustomerId: null,
             stripeSubscriptionId: null,
-            billingCurrentPeriodStart: null,
-            billingCurrentPeriodEnd: null,
+            billingCurrentPeriodStart: input.seededAt,
+            billingCurrentPeriodEnd: buildDemoBillingPeriodEnd(input.seededAt),
           },
           select: {
             id: true,
@@ -470,7 +474,10 @@ export class PrismaDemoRepository implements DemoRepositoryPort {
             ownerId,
             isDemo: true,
             demoSessionId: null,
-            plan: 'FREE',
+            plan: 'PRO',
+            billingStatus: 'ACTIVE',
+            billingCurrentPeriodStart: input.seededAt,
+            billingCurrentPeriodEnd: buildDemoBillingPeriodEnd(input.seededAt),
           },
           select: {
             id: true,
@@ -574,6 +581,10 @@ export class PrismaDemoRepository implements DemoRepositoryPort {
       select: {
         id: true,
         name: true,
+        plan: true,
+        billingStatus: true,
+        billingCurrentPeriodStart: true,
+        billingCurrentPeriodEnd: true,
         owner: {
           select: {
             id: true,
@@ -609,6 +620,10 @@ export class PrismaDemoRepository implements DemoRepositoryPort {
         id: workspace.id,
         name: workspace.name,
         isDemo: true as const,
+        plan: workspace.plan,
+        billingStatus: workspace.billingStatus,
+        billingCurrentPeriodStart: workspace.billingCurrentPeriodStart,
+        billingCurrentPeriodEnd: workspace.billingCurrentPeriodEnd,
       },
       user: workspace.owner,
       apiKey,
@@ -837,6 +852,10 @@ function buildSessionWorkflowPublicId(sessionKeyHash: string, index: number): st
   const prefixLength = DEMO_SESSION_PUBLIC_ID_HEX_LENGTH - DEMO_SESSION_PUBLIC_ID_INDEX_HEX_LENGTH;
 
   return `wf_${sessionKeyHash.slice(0, prefixLength)}${indexHex.slice(-DEMO_SESSION_PUBLIC_ID_INDEX_HEX_LENGTH)}`;
+}
+
+function buildDemoBillingPeriodEnd(start: Date): Date {
+  return new Date(start.getTime() + DEMO_BILLING_PERIOD_MS);
 }
 
 function mapUsageMetricType(type: DemoUsageQuantityInput['type']): 'EXECUTION' | 'AI_CALL' {

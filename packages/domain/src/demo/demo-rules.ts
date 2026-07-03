@@ -1,9 +1,12 @@
 import { DomainError } from '../shared';
 
-export const DEMO_SEED_VERSION = 'demo-seed-v1';
+export const DEMO_SEED_VERSION = 'demo-seed-v2';
 export const DEMO_WORKFLOW_PUBLIC_IDS = {
   leadRouting: 'wf_00000000000000000000000000000040',
-  automationBridge: 'wf_00000000000000000000000000000041',
+  webhookQueueWorker: 'wf_00000000000000000000000000000041',
+  subscriptionSync: 'wf_00000000000000000000000000000042',
+  apiEnrichment: 'wf_00000000000000000000000000000043',
+  aiDecisionRouting: 'wf_00000000000000000000000000000044',
 } as const;
 
 const DEMO_USER_EMAIL_MAX_LENGTH = 320;
